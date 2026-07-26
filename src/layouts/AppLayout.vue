@@ -56,6 +56,13 @@ async function handleLogout(all = false) {
         <v-list-item :title="auth.user?.name" :subtitle="auth.user?.email" />
         <v-divider class="my-1" />
         <v-list-item
+          v-if="auth.roles.includes('admin')"
+          prepend-icon="mdi-shield-account"
+          title="Administração"
+          :to="{ name: 'admin' }"
+        />
+        <v-divider v-if="auth.roles.includes('admin')" class="my-1" />
+        <v-list-item
           prepend-icon="mdi-logout"
           title="Sair"
           :disabled="loggingOut"
@@ -70,6 +77,10 @@ async function handleLogout(all = false) {
       </v-list>
     </v-menu>
   </v-app-bar>
+
+  <v-navigation-drawer v-if="$slots.drawer" permanent>
+    <slot name="drawer" />
+  </v-navigation-drawer>
 
   <v-main>
     <v-container class="py-8" style="max-width: 1100px">
