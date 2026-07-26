@@ -1,14 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import CustomerFormModal from '@/components/admin/CustomerFormModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import customerService from '@/services/customerService'
 import { extractErrorMessage } from '@/utils/errors'
 
 const headers = [
-  { title: 'Nome', key: 'name' },
-  { title: 'E-mail', key: 'email' },
-  { title: 'Cliente', key: 'client.name' },
+  { title: 'Nome', key: 'name', sortable: false },
+  { title: 'E-mail', key: 'email', sortable: false },
+  { title: 'Cliente', key: 'client.name', sortable: false },
   { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
 ]
 
@@ -81,8 +81,6 @@ async function confirmDelete() {
     deleting.value = false
   }
 }
-
-onMounted(loadCustomers)
 </script>
 
 <template>

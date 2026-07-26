@@ -1,13 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import UserFormModal from '@/components/admin/UserFormModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import userService from '@/services/userService'
 import { extractErrorMessage } from '@/utils/errors'
 
 const headers = [
-  { title: 'Nome', key: 'name' },
-  { title: 'E-mail', key: 'email' },
+  { title: 'Nome', key: 'name', sortable: false },
+  { title: 'E-mail', key: 'email', sortable: false },
   { title: 'Papéis', key: 'roles', sortable: false },
   { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
 ]
@@ -81,8 +81,6 @@ async function confirmDelete() {
     deleting.value = false
   }
 }
-
-onMounted(loadUsers)
 </script>
 
 <template>
