@@ -42,3 +42,4 @@ Todas com senha `password`:
 | `supervisor@example.com` | `web` (role supervisor) |
 | `agente@example.com` | `web` (role agente) |
 | `cliente@example.com` | `customer` |
+# gespriority_claude_front
