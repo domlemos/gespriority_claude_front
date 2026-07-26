@@ -67,6 +67,11 @@ async function confirmDelete() {
     await clientService.remove(clientToDelete.value.id)
     deleteOpen.value = false
     await loadClients()
+
+    if (items.value.length === 0 && page.value > 1) {
+      page.value -= 1
+      await loadClients()
+    }
   } catch (error) {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o cliente.')
     deleteOpen.value = false
@@ -106,7 +111,7 @@ onMounted(loadClients)
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message="`Excluir o cliente &quot;${clientToDelete?.name}&quot;? Essa ação não pode ser desfeita.`"
+    :message='`Excluir o cliente "${clientToDelete?.name}"? Essa ação não pode ser desfeita.`'
     :loading="deleting"
     @confirm="confirmDelete"
   />
