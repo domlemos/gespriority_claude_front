@@ -88,6 +88,11 @@ const routes = [
         name: 'admin-customers',
         component: () => import('@/views/admin/CustomersView.vue'),
       },
+      {
+        path: 'slas',
+        name: 'admin-slas',
+        component: () => import('@/views/admin/SlasView.vue'),
+      },
     ],
   },
 
