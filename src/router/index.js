@@ -65,6 +65,37 @@ const routes = [
     meta: { requiresAuth: true, guard: 'customer' },
   },
 
+  // --- Administração (só role "admin", guard "web") ---
+  {
+    path: '/admin',
+    name: 'admin',
+    redirect: { name: 'admin-clients' },
+    component: () => import('@/layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, guard: 'web', requiresAdmin: true },
+    children: [
+      {
+        path: 'clients',
+        name: 'admin-clients',
+        component: () => import('@/views/admin/ClientsView.vue'),
+      },
+      {
+        path: 'users',
+        name: 'admin-users',
+        component: () => import('@/views/admin/UsersView.vue'),
+      },
+      {
+        path: 'customers',
+        name: 'admin-customers',
+        component: () => import('@/views/admin/CustomersView.vue'),
+      },
+      {
+        path: 'slas',
+        name: 'admin-slas',
+        component: () => import('@/views/admin/SlasView.vue'),
+      },
+    ],
+  },
+
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
@@ -102,6 +133,10 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.guard && auth.guard !== to.meta.guard) {
+      return homeRouteFor(auth.guard)
+    }
+
+    if (to.meta.requiresAdmin && !auth.roles.includes('admin')) {
       return homeRouteFor(auth.guard)
     }
   }
