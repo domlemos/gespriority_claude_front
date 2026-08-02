@@ -93,6 +93,11 @@ const routes = [
         name: 'admin-slas',
         component: () => import('@/views/admin/SlasView.vue'),
       },
+      {
+        path: 'solution-groups',
+        name: 'admin-solution-groups',
+        component: () => import('@/views/admin/SolutionGroupsView.vue'),
+      },
     ],
   },
 

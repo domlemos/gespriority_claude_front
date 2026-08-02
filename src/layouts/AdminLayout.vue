@@ -6,6 +6,7 @@ const items = [
   { title: 'Usuários da Aplicação', icon: 'mdi-account-cog', to: { name: 'admin-users' } },
   { title: 'Usuários de Clientes', icon: 'mdi-account-group', to: { name: 'admin-customers' } },
   { title: 'Políticas de SLA', icon: 'mdi-timer-alert-outline', to: { name: 'admin-slas' } },
+  { title: 'Grupos de Solução', icon: 'mdi-account-multiple-outline', to: { name: 'admin-solution-groups' } },
 ]
 </script>
 
