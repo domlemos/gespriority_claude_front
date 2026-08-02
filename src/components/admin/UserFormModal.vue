@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import userService from '@/services/userService'
 import roleService from '@/services/roleService'
+import solutionGroupService from '@/services/solutionGroupService'
 import { extractErrorMessage } from '@/utils/errors'
 
 const props = defineProps({
@@ -16,12 +17,19 @@ const email = ref('')
 const password = ref('')
 const roleIds = ref([])
 const roleOptions = ref([])
+const solutionGroupId = ref(null)
+const solutionGroupOptions = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
 
 async function loadRoles() {
   const { data } = await roleService.list()
   roleOptions.value = data
+}
+
+async function loadSolutionGroups() {
+  const { data } = await solutionGroupService.list({ per_page: 200 })
+  solutionGroupOptions.value = data
 }
 
 watch(
@@ -33,8 +41,9 @@ watch(
     password.value = ''
     name.value = props.user?.name ?? ''
     email.value = props.user?.email ?? ''
+    solutionGroupId.value = props.user?.grupo_solucao_id ?? null
 
-    await loadRoles()
+    await Promise.all([loadRoles(), loadSolutionGroups()])
 
     roleIds.value = props.user
       ? roleOptions.value
@@ -56,6 +65,7 @@ async function onSubmit() {
     name: name.value,
     email: email.value,
     role_ids: roleIds.value,
+    grupo_solucao_id: solutionGroupId.value,
     ...(password.value ? { password: password.value } : {}),
   }
 
@@ -109,6 +119,15 @@ async function onSubmit() {
             label="Papéis"
             multiple
             chips
+            class="mb-2"
+          />
+          <v-select
+            v-model="solutionGroupId"
+            :items="solutionGroupOptions"
+            item-title="nome"
+            item-value="id"
+            label="Grupo de Solução"
+            required
           />
         </v-form>
       </v-card-text>
