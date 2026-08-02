@@ -19,6 +19,7 @@ const loading = ref(false)
 const errorMessage = ref('')
 
 function subcategoryLabel(subcategory) {
+  if (!subcategory || typeof subcategory !== 'object') return ''
   return `${subcategory.categoria?.nome ?? '—'} / ${subcategory.nome}`
 }
 
