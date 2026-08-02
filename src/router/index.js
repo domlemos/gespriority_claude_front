@@ -98,6 +98,21 @@ const routes = [
         name: 'admin-solution-groups',
         component: () => import('@/views/admin/SolutionGroupsView.vue'),
       },
+      {
+        path: 'categories',
+        name: 'admin-categories',
+        component: () => import('@/views/admin/CategoriesView.vue'),
+      },
+      {
+        path: 'subcategories',
+        name: 'admin-subcategories',
+        component: () => import('@/views/admin/SubcategoriesView.vue'),
+      },
+      {
+        path: 'items',
+        name: 'admin-items',
+        component: () => import('@/views/admin/ItemsView.vue'),
+      },
     ],
   },
 
