@@ -42,8 +42,15 @@ watch(
     name.value = props.user?.name ?? ''
     email.value = props.user?.email ?? ''
     solutionGroupId.value = props.user?.grupo_solucao_id ?? null
+    roleIds.value = []
+    solutionGroupOptions.value = []
 
-    await Promise.all([loadRoles(), loadSolutionGroups()])
+    try {
+      await Promise.all([loadRoles(), loadSolutionGroups()])
+    } catch (error) {
+      errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções do formulário.')
+      return
+    }
 
     roleIds.value = props.user
       ? roleOptions.value
