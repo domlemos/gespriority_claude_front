@@ -9,6 +9,7 @@ const headers = [
   { title: 'Nome', key: 'name', sortable: false },
   { title: 'E-mail', key: 'email', sortable: false },
   { title: 'Papéis', key: 'roles', sortable: false },
+  { title: 'Grupo de Solução', key: 'grupo_solucao', sortable: false },
   { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
 ]
 
@@ -112,6 +113,10 @@ async function confirmDelete() {
       >
         {{ role }}
       </v-chip>
+    </template>
+
+    <template #item.grupo_solucao="{ item }">
+      {{ item.grupo_solucao?.nome ?? '—' }}
     </template>
 
     <template #item.actions="{ item }">
