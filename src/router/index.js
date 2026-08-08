@@ -38,6 +38,19 @@ const routes = [
     component: () => import('@/views/DashboardView.vue'),
     meta: { requiresAuth: true, guard: 'web' },
   },
+  {
+    path: '/incidents/new',
+    name: 'incident-new',
+    component: () => import('@/views/IncidentFormView.vue'),
+    meta: { requiresAuth: true, guard: 'web' },
+  },
+  {
+    path: '/incidents/:id',
+    name: 'incident-edit',
+    component: () => import('@/views/IncidentFormView.vue'),
+    props: true,
+    meta: { requiresAuth: true, guard: 'web' },
+  },
 
   // --- Cliente (guard "customer") ---
   {
