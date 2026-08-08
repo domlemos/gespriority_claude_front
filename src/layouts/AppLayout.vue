@@ -2,21 +2,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { initials } from '@/utils/text'
 
 const auth = useAuthStore()
 const router = useRouter()
 const loggingOut = ref(false)
-
-function initials(name) {
-  if (!name) return '?'
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-}
 
 async function handleLogout(all = false) {
   loggingOut.value = true
