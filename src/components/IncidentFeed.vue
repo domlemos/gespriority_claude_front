@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import incidentDescriptionService from '@/services/incidentDescriptionService'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
@@ -116,6 +116,7 @@ function askDelete(entry) {
 }
 
 async function confirmDelete() {
+  errorMessage.value = ''
   deleting.value = true
 
   try {
@@ -131,6 +132,12 @@ async function confirmDelete() {
 }
 
 onMounted(loadFeed)
+
+watch(() => props.incidentId, () => {
+  loadFeed()
+})
+
+defineExpose({ reload: loadFeed })
 </script>
 
 <template>

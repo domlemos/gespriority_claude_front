@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import IncidentFeed from '@/components/IncidentFeed.vue'
@@ -32,7 +32,8 @@ const loading = ref(false)
 const loadFailed = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
-const initializing = ref(true)
+const successMessage = ref('')
+const feedRef = ref(null)
 
 const customerId = ref(null)
 const titulo = ref('')
@@ -77,18 +78,15 @@ function customerLabel(customer) {
 }
 
 function watchCategoriaChange() {
-  if (initializing.value) return
   subcategoriaId.value = null
   itemId.value = null
 }
 
 function watchSubcategoriaChange() {
-  if (initializing.value) return
   itemId.value = null
 }
 
 function watchGrupoSolucaoChange() {
-  if (initializing.value) return
   if (!filteredResponsavelOptions.value.some((user) => user.id === responsavelId.value)) {
     responsavelId.value = null
   }
@@ -131,10 +129,11 @@ async function loadUsers() {
 }
 
 function resolveClassificationFromItemId(currentItemId) {
+  itemId.value = currentItemId
+
   const item = itemOptions.value.find((option) => option.id === currentItemId)
   if (!item) return
 
-  itemId.value = item.id
   subcategoriaId.value = item.subcategoria_id
 
   const subcategory = subcategoryOptions.value.find((option) => option.id === item.subcategoria_id)
@@ -166,10 +165,9 @@ async function init() {
   loading.value = true
   loadFailed.value = false
   errorMessage.value = ''
-  initializing.value = true
 
   try {
-    const results = await Promise.all([
+    const [, , , , , , incidentItemId] = await Promise.all([
       loadCustomers(),
       loadCategories(),
       loadSubcategories(),
@@ -179,7 +177,6 @@ async function init() {
       isEditing.value ? loadIncident() : Promise.resolve(null),
     ])
 
-    const incidentItemId = results[6]
     if (incidentItemId) {
       resolveClassificationFromItemId(incidentItemId)
     }
@@ -187,7 +184,6 @@ async function init() {
     loadFailed.value = true
     errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os dados do incidente.')
   } finally {
-    initializing.value = false
     loading.value = false
   }
 }
@@ -207,10 +203,13 @@ function buildBasePayload() {
 async function onSubmit() {
   saving.value = true
   errorMessage.value = ''
+  successMessage.value = ''
 
   try {
     if (isEditing.value) {
       await incidentService.update(props.id, { ...buildBasePayload(), status: status.value })
+      successMessage.value = 'Incidente atualizado com sucesso.'
+      feedRef.value?.reload()
     } else {
       const created = await incidentService.create({
         ...buildBasePayload(),
@@ -226,17 +225,28 @@ async function onSubmit() {
   }
 }
 
+watch(() => props.id, () => {
+  init()
+})
+
 init()
 </script>
 
 <template>
   <AppLayout>
-    <h1 class="text-h5 font-weight-bold mb-4">
-      {{ isEditing ? `Incidente #${id}` : 'Novo Incidente' }}
-    </h1>
+    <div class="d-flex align-center mb-4">
+      <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'dashboard' }" />
+      <h1 class="text-h5 font-weight-bold">
+        {{ isEditing ? `Incidente #${id}` : 'Novo Incidente' }}
+      </h1>
+    </div>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
       {{ errorMessage }}
+    </v-alert>
+
+    <v-alert v-if="successMessage" type="success" variant="tonal" density="comfortable" class="mb-4">
+      {{ successMessage }}
     </v-alert>
 
     <div v-if="loading" class="d-flex justify-center py-12">
@@ -378,7 +388,7 @@ init()
       </v-col>
 
       <v-col cols="12" md="6">
-        <IncidentFeed v-if="isEditing" :incident-id="id" />
+        <IncidentFeed v-if="isEditing" ref="feedRef" :incident-id="id" />
       </v-col>
     </v-row>
   </AppLayout>
