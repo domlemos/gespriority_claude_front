@@ -4,6 +4,10 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { initials } from '@/utils/text'
 
+defineProps({
+  fluid: { type: Boolean, default: false },
+})
+
 const auth = useAuthStore()
 const router = useRouter()
 const loggingOut = ref(false)
@@ -23,13 +27,35 @@ async function handleLogout(all = false) {
 
 <template>
   <v-app-bar color="surface" elevation="1">
-    <v-app-bar-title class="d-flex align-center">
+    <v-app-bar-title class="flex-grow-0 d-flex align-center">
       <v-icon icon="mdi-shield-check" color="primary" class="mr-2" />
-      <span class="font-weight-bold">ITSM</span>
+      <span class="font-weight-bold">upITSM</span>
       <v-chip v-if="auth.isCustomer" size="small" class="ml-3" color="secondary" variant="tonal">
         Portal do Cliente
       </v-chip>
     </v-app-bar-title>
+
+    <v-spacer />
+
+    <v-btn
+      v-if="!auth.isCustomer && auth.hasPermission('tickets.view')"
+      variant="text"
+      class="text-none"
+      :to="{ name: 'dashboard' }"
+    >
+      Incidentes
+    </v-btn>
+
+    <v-btn
+      v-if="!auth.isCustomer && auth.roles.includes('admin')"
+      variant="text"
+      class="text-none"
+      :to="{ name: 'admin' }"
+    >
+      Administração
+    </v-btn>
+
+    <v-spacer />
 
     <v-menu>
       <template #activator="{ props }">
@@ -73,7 +99,7 @@ async function handleLogout(all = false) {
   </v-navigation-drawer>
 
   <v-main>
-    <v-container class="py-8" style="max-width: 1100px">
+    <v-container class="py-8" :fluid="fluid" :style="fluid ? undefined : 'max-width: 1100px'">
       <slot />
     </v-container>
   </v-main>

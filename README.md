@@ -1,4 +1,4 @@
-# ITSM — Frontend
+# upITSM — Frontend
 
 SPA em Vue 3 + Vuetify para o backend em [`../gespriority_claude`](../gespriority_claude). Cobre o módulo de autenticação: login/logout/refresh, recuperação de senha e um painel autenticado, para os dois guards do backend — `web` (equipe interna) e `customer` (portal do cliente).
 

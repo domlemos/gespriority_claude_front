@@ -38,3 +38,26 @@ export const ORIGEM_LABELS = {
   presencial: 'Presencial',
   monitoramento: 'Monitoramento',
 }
+
+export const SLA_STATUS_LABELS = {
+  dentro_prazo: 'Dentro do prazo',
+  estourado: 'Fora do Prazo',
+  sem_sla: 'Sem SLA',
+}
+
+export const SLA_STATUS_COLORS = {
+  dentro_prazo: 'success',
+  estourado: 'error',
+  sem_sla: 'default',
+}
+
+export function formatRemainingMinutes(minutes) {
+  if (minutes === null || minutes === undefined) return null
+
+  const abs = Math.round(Math.abs(minutes))
+  const hours = Math.floor(abs / 60)
+  const mins = abs % 60
+  const duration = hours > 0 ? `${hours}h${mins > 0 ? ` ${mins}min` : ''}` : `${mins}min`
+
+  return minutes < 0 ? `Atrasado ${duration}` : `${duration} restantes`
+}

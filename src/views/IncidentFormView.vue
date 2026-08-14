@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import IncidentFeed from '@/components/IncidentFeed.vue'
+import IncidentAttachments from '@/components/IncidentAttachments.vue'
 import incidentService from '@/services/incidentService'
 import customerService from '@/services/customerService'
 import categoryService from '@/services/categoryService'
@@ -233,12 +234,18 @@ init()
 </script>
 
 <template>
-  <AppLayout>
-    <div class="d-flex align-center mb-4">
-      <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'dashboard' }" />
-      <h1 class="text-h5 font-weight-bold">
-        {{ isEditing ? `Incidente #${id}` : 'Novo Incidente' }}
-      </h1>
+  <AppLayout fluid>
+    <div class="d-flex align-center justify-space-between mb-4">
+      <div class="d-flex align-center">
+        <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'dashboard' }" />
+        <h1 class="text-h5 font-weight-bold">
+          {{ isEditing ? `Incidente #${id}` : 'Novo Incidente' }}
+        </h1>
+      </div>
+
+      <v-btn v-if="canManage" color="primary" :loading="saving" @click="onSubmit">
+        Salvar
+      </v-btn>
     </div>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
@@ -258,12 +265,14 @@ init()
         <v-card variant="outlined" class="pa-2">
           <v-card-text>
             <v-form @submit.prevent="onSubmit">
-              <v-select
+              <v-autocomplete
                 v-model="customerId"
                 :items="customerOptions"
                 :item-title="customerLabel"
                 item-value="id"
                 label="Cliente"
+                no-data-text="Nenhum cliente encontrado"
+                clearable
                 required
                 :disabled="!canManage"
                 class="mb-2"
@@ -378,10 +387,6 @@ init()
                 :disabled="!canManage"
                 class="mb-2"
               />
-
-              <v-btn v-if="canManage" color="primary" :loading="saving" @click="onSubmit">
-                Salvar
-              </v-btn>
             </v-form>
           </v-card-text>
         </v-card>
@@ -389,6 +394,10 @@ init()
 
       <v-col cols="12" md="6">
         <IncidentFeed v-if="isEditing" ref="feedRef" :incident-id="id" />
+      </v-col>
+
+      <v-col v-if="isEditing" cols="12">
+        <IncidentAttachments :incident-id="id" />
       </v-col>
     </v-row>
   </AppLayout>

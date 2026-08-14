@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import authService from '@/services/authService'
 
-const STORAGE_KEY = 'itsm.auth'
+const STORAGE_KEY = 'upITSM.auth'
 
 // sessionStorage (não localStorage) por decisão da spec do backend: minimiza
 // exposição a XSS, mas ainda permite sobreviver a um reload de página — o

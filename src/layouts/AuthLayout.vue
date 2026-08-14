@@ -11,10 +11,10 @@ defineProps({
       <div class="auth-layout__brand-content">
         <div class="auth-layout__logo">
           <v-icon icon="mdi-shield-check" size="40" />
-          <span>ITSM</span>
+          <span>upITSM</span>
         </div>
         <h1 class="text-h4 font-weight-bold mt-8 mb-4">
-          Gestão de chamados, sem fricção.
+          Gestão de chamados, sem enrolação.
         </h1>
         <p class="text-body-1 opacity-90">
           Um único lugar para sua equipe atender, priorizar e resolver — e para seus
@@ -32,7 +32,7 @@ defineProps({
       >
         <div class="d-flex d-md-none align-center mb-6 text-primary">
           <v-icon icon="mdi-shield-check" size="32" class="mr-2" />
-          <span class="text-h6 font-weight-bold">ITSM</span>
+          <span class="text-h6 font-weight-bold">upITSM</span>
         </div>
 
         <h2 class="text-h5 font-weight-bold mb-1">{{ title }}</h2>

@@ -196,12 +196,13 @@ defineExpose({ reload: loadFeed })
       </template>
     </div>
 
-    <v-card-actions v-if="auth.hasPermission('tickets.manage')" class="flex-column align-stretch pa-4 pt-0">
+    <v-card-actions v-if="auth.hasPermission('tickets.manage')" class="flex-column align-stretch pa-4 pt-0 flex-shrink-0">
       <v-textarea
         v-model="newComment"
         label="Adicionar comentário"
         auto-grow
         rows="2"
+        max-rows="6"
         density="compact"
         hide-details
         class="mb-2"
