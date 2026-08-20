@@ -1,8 +1,10 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import SubcategoryFormModal from '@/components/admin/SubcategoryFormModal.vue'
+import SubcategoryAdvancedFilterModal from '@/components/admin/SubcategoryAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import subcategoryService from '@/services/subcategoryService'
+import categoryService from '@/services/categoryService'
 import { extractErrorMessage } from '@/utils/errors'
 
 const headers = [
@@ -26,12 +28,53 @@ const deleteOpen = ref(false)
 const deleting = ref(false)
 const subcategoryToDelete = ref(null)
 
+const filterModalOpen = ref(false)
+const appliedFilters = ref({})
+const categoryOptions = ref([])
+
+const hasActiveFilters = computed(() =>
+  Object.values(appliedFilters.value).some((value) => value !== null && value !== undefined),
+)
+
+function buildFilterParams() {
+  const params = {}
+  for (const [key, value] of Object.entries(appliedFilters.value)) {
+    if (value !== null && value !== undefined) params[key] = value
+  }
+  return params
+}
+
+function clearFilters() {
+  appliedFilters.value = {}
+  page.value = 1
+  loadSubcategories()
+}
+
+function applyFilters(filters) {
+  appliedFilters.value = filters
+  page.value = 1
+  loadSubcategories()
+}
+
+async function loadFilterOptions() {
+  try {
+    const categories = await categoryService.list({ per_page: 200 })
+    categoryOptions.value = categories.data
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções de filtro.')
+  }
+}
+
 async function loadSubcategories() {
   loading.value = true
   errorMessage.value = ''
 
   try {
-    const { data, meta } = await subcategoryService.list({ page: page.value, per_page: itemsPerPage.value })
+    const { data, meta } = await subcategoryService.list({
+      page: page.value,
+      per_page: itemsPerPage.value,
+      ...buildFilterParams(),
+    })
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
@@ -40,6 +83,8 @@ async function loadSubcategories() {
     loading.value = false
   }
 }
+
+loadFilterOptions()
 
 function onOptionsUpdate({ page: newPage, itemsPerPage: newItemsPerPage }) {
   page.value = newPage
@@ -86,12 +131,27 @@ async function confirmDelete() {
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
     <h1 class="text-h5 font-weight-bold">Subcategorias</h1>
-    <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Nova subcategoria</v-btn>
+    <div class="d-flex align-center ga-2">
+      <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
+        Limpar filtros
+      </v-btn>
+      <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
+        Filtro Avançado
+      </v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Nova subcategoria</v-btn>
+    </div>
   </div>
 
   <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
     {{ errorMessage }}
   </v-alert>
+
+  <SubcategoryAdvancedFilterModal
+    v-model="filterModalOpen"
+    :filters="appliedFilters"
+    :category-options="categoryOptions"
+    @apply="applyFilters"
+  />
 
   <v-data-table-server
     :headers="headers"

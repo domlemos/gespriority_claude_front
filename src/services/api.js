@@ -11,6 +11,19 @@ api.interceptors.request.use((config) => {
   if (auth.token) {
     config.headers.Authorization = `Bearer ${auth.token}`
   }
+
+  // Axios serializes JS booleans as the literal strings "true"/"false", but
+  // Laravel's `boolean` validation rule only accepts true/false, 0/1, '0'/'1'
+  // — not those word-strings. Normalize to 0/1 here, once, for every request,
+  // instead of in each service/view that happens to send a boolean filter.
+  if (config.params) {
+    for (const key of Object.keys(config.params)) {
+      if (typeof config.params[key] === 'boolean') {
+        config.params[key] = config.params[key] ? 1 : 0
+      }
+    }
+  }
+
   return config
 })
 

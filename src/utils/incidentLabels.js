@@ -51,13 +51,12 @@ export const SLA_STATUS_COLORS = {
   sem_sla: 'default',
 }
 
+import { formatDurationMinutes } from '@/utils/duration'
+
 export function formatRemainingMinutes(minutes) {
   if (minutes === null || minutes === undefined) return null
 
-  const abs = Math.round(Math.abs(minutes))
-  const hours = Math.floor(abs / 60)
-  const mins = abs % 60
-  const duration = hours > 0 ? `${hours}h${mins > 0 ? ` ${mins}min` : ''}` : `${mins}min`
+  const duration = formatDurationMinutes(Math.abs(minutes))
 
   return minutes < 0 ? `Atrasado ${duration}` : `${duration} restantes`
 }

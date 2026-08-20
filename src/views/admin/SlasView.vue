@@ -1,10 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import SlaFormModal from '@/components/admin/SlaFormModal.vue'
+import SlaAdvancedFilterModal from '@/components/admin/SlaAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import slaService from '@/services/slaService'
 import clientService from '@/services/clientService'
 import { extractErrorMessage } from '@/utils/errors'
+import { formatDurationMinutes } from '@/utils/duration'
 
 const PRIORIDADE_LABELS = {
   baixa: 'Baixa',
@@ -24,8 +26,8 @@ const headers = [
   { title: 'Nome', key: 'nome', sortable: false },
   { title: 'Prioridade', key: 'prioridade', sortable: false },
   { title: 'Cliente', key: 'client_id', sortable: false },
-  { title: 'Resposta (min)', key: 'tempo_resposta_minutos', sortable: false },
-  { title: 'Resolução (min)', key: 'tempo_resolucao_minutos', sortable: false },
+  { title: 'Resposta', key: 'tempo_resposta_minutos', sortable: false },
+  { title: 'Resolução', key: 'tempo_resolucao_minutos', sortable: false },
   { title: 'Horário útil', key: 'apenas_horas_uteis', sortable: false },
   { title: 'Ativo', key: 'ativo', sortable: false },
   { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
@@ -38,6 +40,7 @@ const errorMessage = ref('')
 const page = ref(1)
 const itemsPerPage = ref(15)
 const clientNames = ref({})
+const clientOptions = ref([])
 
 const formOpen = ref(false)
 const editingSla = ref(null)
@@ -46,13 +49,41 @@ const deleteOpen = ref(false)
 const deleting = ref(false)
 const slaToDelete = ref(null)
 
+const filterModalOpen = ref(false)
+const appliedFilters = ref({})
+
+const hasActiveFilters = computed(() =>
+  Object.values(appliedFilters.value).some((value) => value !== null && value !== undefined),
+)
+
 function clientName(clientId) {
   return clientId === null ? 'Global' : (clientNames.value[clientId] ?? `#${clientId}`)
 }
 
 async function loadClientNames() {
   const { data } = await clientService.list({ per_page: 200 })
+  clientOptions.value = data
   clientNames.value = Object.fromEntries(data.map((client) => [client.id, client.name]))
+}
+
+function clearFilters() {
+  appliedFilters.value = {}
+  page.value = 1
+  loadSlas()
+}
+
+function applyFilters(filters) {
+  appliedFilters.value = filters
+  page.value = 1
+  loadSlas()
+}
+
+function buildFilterParams() {
+  const params = {}
+  for (const [key, value] of Object.entries(appliedFilters.value)) {
+    if (value !== null && value !== undefined) params[key] = value
+  }
+  return params
 }
 
 async function loadSlas() {
@@ -60,7 +91,11 @@ async function loadSlas() {
   errorMessage.value = ''
 
   try {
-    const { data, meta } = await slaService.list({ page: page.value, per_page: itemsPerPage.value })
+    const { data, meta } = await slaService.list({
+      page: page.value,
+      per_page: itemsPerPage.value,
+      ...buildFilterParams(),
+    })
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
@@ -117,12 +152,27 @@ loadClientNames()
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
     <h1 class="text-h5 font-weight-bold">Políticas de SLA</h1>
-    <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Nova política</v-btn>
+    <div class="d-flex align-center ga-2">
+      <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
+        Limpar filtros
+      </v-btn>
+      <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
+        Filtro Avançado
+      </v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Nova política</v-btn>
+    </div>
   </div>
 
   <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
     {{ errorMessage }}
   </v-alert>
+
+  <SlaAdvancedFilterModal
+    v-model="filterModalOpen"
+    :filters="appliedFilters"
+    :client-options="clientOptions"
+    @apply="applyFilters"
+  />
 
   <v-data-table-server
     :headers="headers"
@@ -140,6 +190,14 @@ loadClientNames()
 
     <template #item.client_id="{ item }">
       {{ clientName(item.client_id) }}
+    </template>
+
+    <template #item.tempo_resposta_minutos="{ item }">
+      {{ formatDurationMinutes(item.tempo_resposta_minutos) }}
+    </template>
+
+    <template #item.tempo_resolucao_minutos="{ item }">
+      {{ formatDurationMinutes(item.tempo_resolucao_minutos) }}
     </template>
 
     <template #item.apenas_horas_uteis="{ item }">

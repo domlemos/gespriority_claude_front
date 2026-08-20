@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
+import IncidentAdvancedFilterModal from '@/components/IncidentAdvancedFilterModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import incidentService from '@/services/incidentService'
 import customerService from '@/services/customerService'
@@ -16,7 +17,6 @@ import {
   PRIORIDADE_COLORS,
   STATUS_LABELS,
   STATUS_COLORS,
-  ORIGEM_LABELS,
   SLA_STATUS_LABELS,
   SLA_STATUS_COLORS,
   formatRemainingMinutes,
@@ -25,44 +25,47 @@ import {
 const auth = useAuthStore()
 const router = useRouter()
 
-const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
-const priorityOptions = Object.entries(PRIORIDADE_LABELS).map(([value, title]) => ({ value, title }))
-const originOptions = Object.entries(ORIGEM_LABELS).map(([value, title]) => ({ value, title }))
-
 const headers = [
-  { title: 'Número', key: 'numero', sortable: false },
-  { title: 'Título', key: 'titulo', sortable: false },
-  { title: 'Cliente', key: 'cliente', sortable: false },
+  { title: 'Número', key: 'numero', sortable: true },
+  { title: 'Título', key: 'titulo', sortable: true },
+  { title: 'Cliente', key: 'cliente', sortable: true },
   { title: 'Classificação', key: 'classificacao', sortable: false },
-  { title: 'Prioridade', key: 'prioridade', sortable: false },
-  { title: 'Status', key: 'status', sortable: false },
-  { title: 'Grupo', key: 'grupo_solucao', sortable: false },
-  { title: 'Responsável', key: 'responsavel', sortable: false },
-  { title: 'Abertura', key: 'data_abertura', sortable: false },
-  { title: 'SLA Resposta', key: 'status_sla_resposta', sortable: false },
-  { title: 'SLA Resolução', key: 'status_sla_resolucao', sortable: false },
+  { title: 'Prioridade', key: 'prioridade', sortable: true },
+  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Grupo', key: 'grupo_solucao', sortable: true },
+  { title: 'Responsável', key: 'responsavel', sortable: true },
+  { title: 'Abertura', key: 'data_abertura', sortable: true },
+  { title: 'SLA Resposta', key: 'status_sla_resposta', sortable: true },
+  { title: 'SLA Resolução', key: 'status_sla_resolucao', sortable: true },
 ]
+
+// Ordenação client-side, só sobre a página já carregada: os status de SLA
+// são calculados por requisição contra `now()`, não são coluna de banco —
+// ordenar isso no backend exigiria replicar essa lógica em SQL bruto (fora
+// de escopo). Como o valor numérico (minutos restantes) já vem em cada
+// item, ordenar localmente é trivial; só não reflete incidentes de outras
+// páginas.
+const LOCAL_SORT_FIELDS = {
+  status_sla_resposta: 'tempo_restante_resposta_minutos',
+  status_sla_resolucao: 'tempo_restante_resolucao_minutos',
+}
 
 function formatDateTime(iso) {
   return new Date(iso).toLocaleString('pt-BR')
 }
+
+const DEFAULT_ITEMS_PER_PAGE = 15
 
 const items = ref([])
 const totalItems = ref(0)
 const loading = ref(false)
 const errorMessage = ref('')
 const page = ref(1)
-const itemsPerPage = ref(15)
+const itemsPerPage = ref(DEFAULT_ITEMS_PER_PAGE)
+const sortBy = ref([])
 
-const statusFilter = ref(null)
-const prioridadeFilter = ref(null)
-const origemFilter = ref(null)
-const customerFilter = ref(null)
-const categoriaFilter = ref(null)
-const subcategoriaFilter = ref(null)
-const itemFilter = ref(null)
-const grupoSolucaoFilter = ref(null)
-const responsavelFilter = ref(null)
+const filterModalOpen = ref(false)
+const appliedFilters = ref({})
 
 const customerOptions = ref([])
 const categoryOptions = ref([])
@@ -71,52 +74,39 @@ const itemOptions = ref([])
 const solutionGroupOptions = ref([])
 const userOptions = ref([])
 
-const filteredSubcategoryOptions = computed(() =>
-  categoriaFilter.value
-    ? subcategoryOptions.value.filter((sub) => sub.categoria_id === categoriaFilter.value)
-    : [],
-)
-
-const filteredItemOptions = computed(() =>
-  subcategoriaFilter.value
-    ? itemOptions.value.filter((item) => item.subcategoria_id === subcategoriaFilter.value)
-    : [],
-)
-
 const hasActiveFilters = computed(() =>
-  [statusFilter, prioridadeFilter, origemFilter, customerFilter, itemFilter, grupoSolucaoFilter, responsavelFilter]
-    .some((filter) => filter.value !== null),
+  Object.values(appliedFilters.value).some((value) => value !== null && value !== undefined),
 )
-
-function customerLabel(customer) {
-  if (!customer || typeof customer !== 'object') return ''
-  return `${customer.client?.name ?? '—'} — ${customer.name} (${customer.email})`
-}
 
 function classification(item) {
   if (!item.categoria) return '—'
   return [item.categoria, item.subcategoria, item.item].filter(Boolean).join(' / ')
 }
 
-function onCategoriaFilterChange() {
-  subcategoriaFilter.value = null
-  itemFilter.value = null
-}
-
-function onSubcategoriaFilterChange() {
-  itemFilter.value = null
-}
-
 function clearFilters() {
-  statusFilter.value = null
-  prioridadeFilter.value = null
-  origemFilter.value = null
-  customerFilter.value = null
-  categoriaFilter.value = null
-  subcategoriaFilter.value = null
-  itemFilter.value = null
-  grupoSolucaoFilter.value = null
-  responsavelFilter.value = null
+  appliedFilters.value = {}
+  page.value = 1
+  itemsPerPage.value = DEFAULT_ITEMS_PER_PAGE
+  loadIncidents()
+}
+
+function applyFilters(filters) {
+  appliedFilters.value = filters
+  page.value = 1
+  itemsPerPage.value = DEFAULT_ITEMS_PER_PAGE
+  loadIncidents()
+}
+
+// Sem limite de per_page no backend (ver BACKEND_SPECS.md §3.4.8) — um
+// valor bem acima de qualquer volume real de incidentes já traz tudo numa
+// página só, sem precisar de uma segunda requisição só pra descobrir o total.
+const ALL_RECORDS_PAGE_SIZE = 100000
+
+function showAllRecords() {
+  appliedFilters.value = { todos_status: true }
+  page.value = 1
+  itemsPerPage.value = ALL_RECORDS_PAGE_SIZE
+  loadIncidents()
 }
 
 async function loadFilterOptions() {
@@ -142,14 +132,33 @@ async function loadFilterOptions() {
 
 function buildFilterParams() {
   const params = {}
-  if (statusFilter.value) params.status = statusFilter.value
-  if (prioridadeFilter.value) params.prioridade = prioridadeFilter.value
-  if (origemFilter.value) params.origem = origemFilter.value
-  if (customerFilter.value) params.customer_id = customerFilter.value
-  if (itemFilter.value) params.item_id = itemFilter.value
-  if (grupoSolucaoFilter.value) params.grupo_solucao_id = grupoSolucaoFilter.value
-  if (responsavelFilter.value) params.responsavel_id = responsavelFilter.value
+  for (const [key, value] of Object.entries(appliedFilters.value)) {
+    if (value !== null && value !== undefined) params[key] = value
+  }
+
+  const [sort] = sortBy.value
+  if (sort && !LOCAL_SORT_FIELDS[sort.key]) {
+    params.sort_by = sort.key
+    params.sort_dir = sort.order
+  }
+
   return params
+}
+
+function applyLocalSort() {
+  const [sort] = sortBy.value
+  const field = sort && LOCAL_SORT_FIELDS[sort.key]
+  if (!field) return
+
+  const direction = sort.order === 'desc' ? -1 : 1
+
+  items.value = [...items.value].sort((a, b) => {
+    const aVal = a[field]
+    const bVal = b[field]
+    if (aVal === null || aVal === undefined) return bVal === null || bVal === undefined ? 0 : 1
+    if (bVal === null || bVal === undefined) return -1
+    return (aVal - bVal) * direction
+  })
 }
 
 async function loadIncidents() {
@@ -164,6 +173,7 @@ async function loadIncidents() {
     })
     items.value = data
     totalItems.value = meta.total
+    applyLocalSort()
   } catch (error) {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os incidentes.')
   } finally {
@@ -171,19 +181,24 @@ async function loadIncidents() {
   }
 }
 
-function onOptionsUpdate({ page: newPage, itemsPerPage: newItemsPerPage }) {
+function onOptionsUpdate({ page: newPage, itemsPerPage: newItemsPerPage, sortBy: newSortBy }) {
+  const isLocalSortOnly =
+    newPage === page.value &&
+    newItemsPerPage === itemsPerPage.value &&
+    newSortBy[0] &&
+    LOCAL_SORT_FIELDS[newSortBy[0].key]
+
+  sortBy.value = newSortBy
+
+  if (isLocalSortOnly) {
+    applyLocalSort()
+    return
+  }
+
   page.value = newPage
   itemsPerPage.value = newItemsPerPage
   loadIncidents()
 }
-
-watch(
-  [statusFilter, prioridadeFilter, origemFilter, customerFilter, itemFilter, grupoSolucaoFilter, responsavelFilter],
-  () => {
-    page.value = 1
-    loadIncidents()
-  },
-)
 
 function onRowClick(event, { item }) {
   router.push({ name: 'incident-edit', params: { id: item.numero } })
@@ -200,132 +215,35 @@ loadFilterOptions()
   <AppLayout fluid>
     <div class="d-flex align-center justify-space-between mb-4">
       <h1 class="text-h5 font-weight-bold">Incidentes</h1>
-      <v-btn v-if="auth.hasPermission('tickets.manage')" color="primary" prepend-icon="mdi-plus" @click="openCreate">
-        Novo Incidente
-      </v-btn>
+      <div class="d-flex align-center ga-2">
+        <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
+          Limpar filtros
+        </v-btn>
+        <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
+          Filtro Avançado
+        </v-btn>
+        <v-btn v-if="auth.hasPermission('tickets.manage')" color="primary" prepend-icon="mdi-plus" @click="openCreate">
+          Novo Incidente
+        </v-btn>
+      </div>
     </div>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card variant="outlined" class="pa-4 mb-4">
-      <div class="d-flex align-center justify-space-between mb-2">
-        <span class="text-subtitle-2 font-weight-bold">Filtros</span>
-        <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-          Limpar filtros
-        </v-btn>
-      </div>
-
-      <div class="filters-row">
-        <v-select
-          v-model="statusFilter"
-          :items="statusOptions"
-          label="Status"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-        />
-
-        <v-select
-          v-model="prioridadeFilter"
-          :items="priorityOptions"
-          label="Prioridade"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-        />
-
-        <v-select
-          v-model="origemFilter"
-          :items="originOptions"
-          label="Origem"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-        />
-
-        <v-autocomplete
-          v-model="customerFilter"
-          :items="customerOptions"
-          :item-title="customerLabel"
-          item-value="id"
-          label="Cliente"
-          no-data-text="Nenhum cliente encontrado"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-        />
-
-        <v-select
-          v-model="categoriaFilter"
-          :items="categoryOptions"
-          item-title="nome"
-          item-value="id"
-          label="Categoria"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-          @update:model-value="onCategoriaFilterChange"
-        />
-
-        <v-select
-          v-model="subcategoriaFilter"
-          :items="filteredSubcategoryOptions"
-          item-title="nome"
-          item-value="id"
-          label="Subcategoria"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-          :disabled="!categoriaFilter"
-          @update:model-value="onSubcategoriaFilterChange"
-        />
-
-        <v-select
-          v-model="itemFilter"
-          :items="filteredItemOptions"
-          item-title="nome"
-          item-value="id"
-          label="Item"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-          :disabled="!subcategoriaFilter"
-        />
-
-        <v-select
-          v-model="grupoSolucaoFilter"
-          :items="solutionGroupOptions"
-          item-title="nome"
-          item-value="id"
-          label="Grupo de Solução"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-        />
-
-        <v-select
-          v-model="responsavelFilter"
-          :items="userOptions"
-          item-title="name"
-          item-value="id"
-          label="Responsável"
-          clearable
-          density="compact"
-          hide-details
-          class="filter-field"
-        />
-      </div>
-    </v-card>
+    <IncidentAdvancedFilterModal
+      v-model="filterModalOpen"
+      :filters="appliedFilters"
+      :customer-options="customerOptions"
+      :category-options="categoryOptions"
+      :subcategory-options="subcategoryOptions"
+      :item-options="itemOptions"
+      :solution-group-options="solutionGroupOptions"
+      :user-options="userOptions"
+      @apply="applyFilters"
+      @show-all="showAllRecords"
+    />
 
     <v-data-table-server
       :headers="headers"
@@ -394,37 +312,5 @@ loadFilterOptions()
 <style scoped>
 .incident-table :deep(tbody tr) {
   cursor: pointer;
-}
-
-.filters-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-
-.filter-field {
-  flex: 0 1 140px;
-  min-width: 120px;
-}
-
-.filters-row :deep(.v-field) {
-  --v-field-padding-top: 2px;
-  font-size: 0.8125rem;
-}
-
-.filters-row :deep(.v-field__input) {
-  min-height: 32px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-.filters-row :deep(.v-label) {
-  font-size: 0.8125rem;
-}
-
-.filters-row :deep(.v-select__selection),
-.filters-row :deep(.v-autocomplete__selection) {
-  font-size: 0.8125rem;
 }
 </style>

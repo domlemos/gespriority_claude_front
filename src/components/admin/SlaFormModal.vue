@@ -20,10 +20,27 @@ const PRIORIDADES = [
 
 const GLOBAL_CLIENT_OPTION = { name: 'Global (todos os clientes)', id: null }
 
+function minutesToDhm(totalMinutes) {
+  const abs = Math.max(0, Math.trunc(totalMinutes ?? 0))
+  return {
+    dias: Math.floor(abs / 1440),
+    horas: Math.floor((abs % 1440) / 60),
+    minutos: abs % 60,
+  }
+}
+
+function dhmToMinutes(dias, horas, minutos) {
+  return (Number(dias) || 0) * 1440 + (Number(horas) || 0) * 60 + (Number(minutos) || 0)
+}
+
 const nome = ref('')
 const prioridade = ref(null)
-const tempoRespostaMinutos = ref(null)
-const tempoResolucaoMinutos = ref(null)
+const respostaDias = ref(0)
+const respostaHoras = ref(0)
+const respostaMinutos = ref(0)
+const resolucaoDias = ref(0)
+const resolucaoHoras = ref(0)
+const resolucaoMinutos = ref(0)
 const apenasHorasUteis = ref(false)
 const ativo = ref(true)
 const clientId = ref(null)
@@ -44,8 +61,17 @@ watch(
     errorMessage.value = ''
     nome.value = props.sla?.nome ?? ''
     prioridade.value = props.sla?.prioridade ?? null
-    tempoRespostaMinutos.value = props.sla?.tempo_resposta_minutos ?? null
-    tempoResolucaoMinutos.value = props.sla?.tempo_resolucao_minutos ?? null
+
+    const resposta = minutesToDhm(props.sla?.tempo_resposta_minutos)
+    respostaDias.value = resposta.dias
+    respostaHoras.value = resposta.horas
+    respostaMinutos.value = resposta.minutos
+
+    const resolucao = minutesToDhm(props.sla?.tempo_resolucao_minutos)
+    resolucaoDias.value = resolucao.dias
+    resolucaoHoras.value = resolucao.horas
+    resolucaoMinutos.value = resolucao.minutos
+
     apenasHorasUteis.value = props.sla?.apenas_horas_uteis ?? false
     ativo.value = props.sla?.ativo ?? true
     clientId.value = props.sla?.client_id ?? null
@@ -65,8 +91,8 @@ async function onSubmit() {
   const payload = {
     nome: nome.value,
     prioridade: prioridade.value,
-    tempo_resposta_minutos: tempoRespostaMinutos.value,
-    tempo_resolucao_minutos: tempoResolucaoMinutos.value,
+    tempo_resposta_minutos: dhmToMinutes(respostaDias.value, respostaHoras.value, respostaMinutos.value),
+    tempo_resolucao_minutos: dhmToMinutes(resolucaoDias.value, resolucaoHoras.value, resolucaoMinutos.value),
     apenas_horas_uteis: apenasHorasUteis.value,
     ativo: ativo.value,
     client_id: clientId.value,
@@ -115,23 +141,31 @@ async function onSubmit() {
             class="mb-2"
           />
 
-          <v-text-field
-            v-model.number="tempoRespostaMinutos"
-            label="Tempo de resposta (minutos)"
-            type="number"
-            min="1"
-            required
-            class="mb-2"
-          />
+          <div class="text-caption text-medium-emphasis mb-1">Tempo de resposta</div>
+          <v-row dense class="mb-2">
+            <v-col cols="4">
+              <v-text-field v-model.number="respostaDias" label="Dias" type="number" min="0" />
+            </v-col>
+            <v-col cols="4">
+              <v-text-field v-model.number="respostaHoras" label="Horas" type="number" min="0" />
+            </v-col>
+            <v-col cols="4">
+              <v-text-field v-model.number="respostaMinutos" label="Minutos" type="number" min="0" />
+            </v-col>
+          </v-row>
 
-          <v-text-field
-            v-model.number="tempoResolucaoMinutos"
-            label="Tempo de resolução (minutos)"
-            type="number"
-            min="1"
-            required
-            class="mb-2"
-          />
+          <div class="text-caption text-medium-emphasis mb-1">Tempo de resolução</div>
+          <v-row dense class="mb-2">
+            <v-col cols="4">
+              <v-text-field v-model.number="resolucaoDias" label="Dias" type="number" min="0" />
+            </v-col>
+            <v-col cols="4">
+              <v-text-field v-model.number="resolucaoHoras" label="Horas" type="number" min="0" />
+            </v-col>
+            <v-col cols="4">
+              <v-text-field v-model.number="resolucaoMinutos" label="Minutos" type="number" min="0" />
+            </v-col>
+          </v-row>
 
           <v-select
             v-model="clientId"
