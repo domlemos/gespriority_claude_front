@@ -17,12 +17,10 @@ const loading = ref(false)
 const errorMessage = ref('')
 const feedBody = ref(null)
 
-const newComment = ref('')
-const posting = ref(false)
-
-const editingId = ref(null)
-const editText = ref('')
-const savingEdit = ref(false)
+const commentModalOpen = ref(false)
+const commentModalText = ref('')
+const commentModalEntry = ref(null)
+const commentModalSaving = ref(false)
 
 const deleteOpen = ref(false)
 const deleting = ref(false)
@@ -34,6 +32,22 @@ function formatDateTime(iso) {
 
 function isOwnComment(entry) {
   return entry.tipo === 'comentario' && entry.user?.id === auth.user?.id
+}
+
+// 'escalonamento' (mudança de grupo/responsável) e 'alteracao' (qualquer
+// outro campo do incidente mudando — título, prioridade, origem, status,
+// cliente, item) são ambos log de sistema gerado pelo backend
+// (IncidenteController), renderizados como chip, nunca como bolha de
+// comentário — só 'comentario' é editável/excluível pelo autor.
+function isSystemLog(entry) {
+  return entry.tipo === 'escalonamento' || entry.tipo === 'alteracao'
+}
+
+function systemLogIcon(entry) {
+  if (entry.tipo === 'alteracao') return 'mdi-pencil-outline'
+  if (entry.descricao.startsWith('Encaminhado')) return 'mdi-account-group'
+  if (entry.descricao.startsWith('Atribuído')) return 'mdi-account-check'
+  return 'mdi-information-outline'
 }
 
 function scrollToBottom() {
@@ -59,54 +73,53 @@ async function loadFeed() {
   }
 }
 
-async function submitComment() {
-  if (!newComment.value.trim()) return
+function openCreateModal() {
+  commentModalEntry.value = null
+  commentModalText.value = ''
+  commentModalOpen.value = true
+}
 
-  posting.value = true
+function openEditModal(entry) {
+  commentModalEntry.value = entry
+  commentModalText.value = entry.descricao
+  commentModalOpen.value = true
+}
+
+function closeCommentModal() {
+  commentModalOpen.value = false
+  commentModalEntry.value = null
+  commentModalText.value = ''
+}
+
+async function submitCommentModal() {
+  if (!commentModalText.value.trim()) return
+
+  commentModalSaving.value = true
   errorMessage.value = ''
 
   try {
-    const created = await incidentDescriptionService.create(props.incidentId, {
-      descricao: newComment.value,
-    })
-    entries.value.push(created)
-    newComment.value = ''
-    await nextTick()
-    scrollToBottom()
+    if (commentModalEntry.value) {
+      const updated = await incidentDescriptionService.update(props.incidentId, commentModalEntry.value.id, {
+        descricao: commentModalText.value,
+      })
+      const index = entries.value.findIndex((item) => item.id === commentModalEntry.value.id)
+      if (index !== -1) entries.value[index] = updated
+    } else {
+      const created = await incidentDescriptionService.create(props.incidentId, {
+        descricao: commentModalText.value,
+      })
+      entries.value.push(created)
+      await nextTick()
+      scrollToBottom()
+    }
+    closeCommentModal()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível adicionar o comentário.')
+    errorMessage.value = extractErrorMessage(
+      error,
+      commentModalEntry.value ? 'Não foi possível editar o comentário.' : 'Não foi possível adicionar o comentário.',
+    )
   } finally {
-    posting.value = false
-  }
-}
-
-function startEdit(entry) {
-  editingId.value = entry.id
-  editText.value = entry.descricao
-}
-
-function cancelEdit() {
-  editingId.value = null
-  editText.value = ''
-}
-
-async function saveEdit(entry) {
-  if (!editText.value.trim()) return
-
-  savingEdit.value = true
-  errorMessage.value = ''
-
-  try {
-    const updated = await incidentDescriptionService.update(props.incidentId, entry.id, {
-      descricao: editText.value,
-    })
-    const index = entries.value.findIndex((item) => item.id === entry.id)
-    if (index !== -1) entries.value[index] = updated
-    cancelEdit()
-  } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível editar o comentário.')
-  } finally {
-    savingEdit.value = false
+    commentModalSaving.value = false
   }
 }
 
@@ -141,14 +154,12 @@ defineExpose({ reload: loadFeed })
 </script>
 
 <template>
-  <v-card variant="outlined" class="d-flex flex-column" style="height: 640px">
-    <v-card-title class="text-subtitle-1 font-weight-bold">Feed do incidente</v-card-title>
-
-    <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mx-4 mb-2">
+  <div class="d-flex flex-column h-100" style="min-height: 0">
+    <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mx-4 mt-2 mb-2">
       {{ errorMessage }}
     </v-alert>
 
-    <div ref="feedBody" class="flex-grow-1 overflow-y-auto pa-4 pt-0">
+    <div ref="feedBody" class="flex-grow-1 overflow-y-auto pa-4" style="min-height: 0">
       <div v-if="loading" class="d-flex justify-center py-8">
         <v-progress-circular indeterminate color="primary" />
       </div>
@@ -158,9 +169,15 @@ defineExpose({ reload: loadFeed })
       </div>
 
       <template v-for="entry in entries" :key="entry.id">
-        <div v-if="entry.tipo === 'escalonamento'" class="d-flex justify-center my-3">
-          <v-chip size="small" variant="tonal" color="default">
-            {{ entry.descricao }} — {{ formatDateTime(entry.created_at) }}
+        <div v-if="isSystemLog(entry)" class="d-flex justify-end my-3">
+          <!--
+            Sem `— formatDateTime(entry.created_at)` aqui de propósito — a
+            mensagem gerada pelo backend (IncidenteController) já embute a
+            data/hora ("às HH:mm do dia DD/MM/AAAA."), então concatenar de
+            novo duplicava a data no chip.
+          -->
+          <v-chip size="small" variant="tonal" color="default" :prepend-icon="systemLogIcon(entry)">
+            {{ entry.user?.name }}: {{ entry.descricao }}
           </v-chip>
         </div>
 
@@ -176,42 +193,57 @@ defineExpose({ reload: loadFeed })
 
               <v-spacer />
 
-              <template v-if="isOwnComment(entry) && editingId !== entry.id">
-                <v-btn icon="mdi-pencil" variant="text" size="x-small" @click="startEdit(entry)" />
+              <template v-if="isOwnComment(entry)">
+                <v-btn icon="mdi-pencil" variant="text" size="x-small" @click="openEditModal(entry)" />
                 <v-btn icon="mdi-delete" variant="text" size="x-small" color="error" @click="askDelete(entry)" />
               </template>
             </div>
 
-            <div v-if="editingId === entry.id">
-              <v-textarea v-model="editText" auto-grow rows="2" density="compact" hide-details class="mt-1" />
-              <div class="d-flex justify-end mt-1">
-                <v-btn variant="text" size="small" @click="cancelEdit">Cancelar</v-btn>
-                <v-btn color="primary" size="small" :loading="savingEdit" @click="saveEdit(entry)">Salvar</v-btn>
-              </div>
-            </div>
-
-            <div v-else class="text-body-2" style="white-space: pre-wrap">{{ entry.descricao }}</div>
+            <div class="text-body-2" style="white-space: pre-wrap">{{ entry.descricao }}</div>
           </div>
         </div>
       </template>
     </div>
 
-    <v-card-actions v-if="auth.hasPermission('tickets.manage')" class="flex-column align-stretch pa-4 pt-0 flex-shrink-0">
-      <v-textarea
-        v-model="newComment"
-        label="Adicionar comentário"
-        auto-grow
-        rows="2"
-        max-rows="6"
-        density="compact"
-        hide-details
-        class="mb-2"
-      />
-      <v-btn color="primary" block :loading="posting" :disabled="!newComment.trim()" @click="submitComment">
-        Comentar
+    <div v-if="auth.hasPermission('tickets.manage')" class="pa-4 pt-0 flex-shrink-0">
+      <v-btn color="primary" block prepend-icon="mdi-comment-plus-outline" @click="openCreateModal">
+        Adicionar Comentário
       </v-btn>
-    </v-card-actions>
-  </v-card>
+    </div>
+  </div>
+
+  <v-dialog v-model="commentModalOpen" max-width="640">
+    <v-card>
+      <v-card-title class="text-subtitle-1 font-weight-bold">
+        {{ commentModalEntry ? 'Editar comentário' : 'Adicionar comentário' }}
+      </v-card-title>
+
+      <v-card-text>
+        <v-textarea
+          v-model="commentModalText"
+          auto-grow
+          rows="8"
+          density="comfortable"
+          hide-details
+          autofocus
+          placeholder="Escreva seu comentário..."
+        />
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer />
+        <v-btn variant="text" @click="closeCommentModal">Cancelar</v-btn>
+        <v-btn
+          color="primary"
+          :loading="commentModalSaving"
+          :disabled="!commentModalText.trim()"
+          @click="submitCommentModal"
+        >
+          {{ commentModalEntry ? 'Salvar' : 'Comentar' }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"

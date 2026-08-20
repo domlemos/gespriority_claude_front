@@ -25,6 +25,12 @@ const previewLoading = ref(false)
 const previewUrl = ref('')
 const previewAttachment = ref(null)
 
+const previewIndex = computed(() =>
+  attachments.value.findIndex((item) => item.id === previewAttachment.value?.id),
+)
+const hasPrevious = computed(() => previewIndex.value > 0)
+const hasNext = computed(() => previewIndex.value !== -1 && previewIndex.value < attachments.value.length - 1)
+
 const deleteOpen = ref(false)
 const deleting = ref(false)
 const attachmentToDelete = ref(null)
@@ -96,6 +102,11 @@ async function onFileSelected(event) {
 }
 
 async function openPreview(attachment) {
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value)
+    previewUrl.value = ''
+  }
+
   previewAttachment.value = attachment
   previewOpen.value = true
   previewLoading.value = true
@@ -110,6 +121,16 @@ async function openPreview(attachment) {
   } finally {
     previewLoading.value = false
   }
+}
+
+function goToPrevious() {
+  if (!hasPrevious.value) return
+  openPreview(attachments.value[previewIndex.value - 1])
+}
+
+function goToNext() {
+  if (!hasNext.value) return
+  openPreview(attachments.value[previewIndex.value + 1])
 }
 
 function closePreview() {
@@ -150,13 +171,11 @@ watch(() => props.incidentId, () => {
 </script>
 
 <template>
-  <v-card variant="outlined">
-    <v-card-title class="d-flex align-center justify-space-between text-subtitle-1 font-weight-bold">
-      Anexos
-
+  <div class="d-flex flex-column h-100" style="min-height: 0">
+    <div v-if="canManage" class="pa-2 flex-shrink-0">
       <v-btn
-        v-if="canManage"
-        size="small"
+        block
+        variant="tonal"
         color="primary"
         prepend-icon="mdi-paperclip"
         :loading="uploading"
@@ -166,13 +185,13 @@ watch(() => props.incidentId, () => {
       </v-btn>
 
       <input ref="fileInput" type="file" class="d-none" @change="onFileSelected" />
-    </v-card-title>
+    </div>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mx-4 mb-2">
       {{ errorMessage }}
     </v-alert>
 
-    <v-card-text>
+    <div class="flex-grow-1 overflow-y-auto pa-4 pt-0" style="min-height: 0">
       <div v-if="loading" class="d-flex justify-center py-6">
         <v-progress-circular indeterminate color="primary" />
       </div>
@@ -182,7 +201,7 @@ watch(() => props.incidentId, () => {
       </div>
 
       <v-row v-else dense>
-        <v-col v-for="attachment in attachments" :key="attachment.id" cols="6" sm="4" md="3" lg="2">
+        <v-col v-for="attachment in attachments" :key="attachment.id" cols="6" sm="4">
           <v-card
             variant="outlined"
             class="pa-2 text-center attachment-card"
@@ -208,15 +227,35 @@ watch(() => props.incidentId, () => {
           </v-card>
         </v-col>
       </v-row>
-    </v-card-text>
-  </v-card>
+    </div>
+  </div>
 
   <v-dialog :model-value="previewOpen" max-width="900" @update:model-value="(value) => !value && closePreview()">
-    <v-card>
+    <v-card style="position: relative">
       <v-card-title class="d-flex align-center justify-space-between">
         <span class="text-truncate">{{ previewAttachment?.nome_original }}</span>
         <v-btn icon="mdi-close" variant="text" @click="closePreview" />
       </v-card-title>
+
+      <v-btn
+        v-if="attachments.length > 1"
+        icon="mdi-chevron-left"
+        variant="tonal"
+        size="large"
+        :disabled="!hasPrevious"
+        style="position: absolute; top: 50%; left: 12px; transform: translateY(-50%); z-index: 1"
+        @click="goToPrevious"
+      />
+
+      <v-btn
+        v-if="attachments.length > 1"
+        icon="mdi-chevron-right"
+        variant="tonal"
+        size="large"
+        :disabled="!hasNext"
+        style="position: absolute; top: 50%; right: 12px; transform: translateY(-50%); z-index: 1"
+        @click="goToNext"
+      />
 
       <v-card-text>
         <div v-if="previewLoading" class="d-flex justify-center py-12">

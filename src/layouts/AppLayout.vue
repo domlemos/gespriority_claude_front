@@ -27,33 +27,34 @@ async function handleLogout(all = false) {
 
 <template>
   <v-app-bar color="surface" elevation="1">
-    <v-app-bar-title class="flex-grow-0 d-flex align-center">
+    <div class="d-flex align-center ml-2">
       <v-icon icon="mdi-shield-check" color="primary" class="mr-2" />
       <span class="font-weight-bold">upITSM</span>
       <v-chip v-if="auth.isCustomer" size="small" class="ml-3" color="secondary" variant="tonal">
         Portal do Cliente
       </v-chip>
-    </v-app-bar-title>
+    </div>
 
-    <v-spacer />
-
-    <v-btn
-      v-if="!auth.isCustomer && auth.hasPermission('tickets.view')"
-      variant="text"
-      class="text-none"
-      :to="{ name: 'dashboard' }"
+    <v-tabs
+      v-if="
+        !auth.isCustomer &&
+        (auth.hasPermission('tickets.view') || auth.hasPermission('relatorios.view') || auth.roles.includes('admin'))
+      "
+      color="primary"
+      class="ml-6"
     >
-      Incidentes
-    </v-btn>
+      <v-tab v-if="auth.hasPermission('tickets.view')" class="text-none" :to="{ name: 'dashboard' }">
+        Incidentes
+      </v-tab>
 
-    <v-btn
-      v-if="!auth.isCustomer && auth.roles.includes('admin')"
-      variant="text"
-      class="text-none"
-      :to="{ name: 'admin' }"
-    >
-      Administração
-    </v-btn>
+      <v-tab v-if="auth.hasPermission('relatorios.view')" class="text-none" :to="{ name: 'reports' }">
+        Relatórios
+      </v-tab>
+
+      <v-tab v-if="auth.roles.includes('admin')" class="text-none" :to="{ name: 'admin' }">
+        Administração
+      </v-tab>
+    </v-tabs>
 
     <v-spacer />
 
