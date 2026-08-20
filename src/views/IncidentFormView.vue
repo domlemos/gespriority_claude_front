@@ -1,9 +1,8 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
-import IncidentFeed from '@/components/IncidentFeed.vue'
-import IncidentAttachments from '@/components/IncidentAttachments.vue'
+import IncidentFeedPanel from '@/components/IncidentFeedPanel.vue'
 import incidentService from '@/services/incidentService'
 import customerService from '@/services/customerService'
 import categoryService from '@/services/categoryService'
@@ -20,6 +19,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 const isEditing = computed(() => props.id !== null)
@@ -34,6 +34,7 @@ const loadFailed = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const successSnackbar = ref(false)
 const feedRef = ref(null)
 
 const customerId = ref(null)
@@ -129,6 +130,26 @@ async function loadUsers() {
   userOptions.value = data
 }
 
+// 'incident-new' e 'incident-edit' renderizam o mesmo componente — ao
+// navegar entre elas via router (não um reload de página), o Vue reaproveita
+// a instância em vez de remontar, então os refs em memória do incidente
+// anterior continuam com o valor antigo até algo os sobrescrever. Chamado no
+// início de `init()`, antes de aplicar dados do incidente ou de um clone,
+// pra nunca vazar campo de uma edição anterior pro formulário de criação.
+function resetForm() {
+  customerId.value = null
+  titulo.value = ''
+  prioridade.value = null
+  origem.value = null
+  status.value = null
+  categoriaId.value = null
+  subcategoriaId.value = null
+  itemId.value = null
+  grupoSolucaoId.value = null
+  responsavelId.value = null
+  descricaoInicial.value = ''
+}
+
 function resolveClassificationFromItemId(currentItemId) {
   itemId.value = currentItemId
 
@@ -141,6 +162,23 @@ function resolveClassificationFromItemId(currentItemId) {
   if (subcategory) {
     categoriaId.value = subcategory.categoria_id
   }
+}
+
+// Ao clonar (ver `cloneAsNew`), a rota muda de 'incident-edit' pra
+// 'incident-new' — componente diferente montado do zero, os refs em memória
+// do incidente de origem já não existem mais. Os valores viajam via query
+// string e são reaplicados aqui, depois que as listas de opções (usadas por
+// `resolveClassificationFromItemId`) já carregaram.
+function applyCloneFromQuery() {
+  customerId.value = route.query.customer_id ? Number(route.query.customer_id) : null
+  titulo.value = typeof route.query.titulo === 'string' ? route.query.titulo : ''
+  prioridade.value = route.query.prioridade || null
+  origem.value = route.query.origem || null
+  grupoSolucaoId.value = route.query.grupo_solucao_id ? Number(route.query.grupo_solucao_id) : null
+  responsavelId.value = route.query.responsavel_id ? Number(route.query.responsavel_id) : null
+
+  const cloneItemId = route.query.item_id ? Number(route.query.item_id) : null
+  if (cloneItemId) resolveClassificationFromItemId(cloneItemId)
 }
 
 async function loadIncident() {
@@ -166,6 +204,7 @@ async function init() {
   loading.value = true
   loadFailed.value = false
   errorMessage.value = ''
+  resetForm()
 
   try {
     const [, , , , , , incidentItemId] = await Promise.all([
@@ -180,6 +219,8 @@ async function init() {
 
     if (incidentItemId) {
       resolveClassificationFromItemId(incidentItemId)
+    } else if (!isEditing.value && route.query.clone === '1') {
+      applyCloneFromQuery()
     }
   } catch (error) {
     loadFailed.value = true
@@ -210,6 +251,7 @@ async function onSubmit() {
     if (isEditing.value) {
       await incidentService.update(props.id, { ...buildBasePayload(), status: status.value })
       successMessage.value = 'Incidente atualizado com sucesso.'
+      successSnackbar.value = true
       feedRef.value?.reload()
     } else {
       const created = await incidentService.create({
@@ -226,6 +268,22 @@ async function onSubmit() {
   }
 }
 
+function cloneAsNew() {
+  router.push({
+    name: 'incident-new',
+    query: {
+      clone: '1',
+      customer_id: customerId.value ?? '',
+      titulo: titulo.value ?? '',
+      prioridade: prioridade.value ?? '',
+      origem: origem.value ?? '',
+      item_id: itemId.value ?? '',
+      grupo_solucao_id: grupoSolucaoId.value ?? '',
+      responsavel_id: responsavelId.value ?? '',
+    },
+  })
+}
+
 watch(() => props.id, () => {
   init()
 })
@@ -235,26 +293,34 @@ init()
 
 <template>
   <AppLayout fluid>
-    <div class="d-flex align-center justify-space-between mb-4">
+    <div class="d-flex align-center justify-space-between mb-4 form-header">
       <div class="d-flex align-center">
         <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'dashboard' }" />
-        <h1 class="text-h5 font-weight-bold">
+        <h1 class="text-h5 font-weight-bold ma-0">
           {{ isEditing ? `Incidente #${id}` : 'Novo Incidente' }}
         </h1>
       </div>
 
-      <v-btn v-if="canManage" color="primary" :loading="saving" @click="onSubmit">
-        Salvar
-      </v-btn>
+      <div class="d-flex align-center ga-2">
+        <v-btn v-if="canManage && isEditing" variant="outlined" :to="{ name: 'incident-new' }">
+          Novo Incidente
+        </v-btn>
+        <v-btn v-if="canManage && isEditing" variant="outlined" @click="cloneAsNew">
+          Clonar Incidente
+        </v-btn>
+        <v-btn v-if="canManage" color="primary" :loading="saving" @click="onSubmit">
+          Salvar
+        </v-btn>
+      </div>
     </div>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
       {{ errorMessage }}
     </v-alert>
 
-    <v-alert v-if="successMessage" type="success" variant="tonal" density="comfortable" class="mb-4">
+    <v-snackbar v-model="successSnackbar" :timeout="3000" color="success" transition="fade-transition">
       {{ successMessage }}
-    </v-alert>
+    </v-snackbar>
 
     <div v-if="loading" class="d-flex justify-center py-12">
       <v-progress-circular indeterminate color="primary" />
@@ -262,8 +328,8 @@ init()
 
     <v-row v-else-if="!loadFailed">
       <v-col cols="12" md="6">
-        <v-card variant="outlined" class="pa-2">
-          <v-card-text>
+        <v-card variant="outlined" class="pa-2 bg-surface d-flex flex-column" style="min-height: 500px">
+          <v-card-text class="flex-grow-1 overflow-y-auto" style="min-height: 0">
             <v-form @submit.prevent="onSubmit">
               <v-autocomplete
                 v-model="customerId"
@@ -286,33 +352,37 @@ init()
                 class="mb-2"
               />
 
-              <v-select
-                v-model="prioridade"
-                :items="priorityOptions"
-                label="Prioridade"
-                required
-                :disabled="!canManage"
-                class="mb-2"
-              />
+              <v-row dense class="mb-2">
+                <v-col cols="4">
+                  <v-select
+                    v-model="prioridade"
+                    :items="priorityOptions"
+                    label="Prioridade"
+                    required
+                    :disabled="!canManage"
+                  />
+                </v-col>
 
-              <v-select
-                v-model="origem"
-                :items="originOptions"
-                label="Origem"
-                required
-                :disabled="!canManage"
-                class="mb-2"
-              />
+                <v-col cols="4">
+                  <v-select
+                    v-model="origem"
+                    :items="originOptions"
+                    label="Origem"
+                    required
+                    :disabled="!canManage"
+                  />
+                </v-col>
 
-              <v-select
-                v-if="isEditing"
-                v-model="status"
-                :items="statusOptions"
-                label="Status"
-                required
-                :disabled="!canManage"
-                class="mb-2"
-              />
+                <v-col v-if="isEditing" cols="4">
+                  <v-select
+                    v-model="status"
+                    :items="statusOptions"
+                    label="Status"
+                    required
+                    :disabled="!canManage"
+                  />
+                </v-col>
+              </v-row>
 
               <div class="text-caption text-medium-emphasis mb-1">Classificação</div>
               <v-row dense class="mb-2">
@@ -353,30 +423,34 @@ init()
                 </v-col>
               </v-row>
 
-              <v-select
-                v-model="grupoSolucaoId"
-                :items="solutionGroupOptions"
-                item-title="nome"
-                item-value="id"
-                label="Grupo de Solução"
-                clearable
-                :disabled="!canManage"
-                class="mb-2"
-                @update:model-value="watchGrupoSolucaoChange"
-              />
+              <v-row dense class="mb-2">
+                <v-col cols="6">
+                  <v-select
+                    v-model="grupoSolucaoId"
+                    :items="solutionGroupOptions"
+                    item-title="nome"
+                    item-value="id"
+                    label="Grupo de Solução"
+                    clearable
+                    :disabled="!canManage"
+                    @update:model-value="watchGrupoSolucaoChange"
+                  />
+                </v-col>
 
-              <v-select
-                v-model="responsavelId"
-                :items="filteredResponsavelOptions"
-                item-title="name"
-                item-value="id"
-                label="Responsável"
-                clearable
-                :disabled="!canManage || !grupoSolucaoId"
-                :hint="!grupoSolucaoId ? 'Selecione um grupo de solução primeiro' : ''"
-                persistent-hint
-                class="mb-2"
-              />
+                <v-col cols="6">
+                  <v-select
+                    v-model="responsavelId"
+                    :items="filteredResponsavelOptions"
+                    item-title="name"
+                    item-value="id"
+                    label="Responsável"
+                    clearable
+                    :disabled="!canManage || !grupoSolucaoId"
+                    :hint="!grupoSolucaoId ? 'Selecione um grupo de solução primeiro' : ''"
+                    persistent-hint
+                  />
+                </v-col>
+              </v-row>
 
               <v-textarea
                 v-if="!isEditing"
@@ -393,12 +467,24 @@ init()
       </v-col>
 
       <v-col cols="12" md="6">
-        <IncidentFeed v-if="isEditing" ref="feedRef" :incident-id="id" />
-      </v-col>
-
-      <v-col v-if="isEditing" cols="12">
-        <IncidentAttachments :incident-id="id" />
+        <IncidentFeedPanel v-if="isEditing" ref="feedRef" :incident-id="id" />
       </v-col>
     </v-row>
   </AppLayout>
 </template>
+
+<style scoped>
+/*
+ * O layout inteiro (AppLayout > v-main) rola com a página, então sem
+ * `position: sticky` o botão "Salvar" sai da tela ao rolar um formulário
+ * longo. `top` usa o offset de layout que o Vuetify expõe via variável CSS
+ * (altura real do v-app-bar), com fallback pro valor padrão de 64px.
+ */
+.form-header {
+  position: sticky;
+  top: var(--v-layout-top, 64px);
+  z-index: 2;
+  background: rgb(var(--v-theme-background));
+  padding-block: 6px;
+}
+</style>
