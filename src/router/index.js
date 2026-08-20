@@ -51,6 +51,12 @@ const routes = [
     props: true,
     meta: { requiresAuth: true, guard: 'web' },
   },
+  {
+    path: '/reports',
+    name: 'reports',
+    component: () => import('@/views/ReportsView.vue'),
+    meta: { requiresAuth: true, guard: 'web', requiresPermission: 'relatorios.view' },
+  },
 
   // --- Cliente (guard "customer") ---
   {
@@ -170,6 +176,10 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.requiresAdmin && !auth.roles.includes('admin')) {
+      return homeRouteFor(auth.guard)
+    }
+
+    if (to.meta.requiresPermission && !auth.hasPermission(to.meta.requiresPermission)) {
       return homeRouteFor(auth.guard)
     }
   }
