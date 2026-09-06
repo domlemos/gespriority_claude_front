@@ -25,7 +25,12 @@ const canManage = computed(() => auth.hasPermission('relatorios.manage'))
 const AGRUPAMENTO_OPTIONS = [
   { value: 'status_sla', title: 'Status de SLA' },
   { value: 'responsavel', title: 'Responsável' },
+  { value: 'aberto_por', title: 'Aberto por' },
   { value: 'resolvido_por', title: 'Resolvido por' },
+  { value: 'fechado_por', title: 'Fechado por' },
+  { value: 'encaminhado_por', title: 'Encaminhado por' },
+  { value: 'encaminhado_para_grupo', title: 'Encaminhado para (grupo)' },
+  { value: 'encaminhado_para_responsavel', title: 'Encaminhado para (responsável)' },
   { value: 'grupo_solucao', title: 'Grupo de Solução' },
   { value: 'categoria', title: 'Categoria' },
   { value: 'subcategoria', title: 'Subcategoria' },

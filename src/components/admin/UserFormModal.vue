@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import userService from '@/services/userService'
 import roleService from '@/services/roleService'
 import solutionGroupService from '@/services/solutionGroupService'
@@ -12,6 +12,13 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'saved'])
 
+const createdUserId = ref(null)
+const targetUserId = computed(() => props.user?.id ?? createdUserId.value)
+// Depois de "Enviar convite" a partir de um formulário em branco, o registro já existe
+// (createdUserId setado) mesmo sem a prop `user` ter sido passada pelo pai — o formulário
+// passa a se comportar como edição (Salvar vira update, não um create duplicado).
+const isEditing = computed(() => targetUserId.value !== null)
+
 const name = ref('')
 const email = ref('')
 const password = ref('')
@@ -20,7 +27,9 @@ const roleOptions = ref([])
 const solutionGroupId = ref(null)
 const solutionGroupOptions = ref([])
 const loading = ref(false)
+const invitingLoading = ref(false)
 const errorMessage = ref('')
+const inviteMessage = ref('')
 
 async function loadRoles() {
   const { data } = await roleService.list()
@@ -38,7 +47,9 @@ watch(
     if (!open) return
 
     errorMessage.value = ''
+    inviteMessage.value = ''
     password.value = ''
+    createdUserId.value = null
     name.value = props.user?.name ?? ''
     email.value = props.user?.email ?? ''
     solutionGroupId.value = props.user?.grupo_solucao_id ?? null
@@ -66,6 +77,12 @@ function close() {
 
 async function onSubmit() {
   errorMessage.value = ''
+
+  if (!isEditing.value && !password.value) {
+    errorMessage.value = 'Informe uma senha ou use o botão "Enviar convite".'
+    return
+  }
+
   loading.value = true
 
   const payload = {
@@ -77,8 +94,8 @@ async function onSubmit() {
   }
 
   try {
-    if (props.user) {
-      await userService.update(props.user.id, payload)
+    if (targetUserId.value) {
+      await userService.update(targetUserId.value, payload)
     } else {
       await userService.create(payload)
     }
@@ -88,6 +105,32 @@ async function onSubmit() {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o usuário.')
   } finally {
     loading.value = false
+  }
+}
+
+async function onSendInvite() {
+  errorMessage.value = ''
+  inviteMessage.value = ''
+  invitingLoading.value = true
+
+  try {
+    if (!targetUserId.value) {
+      const created = await userService.create({
+        name: name.value,
+        email: email.value,
+        role_ids: roleIds.value,
+        grupo_solucao_id: solutionGroupId.value,
+      })
+      createdUserId.value = created.data.id
+      emit('saved')
+    }
+
+    await userService.sendInvite(targetUserId.value)
+    inviteMessage.value = 'Convite enviado por e-mail.'
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível enviar o convite.')
+  } finally {
+    invitingLoading.value = false
   }
 }
 </script>
@@ -100,7 +143,7 @@ async function onSubmit() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ user ? 'Editar usuário' : 'Novo usuário' }}
+        {{ isEditing ? 'Editar usuário' : 'Novo usuário' }}
       </v-card-title>
 
       <v-card-text>
@@ -109,15 +152,22 @@ async function onSubmit() {
             {{ errorMessage }}
           </v-alert>
 
+          <v-alert v-if="inviteMessage" type="success" variant="tonal" density="comfortable" class="mb-4">
+            {{ inviteMessage }}
+          </v-alert>
+
           <v-text-field v-model="name" label="Nome" required autofocus class="mb-2" />
           <v-text-field v-model="email" label="E-mail" type="email" required class="mb-2" />
           <v-text-field
             v-model="password"
-            :label="user ? 'Nova senha (opcional)' : 'Senha'"
+            :label="isEditing ? 'Nova senha (opcional)' : 'Senha'"
             type="password"
-            :required="!user"
-            class="mb-2"
+            :required="!isEditing"
+            class="mb-1"
           />
+          <div v-if="!isEditing" class="text-caption text-medium-emphasis mb-2">
+            Ou deixe em branco e clique em "Enviar convite" abaixo.
+          </div>
           <v-select
             v-model="roleIds"
             :items="roleOptions"
@@ -140,6 +190,15 @@ async function onSubmit() {
       </v-card-text>
 
       <v-card-actions>
+        <v-btn
+          variant="tonal"
+          color="secondary"
+          :loading="invitingLoading"
+          :disabled="!name || !email"
+          @click="onSendInvite"
+        >
+          {{ isEditing ? 'Reenviar convite' : 'Enviar convite' }}
+        </v-btn>
         <v-spacer />
         <v-btn variant="text" @click="close">Cancelar</v-btn>
         <v-btn color="primary" :loading="loading" @click="onSubmit">Salvar</v-btn>

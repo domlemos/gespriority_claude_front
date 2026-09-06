@@ -13,4 +13,7 @@ export default {
   remove(id) {
     return api.delete(`/customers/${id}`)
   },
+  sendInvite(id) {
+    return api.post(`/customers/${id}/convite`).then((res) => res.data)
+  },
 }
