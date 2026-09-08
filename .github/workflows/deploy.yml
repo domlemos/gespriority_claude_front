@@ -11,7 +11,7 @@ permissions:
 env:
   AWS_REGION: us-east-1
   S3_BUCKET: gespriority-itsm-frontend
-  CLOUDFRONT_DISTRIBUTION_ID: E3RYBKB8MQ7AW5
+  CLOUDFRONT_DISTRIBUTION_ID: E1PI2KHJNOLUGX
 
 jobs:
   build-and-deploy:
