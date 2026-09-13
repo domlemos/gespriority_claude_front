@@ -16,4 +16,10 @@ export default {
   sendInvite(id) {
     return api.post(`/users/${id}/convite`).then((res) => res.data)
   },
+  getVisibleGroups(id) {
+    return api.get(`/users/${id}/grupos-visiveis`).then((res) => res.data)
+  },
+  updateVisibleGroups(id, payload) {
+    return api.put(`/users/${id}/grupos-visiveis`, payload).then((res) => res.data)
+  },
 }

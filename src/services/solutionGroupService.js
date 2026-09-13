@@ -13,4 +13,10 @@ export default {
   remove(id) {
     return api.delete(`/grupos-solucao/${id}`)
   },
+  getPermissions(id) {
+    return api.get(`/grupos-solucao/${id}/permissoes`).then((res) => res.data)
+  },
+  updatePermissions(id, payload) {
+    return api.put(`/grupos-solucao/${id}/permissoes`, payload).then((res) => res.data)
+  },
 }

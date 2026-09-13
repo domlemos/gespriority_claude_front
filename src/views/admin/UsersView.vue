@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import UserFormModal from '@/components/admin/UserFormModal.vue'
+import UserVisibilityModal from '@/components/admin/UserVisibilityModal.vue'
 import UserAdvancedFilterModal from '@/components/admin/UserAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import userService from '@/services/userService'
@@ -25,6 +26,9 @@ const itemsPerPage = ref(15)
 
 const formOpen = ref(false)
 const editingUser = ref(null)
+
+const visibilityOpen = ref(false)
+const userForVisibility = ref(null)
 
 const deleteOpen = ref(false)
 const deleting = ref(false)
@@ -107,6 +111,11 @@ function openEdit(user) {
   formOpen.value = true
 }
 
+function openVisibility(user) {
+  userForVisibility.value = user
+  visibilityOpen.value = true
+}
+
 function askDelete(user) {
   userToDelete.value = user
   deleteOpen.value = true
@@ -187,12 +196,15 @@ loadFilterOptions()
     </template>
 
     <template #item.actions="{ item }">
+      <v-btn icon="mdi-eye-outline" variant="text" size="small" @click="openVisibility(item)" />
       <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEdit(item)" />
       <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="askDelete(item)" />
     </template>
   </v-data-table-server>
 
   <UserFormModal v-model="formOpen" :user="editingUser" @saved="loadUsers" />
+
+  <UserVisibilityModal v-model="visibilityOpen" :user="userForVisibility" />
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"

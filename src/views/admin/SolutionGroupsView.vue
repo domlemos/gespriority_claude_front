@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import SolutionGroupFormModal from '@/components/admin/SolutionGroupFormModal.vue'
+import SolutionGroupPermissionsModal from '@/components/admin/SolutionGroupPermissionsModal.vue'
 import SolutionGroupAdvancedFilterModal from '@/components/admin/SolutionGroupAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import solutionGroupService from '@/services/solutionGroupService'
@@ -21,6 +22,9 @@ const itemsPerPage = ref(15)
 
 const formOpen = ref(false)
 const editingSolutionGroup = ref(null)
+
+const permissionsOpen = ref(false)
+const solutionGroupForPermissions = ref(null)
 
 const deleteOpen = ref(false)
 const deleting = ref(false)
@@ -88,6 +92,11 @@ function openEdit(solutionGroup) {
   formOpen.value = true
 }
 
+function openPermissions(solutionGroup) {
+  solutionGroupForPermissions.value = solutionGroup
+  permissionsOpen.value = true
+}
+
 function askDelete(solutionGroup) {
   solutionGroupToDelete.value = solutionGroup
   deleteOpen.value = true
@@ -149,12 +158,15 @@ async function confirmDelete() {
     </template>
 
     <template #item.actions="{ item }">
+      <v-btn icon="mdi-shield-lock-outline" variant="text" size="small" @click="openPermissions(item)" />
       <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEdit(item)" />
       <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="askDelete(item)" />
     </template>
   </v-data-table-server>
 
   <SolutionGroupFormModal v-model="formOpen" :solution-group="editingSolutionGroup" @saved="loadSolutionGroups" />
+
+  <SolutionGroupPermissionsModal v-model="permissionsOpen" :solution-group="solutionGroupForPermissions" />
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
