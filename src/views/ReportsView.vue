@@ -107,13 +107,13 @@ async function loadFilterOptions() {
   loading.value = true
   try {
     const [clients, customers, categories, subcategories, items, groups, users] = await Promise.all([
-      clientService.list({ per_page: 200 }),
-      customerService.list({ per_page: 200 }),
+      clientService.lookup(),
+      customerService.lookup(),
       categoryService.list({ per_page: 200 }),
       subcategoryService.list({ per_page: 200 }),
       itemService.list({ per_page: 200 }),
       solutionGroupService.list({ per_page: 200 }),
-      userService.list({ per_page: 200 }),
+      userService.lookup(),
     ])
     clientOptions.value = clients.data
     customerOptions.value = customers.data

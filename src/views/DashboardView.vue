@@ -134,12 +134,12 @@ function showAllRecords() {
 async function loadFilterOptions() {
   try {
     const [customers, categories, subcategories, taxonomyItems, groups, users] = await Promise.all([
-      customerService.list({ per_page: 200 }),
+      customerService.lookup(),
       categoryService.list({ per_page: 200 }),
       subcategoryService.list({ per_page: 200 }),
       itemService.list({ per_page: 200 }),
       solutionGroupService.list({ per_page: 200 }),
-      userService.list({ per_page: 200 }),
+      userService.lookup(),
     ])
     customerOptions.value = customers.data
     categoryOptions.value = categories.data

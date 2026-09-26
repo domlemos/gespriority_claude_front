@@ -159,7 +159,7 @@ function watchGrupoSolucaoChange() {
 
 async function loadCustomers() {
   customerOptions.value = []
-  const { data } = await customerService.list({ per_page: 200 })
+  const { data } = await customerService.lookup()
   customerOptions.value = data
 }
 
@@ -189,7 +189,7 @@ async function loadSolutionGroups() {
 
 async function loadUsers() {
   userOptions.value = []
-  const { data } = await userService.list({ per_page: 200 })
+  const { data } = await userService.lookup()
   userOptions.value = data
 }
 
