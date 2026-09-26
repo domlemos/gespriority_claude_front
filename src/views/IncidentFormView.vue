@@ -26,6 +26,16 @@ const auth = useAuthStore()
 
 const isEditing = computed(() => props.id !== null)
 const canManage = computed(() => auth.hasPermission('tickets.manage'))
+// Depois da abertura, sem `tickets.edit_all` (Analista/Agente) só dá pra
+// mexer em classificação, grupo/responsável e status — Cliente, Título e
+// Origem ficam travados (mesma regra do backend em
+// `IncidenteController::garantirPermissaoParaCamposRestritos()`).
+const canEditRestrictedFields = computed(
+  () => canManage.value && (!isEditing.value || auth.hasPermission('tickets.edit_all')),
+)
+const restrictedFieldHint = computed(() =>
+  canManage.value && !canEditRestrictedFields.value ? 'Não pode ser alterado após a abertura' : '',
+)
 
 const originOptions = Object.entries(ORIGEM_LABELS).map(([value, title]) => ({ value, title }))
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
@@ -422,7 +432,9 @@ init()
                 no-data-text="Nenhum cliente encontrado"
                 clearable
                 required
-                :disabled="!canManage"
+                :disabled="!canEditRestrictedFields"
+                :hint="restrictedFieldHint"
+                persistent-hint
                 class="mb-2"
               />
 
@@ -430,7 +442,9 @@ init()
                 v-model="titulo"
                 label="Título"
                 required
-                :disabled="!canManage"
+                :disabled="!canEditRestrictedFields"
+                :hint="restrictedFieldHint"
+                persistent-hint
                 class="mb-2"
               />
 
@@ -451,7 +465,9 @@ init()
                     :items="originOptions"
                     label="Origem"
                     required
-                    :disabled="!canManage"
+                    :disabled="!canEditRestrictedFields"
+                    :hint="restrictedFieldHint"
+                    persistent-hint
                   />
                 </v-col>
 
