@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import itemService from '@/services/itemService'
 import subcategoryService from '@/services/subcategoryService'
 import { extractErrorMessage } from '@/utils/errors'
+import { PRIORIDADE_LABELS } from '@/utils/incidentLabels'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -14,9 +15,15 @@ const emit = defineEmits(['update:modelValue', 'saved'])
 const nome = ref('')
 const ativo = ref(true)
 const subcategoriaId = ref(null)
+const prioridadePadrao = ref(null)
 const subcategoryOptions = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
+
+const prioridadePadraoOptions = Object.entries(PRIORIDADE_LABELS).map(([value, title]) => ({
+  value,
+  title,
+}))
 
 function subcategoryLabel(subcategory) {
   if (!subcategory || typeof subcategory !== 'object') return ''
@@ -37,6 +44,7 @@ watch(
     nome.value = props.item?.nome ?? ''
     ativo.value = props.item?.ativo ?? true
     subcategoriaId.value = props.item?.subcategoria_id ?? props.item?.subcategoria?.id ?? null
+    prioridadePadrao.value = props.item?.prioridade_padrao ?? null
     subcategoryOptions.value = []
 
     try {
@@ -59,6 +67,7 @@ async function onSubmit() {
     nome: nome.value,
     ativo: ativo.value,
     subcategoria_id: subcategoriaId.value,
+    prioridade_padrao: prioridadePadrao.value,
   }
 
   try {
@@ -103,6 +112,18 @@ async function onSubmit() {
             item-value="id"
             label="Subcategoria"
             required
+            class="mb-2"
+          />
+
+          <v-select
+            v-model="prioridadePadrao"
+            :items="prioridadePadraoOptions"
+            item-title="title"
+            item-value="value"
+            label="Prioridade padrão de SLA"
+            required
+            hint="Prioridade aplicada automaticamente a todo incidente classificado neste item."
+            persistent-hint
             class="mb-2"
           />
 

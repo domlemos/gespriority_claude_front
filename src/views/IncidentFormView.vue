@@ -25,7 +25,6 @@ const auth = useAuthStore()
 const isEditing = computed(() => props.id !== null)
 const canManage = computed(() => auth.hasPermission('tickets.manage'))
 
-const priorityOptions = Object.entries(PRIORIDADE_LABELS).map(([value, title]) => ({ value, title }))
 const originOptions = Object.entries(ORIGEM_LABELS).map(([value, title]) => ({ value, title }))
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
 
@@ -67,6 +66,17 @@ const filteredItemOptions = computed(() =>
     ? itemOptions.value.filter((item) => item.subcategoria_id === subcategoriaId.value)
     : [],
 )
+
+// Prioridade nunca é escolhida no formulário — o backend sempre a deriva do
+// `prioridade_padrao` do item (ver "SLA por Categorização" no
+// BACKEND_SPECS.md). Na edição, só exibimos o valor: o do item recém
+// selecionado (prévia do que o backend vai aplicar ao salvar) ou, sem item,
+// o que já está gravado no incidente.
+const prioridadeExibida = computed(() => {
+  const item = itemOptions.value.find((option) => option.id === itemId.value)
+  const valor = item?.prioridade_padrao ?? prioridade.value
+  return valor ? PRIORIDADE_LABELS[valor] ?? valor : '—'
+})
 
 const filteredResponsavelOptions = computed(() =>
   grupoSolucaoId.value
@@ -172,7 +182,6 @@ function resolveClassificationFromItemId(currentItemId) {
 function applyCloneFromQuery() {
   customerId.value = route.query.customer_id ? Number(route.query.customer_id) : null
   titulo.value = typeof route.query.titulo === 'string' ? route.query.titulo : ''
-  prioridade.value = route.query.prioridade || null
   origem.value = route.query.origem || null
   grupoSolucaoId.value = route.query.grupo_solucao_id ? Number(route.query.grupo_solucao_id) : null
   responsavelId.value = route.query.responsavel_id ? Number(route.query.responsavel_id) : null
@@ -234,7 +243,6 @@ function buildBasePayload() {
   return {
     customer_id: customerId.value,
     titulo: titulo.value,
-    prioridade: prioridade.value,
     origem: origem.value,
     item_id: itemId.value,
     grupo_solucao_id: grupoSolucaoId.value,
@@ -275,7 +283,6 @@ function cloneAsNew() {
       clone: '1',
       customer_id: customerId.value ?? '',
       titulo: titulo.value ?? '',
-      prioridade: prioridade.value ?? '',
       origem: origem.value ?? '',
       item_id: itemId.value ?? '',
       grupo_solucao_id: grupoSolucaoId.value ?? '',
@@ -353,13 +360,13 @@ init()
               />
 
               <v-row dense class="mb-2">
-                <v-col cols="4">
-                  <v-select
-                    v-model="prioridade"
-                    :items="priorityOptions"
+                <v-col v-if="isEditing" cols="4">
+                  <v-text-field
+                    :model-value="prioridadeExibida"
                     label="Prioridade"
-                    required
-                    :disabled="!canManage"
+                    readonly
+                    hint="Calculada automaticamente pelo item"
+                    persistent-hint
                   />
                 </v-col>
 
@@ -417,7 +424,7 @@ init()
                     item-title="nome"
                     item-value="id"
                     label="Item"
-                    clearable
+                    required
                     :disabled="!canManage || !subcategoriaId"
                   />
                 </v-col>
