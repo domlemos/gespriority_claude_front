@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import attachmentService from '@/services/attachmentService'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import { extractErrorMessage } from '@/utils/errors'
+import { ATTACHMENT_ACCEPT, attachmentError } from '@/utils/attachmentRules'
 
 const props = defineProps({
   incidentId: { type: [String, Number], required: true },
@@ -12,7 +13,6 @@ const props = defineProps({
 const auth = useAuthStore()
 const canManage = computed(() => auth.hasPermission('tickets.manage'))
 
-const MAX_SIZE_BYTES = 10 * 1024 * 1024
 
 const attachments = ref([])
 const loading = ref(false)
@@ -78,27 +78,35 @@ function openFilePicker() {
   fileInput.value?.click()
 }
 
+// Vários arquivos por seleção: cada um é validado e enviado individualmente
+// (o endpoint recebe um por vez); falha em um não impede os demais, e todas
+// as mensagens aparecem juntas no alerta.
 async function onFileSelected(event) {
-  const file = event.target.files?.[0]
+  const files = Array.from(event.target.files ?? [])
   event.target.value = ''
-  if (!file) return
-
-  if (file.size > MAX_SIZE_BYTES) {
-    errorMessage.value = 'O arquivo excede o tamanho máximo de 10 MB.'
-    return
-  }
+  if (!files.length) return
 
   uploading.value = true
   errorMessage.value = ''
+  const erros = []
 
-  try {
-    const created = await attachmentService.upload(props.incidentId, file)
-    attachments.value.unshift(created)
-  } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível enviar o anexo.')
-  } finally {
-    uploading.value = false
+  for (const file of files) {
+    const erro = attachmentError(file)
+    if (erro) {
+      erros.push(erro)
+      continue
+    }
+
+    try {
+      const created = await attachmentService.upload(props.incidentId, file)
+      attachments.value.unshift(created)
+    } catch (error) {
+      erros.push(`"${file.name}": ${extractErrorMessage(error, 'não foi possível enviar o anexo.')}`)
+    }
   }
+
+  errorMessage.value = erros.join(' ')
+  uploading.value = false
 }
 
 async function openPreview(attachment) {
@@ -181,10 +189,17 @@ watch(() => props.incidentId, () => {
         :loading="uploading"
         @click="openFilePicker"
       >
-        Anexar arquivo
+        Anexar arquivos
       </v-btn>
 
-      <input ref="fileInput" type="file" class="d-none" @change="onFileSelected" />
+      <input
+        ref="fileInput"
+        type="file"
+        multiple
+        class="d-none"
+        :accept="ATTACHMENT_ACCEPT"
+        @change="onFileSelected"
+      />
     </div>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mx-4 mb-2">
