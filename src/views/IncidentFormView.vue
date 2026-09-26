@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import IncidentFeedPanel from '@/components/IncidentFeedPanel.vue'
 import incidentService from '@/services/incidentService'
+import attachmentService from '@/services/attachmentService'
 import customerService from '@/services/customerService'
 import categoryService from '@/services/categoryService'
 import subcategoryService from '@/services/subcategoryService'
@@ -12,6 +13,7 @@ import solutionGroupService from '@/services/solutionGroupService'
 import userService from '@/services/userService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
+import { ATTACHMENT_ACCEPT, attachmentError } from '@/utils/attachmentRules'
 import { PRIORIDADE_LABELS, ORIGEM_LABELS, STATUS_LABELS } from '@/utils/incidentLabels'
 
 const props = defineProps({
@@ -47,6 +49,12 @@ const itemId = ref(null)
 const grupoSolucaoId = ref(null)
 const responsavelId = ref(null)
 const descricaoInicial = ref('')
+// Anexos escolhidos na abertura — só enviados depois que o incidente existe
+// (o endpoint de anexos é aninhado em /incidentes/{id}), ver `onSubmit()`.
+const anexosPendentes = ref([])
+const anexosPendentesRules = [
+  (files) => (files ?? []).map(attachmentError).find(Boolean) ?? true,
+]
 
 const customerOptions = ref([])
 const categoryOptions = ref([])
@@ -158,6 +166,7 @@ function resetForm() {
   grupoSolucaoId.value = null
   responsavelId.value = null
   descricaoInicial.value = ''
+  anexosPendentes.value = []
 }
 
 function resolveClassificationFromItemId(currentItemId) {
@@ -226,6 +235,10 @@ async function init() {
       isEditing.value ? loadIncident() : Promise.resolve(null),
     ])
 
+    if (isEditing.value) {
+      showAttachmentFailuresFromCreation()
+    }
+
     if (incidentItemId) {
       resolveClassificationFromItemId(incidentItemId)
     } else if (!isEditing.value && route.query.clone === '1') {
@@ -237,6 +250,32 @@ async function init() {
   } finally {
     loading.value = false
   }
+}
+
+// Falha de upload na abertura não desfaz o incidente (já foi criado) — a
+// lista de arquivos que falharam viaja no history state do redirect pra
+// edição e vira um aviso aqui, pro usuário reanexar pela aba de anexos. Sai
+// do state logo em seguida pra não reaparecer num F5.
+function showAttachmentFailuresFromCreation() {
+  const falhas = window.history.state?.anexosComFalha
+  if (!Array.isArray(falhas) || !falhas.length) return
+
+  errorMessage.value = `Incidente criado, mas não foi possível anexar: ${falhas.join('; ')}. Anexe novamente pela aba de anexos.`
+  window.history.replaceState({ ...window.history.state, anexosComFalha: undefined }, '')
+}
+
+async function uploadPendingAttachments(incidentId) {
+  const falhas = []
+
+  for (const file of anexosPendentes.value) {
+    try {
+      await attachmentService.upload(incidentId, file)
+    } catch (error) {
+      falhas.push(`"${file.name}" (${extractErrorMessage(error, 'erro no envio')})`)
+    }
+  }
+
+  return falhas
 }
 
 function buildBasePayload() {
@@ -262,11 +301,18 @@ async function onSubmit() {
       successSnackbar.value = true
       feedRef.value?.reload()
     } else {
+      const arquivoInvalido = anexosPendentes.value.map(attachmentError).find(Boolean)
+      if (arquivoInvalido) {
+        errorMessage.value = arquivoInvalido
+        return
+      }
+
       const created = await incidentService.create({
         ...buildBasePayload(),
         descricao: descricaoInicial.value,
       })
-      router.replace({ name: 'incident-edit', params: { id: created.id } })
+      const anexosComFalha = await uploadPendingAttachments(created.id)
+      router.replace({ name: 'incident-edit', params: { id: created.id }, state: { anexosComFalha } })
       return
     }
   } catch (error) {
@@ -465,6 +511,23 @@ init()
                 label="Descrição"
                 required
                 rows="4"
+                :disabled="!canManage"
+                class="mb-2"
+              />
+
+              <v-file-input
+                v-if="!isEditing"
+                v-model="anexosPendentes"
+                label="Anexos"
+                multiple
+                chips
+                show-size
+                counter
+                prepend-icon="mdi-paperclip"
+                :accept="ATTACHMENT_ACCEPT"
+                :rules="anexosPendentesRules"
+                hint="Opcional. PDF, Word, Excel, CSV, JPG ou PNG, até 10 MB cada."
+                persistent-hint
                 :disabled="!canManage"
                 class="mb-2"
               />
