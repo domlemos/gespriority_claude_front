@@ -13,7 +13,7 @@ const props = defineProps({
   userOptions: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['update:modelValue', 'apply', 'show-all'])
+const emit = defineEmits(['update:modelValue', 'apply', 'save', 'show-all'])
 
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
 const priorityOptions = Object.entries(PRIORIDADE_LABELS).map(([value, title]) => ({ value, title }))
@@ -96,8 +96,8 @@ function close() {
   emit('update:modelValue', false)
 }
 
-function applyFilters() {
-  emit('apply', {
+function draftFilters() {
+  return {
     numero: numero.value,
     status: status.value,
     prioridade: prioridade.value,
@@ -106,7 +106,16 @@ function applyFilters() {
     item_id: itemId.value,
     grupo_solucao_id: grupoSolucaoId.value,
     responsavel_id: responsavelId.value,
-  })
+  }
+}
+
+function applyFilters() {
+  emit('apply', draftFilters())
+  close()
+}
+
+function saveFilters() {
+  emit('save', draftFilters())
   close()
 }
 
@@ -222,7 +231,7 @@ function showAll() {
         </v-row>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions class="flex-wrap ga-1">
         <v-btn variant="text" @click="clearDraft">Limpar</v-btn>
         <v-spacer />
         <v-btn variant="text" prepend-icon="mdi-format-list-bulleted" @click="showAll">
@@ -230,6 +239,12 @@ function showAll() {
         </v-btn>
         <v-spacer />
         <v-btn variant="text" @click="close">Cancelar</v-btn>
+        <v-btn variant="outlined" color="primary" prepend-icon="mdi-content-save" @click="saveFilters">
+          Salvar
+          <v-tooltip activator="parent" location="top">
+            Filtra e mantém este filtro nos próximos acessos. Salvar em branco remove o filtro salvo.
+          </v-tooltip>
+        </v-btn>
         <v-btn color="primary" @click="applyFilters">Filtrar</v-btn>
       </v-card-actions>
     </v-card>

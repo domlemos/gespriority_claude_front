@@ -12,6 +12,7 @@ import itemService from '@/services/itemService'
 import solutionGroupService from '@/services/solutionGroupService'
 import userService from '@/services/userService'
 import { extractErrorMessage } from '@/utils/errors'
+import { compactFilters, loadSavedFilters, saveFilters } from '@/utils/savedIncidentFilters'
 import {
   PRIORIDADE_LABELS,
   PRIORIDADE_COLORS,
@@ -64,8 +65,16 @@ const page = ref(1)
 const itemsPerPage = ref(DEFAULT_ITEMS_PER_PAGE)
 const sortBy = ref([])
 
+// Guard no identificador: staff e customer têm tabelas (e ids) separadas.
+const savedFiltersOwner = computed(() => (auth.user?.id ? `${auth.guard}.${auth.user.id}` : null))
+
 const filterModalOpen = ref(false)
-const appliedFilters = ref({})
+// Já nasce com o filtro salvo (se houver) — o v-data-table-server dispara o
+// primeiro `update:options` ao montar, e esse primeiro carregamento já tem
+// que sair filtrado.
+const appliedFilters = ref(loadSavedFilters(savedFiltersOwner.value))
+const filtersSavedSnackbar = ref(false)
+const filtersSavedMessage = ref('')
 
 const customerOptions = ref([])
 const categoryOptions = ref([])
@@ -95,6 +104,19 @@ function applyFilters(filters) {
   page.value = 1
   itemsPerPage.value = DEFAULT_ITEMS_PER_PAGE
   loadIncidents()
+}
+
+// "Salvar" do Filtro Avançado: aplica e grava pra este usuário. Salvar com
+// tudo em branco apaga o filtro salvo. "Limpar filtros" no cabeçalho, ao
+// contrário, só limpa a visualização atual — o salvo continua valendo no
+// próximo acesso.
+function saveAndApplyFilters(filters) {
+  saveFilters(savedFiltersOwner.value, filters)
+  filtersSavedMessage.value = Object.keys(compactFilters(filters)).length
+    ? 'Filtro salvo. Ele será aplicado automaticamente no próximo acesso.'
+    : 'Filtro salvo removido.'
+  filtersSavedSnackbar.value = true
+  applyFilters(filters)
 }
 
 // Sem limite de per_page no backend (ver BACKEND_SPECS.md §3.4.8) — um
@@ -242,8 +264,13 @@ loadFilterOptions()
       :solution-group-options="solutionGroupOptions"
       :user-options="userOptions"
       @apply="applyFilters"
+      @save="saveAndApplyFilters"
       @show-all="showAllRecords"
     />
+
+    <v-snackbar v-model="filtersSavedSnackbar" :timeout="3000" color="success" transition="fade-transition">
+      {{ filtersSavedMessage }}
+    </v-snackbar>
 
     <v-data-table-server
       :headers="headers"
