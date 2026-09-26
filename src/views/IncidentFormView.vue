@@ -69,9 +69,9 @@ const filteredItemOptions = computed(() =>
 
 // Prioridade nunca é escolhida no formulário — o backend sempre a deriva do
 // `prioridade_padrao` do item (ver "SLA por Categorização" no
-// BACKEND_SPECS.md). Na edição, só exibimos o valor: o do item recém
-// selecionado (prévia do que o backend vai aplicar ao salvar) ou, sem item,
-// o que já está gravado no incidente.
+// BACKEND_SPECS.md). Só exibimos o valor (na abertura, assim que um item é
+// selecionado): o do item selecionado (prévia do que o backend vai aplicar ao
+// salvar) ou, sem item, o que já está gravado no incidente.
 const prioridadeExibida = computed(() => {
   const item = itemOptions.value.find((option) => option.id === itemId.value)
   const valor = item?.prioridade_padrao ?? prioridade.value
@@ -360,7 +360,7 @@ init()
               />
 
               <v-row dense class="mb-2">
-                <v-col v-if="isEditing" cols="4">
+                <v-col v-if="isEditing || itemId" cols="4">
                   <v-text-field
                     :model-value="prioridadeExibida"
                     label="Prioridade"
