@@ -5,6 +5,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import IncidentFeedPanel from '@/components/IncidentFeedPanel.vue'
 import incidentService from '@/services/incidentService'
 import attachmentService from '@/services/attachmentService'
+import clientService from '@/services/clientService'
 import customerService from '@/services/customerService'
 import categoryService from '@/services/categoryService'
 import subcategoryService from '@/services/subcategoryService'
@@ -14,7 +15,7 @@ import userService from '@/services/userService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
 import { ATTACHMENT_ACCEPT, attachmentError } from '@/utils/attachmentRules'
-import { PRIORIDADE_LABELS, ORIGEM_LABELS, STATUS_LABELS } from '@/utils/incidentLabels'
+import { PRIORIDADE_LABELS, ORIGEM_LABELS, STATUS_LABELS, TIPO_LABELS } from '@/utils/incidentLabels'
 
 const props = defineProps({
   id: { type: [String, Number], default: null },
@@ -27,8 +28,8 @@ const auth = useAuthStore()
 const isEditing = computed(() => props.id !== null)
 const canManage = computed(() => auth.hasPermission('tickets.manage'))
 // Depois da abertura, sem `tickets.edit_all` (Analista/Agente) só dá pra
-// mexer em classificação, grupo/responsável e status — Cliente, Título e
-// Origem ficam travados (mesma regra do backend em
+// mexer em classificação, grupo/responsável e status — Tipo, Empresa/
+// Solicitante, Título e Origem ficam travados (mesma regra do backend em
 // `IncidenteController::garantirPermissaoParaCamposRestritos()`).
 const canEditRestrictedFields = computed(
   () => canManage.value && (!isEditing.value || auth.hasPermission('tickets.edit_all')),
@@ -37,6 +38,7 @@ const restrictedFieldHint = computed(() =>
   canManage.value && !canEditRestrictedFields.value ? 'Não pode ser alterado após a abertura' : '',
 )
 
+const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value, title }))
 const originOptions = Object.entries(ORIGEM_LABELS).map(([value, title]) => ({ value, title }))
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
 
@@ -48,6 +50,10 @@ const successMessage = ref('')
 const successSnackbar = ref(false)
 const feedRef = ref(null)
 
+const tipo = ref('incidente')
+// Empresa não é campo do incidente (a API só recebe `customer_id`; a empresa
+// é sempre derivada do solicitante) — só filtra o select de Solicitante.
+const clientId = ref(null)
 const customerId = ref(null)
 const titulo = ref('')
 const prioridade = ref(null)
@@ -101,12 +107,17 @@ function formatFileSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+const clientOptions = ref([])
 const customerOptions = ref([])
 const categoryOptions = ref([])
 const subcategoryOptions = ref([])
 const itemOptions = ref([])
 const solutionGroupOptions = ref([])
 const userOptions = ref([])
+
+const filteredCustomerOptions = computed(() =>
+  clientId.value ? customerOptions.value.filter((customer) => customer.client?.id === clientId.value) : [],
+)
 
 const filteredSubcategoryOptions = computed(() =>
   categoriaId.value
@@ -139,7 +150,19 @@ const filteredResponsavelOptions = computed(() =>
 
 function customerLabel(customer) {
   if (!customer || typeof customer !== 'object') return ''
-  return `${customer.client?.name ?? '—'} — ${customer.name} (${customer.email})`
+  return `${customer.name} (${customer.email})`
+}
+
+function onClientChange() {
+  customerId.value = null
+}
+
+// Na edição/clone o incidente só traz o solicitante — a empresa é derivada
+// dele. Chamado depois do `Promise.all` de `init()`, quando `customerOptions`
+// já carregou (mesmo motivo de `resolveClassificationFromItemId`).
+function syncClientFromCustomer() {
+  const customer = customerOptions.value.find((option) => option.id === customerId.value)
+  clientId.value = customer?.client?.id ?? null
 }
 
 function watchCategoriaChange() {
@@ -155,6 +178,12 @@ function watchGrupoSolucaoChange() {
   if (!filteredResponsavelOptions.value.some((user) => user.id === responsavelId.value)) {
     responsavelId.value = null
   }
+}
+
+async function loadClients() {
+  clientOptions.value = []
+  const { data } = await clientService.lookup()
+  clientOptions.value = data
 }
 
 async function loadCustomers() {
@@ -200,6 +229,8 @@ async function loadUsers() {
 // início de `init()`, antes de aplicar dados do incidente ou de um clone,
 // pra nunca vazar campo de uma edição anterior pro formulário de criação.
 function resetForm() {
+  tipo.value = 'incidente'
+  clientId.value = null
   customerId.value = null
   titulo.value = ''
   prioridade.value = null
@@ -234,6 +265,7 @@ function resolveClassificationFromItemId(currentItemId) {
 // string e são reaplicados aqui, depois que as listas de opções (usadas por
 // `resolveClassificationFromItemId`) já carregaram.
 function applyCloneFromQuery() {
+  tipo.value = route.query.tipo || 'incidente'
   customerId.value = route.query.customer_id ? Number(route.query.customer_id) : null
   titulo.value = typeof route.query.titulo === 'string' ? route.query.titulo : ''
   origem.value = route.query.origem || null
@@ -247,6 +279,7 @@ function applyCloneFromQuery() {
 async function loadIncident() {
   const incident = await incidentService.get(props.id)
 
+  tipo.value = incident.tipo ?? 'incidente'
   customerId.value = incident.customer_id ?? incident.customer?.id ?? null
   titulo.value = incident.titulo
   prioridade.value = incident.prioridade
@@ -270,7 +303,8 @@ async function init() {
   resetForm()
 
   try {
-    const [, , , , , , incidentItemId] = await Promise.all([
+    const [, , , , , , , incidentItemId] = await Promise.all([
+      loadClients(),
       loadCustomers(),
       loadCategories(),
       loadSubcategories(),
@@ -289,9 +323,11 @@ async function init() {
     } else if (!isEditing.value && route.query.clone === '1') {
       applyCloneFromQuery()
     }
+
+    syncClientFromCustomer()
   } catch (error) {
     loadFailed.value = true
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os dados do incidente.')
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os dados do chamado.')
   } finally {
     loading.value = false
   }
@@ -305,7 +341,7 @@ function showAttachmentFailuresFromCreation() {
   const falhas = window.history.state?.anexosComFalha
   if (!Array.isArray(falhas) || !falhas.length) return
 
-  errorMessage.value = `Incidente criado, mas não foi possível anexar: ${falhas.join('; ')}. Anexe novamente pela aba de anexos.`
+  errorMessage.value = `Chamado criado, mas não foi possível anexar: ${falhas.join('; ')}. Anexe novamente pela aba de anexos.`
   window.history.replaceState({ ...window.history.state, anexosComFalha: undefined }, '')
 }
 
@@ -325,6 +361,7 @@ async function uploadPendingAttachments(incidentId) {
 
 function buildBasePayload() {
   return {
+    tipo: tipo.value,
     customer_id: customerId.value,
     titulo: titulo.value,
     origem: origem.value,
@@ -342,7 +379,7 @@ async function onSubmit() {
   try {
     if (isEditing.value) {
       await incidentService.update(props.id, { ...buildBasePayload(), status: status.value })
-      successMessage.value = 'Incidente atualizado com sucesso.'
+      successMessage.value = 'Chamado atualizado com sucesso.'
       successSnackbar.value = true
       feedRef.value?.reload()
     } else {
@@ -355,7 +392,7 @@ async function onSubmit() {
       return
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o incidente.')
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o chamado.')
   } finally {
     saving.value = false
   }
@@ -366,6 +403,7 @@ function cloneAsNew() {
     name: 'incident-new',
     query: {
       clone: '1',
+      tipo: tipo.value ?? '',
       customer_id: customerId.value ?? '',
       titulo: titulo.value ?? '',
       origem: origem.value ?? '',
@@ -389,16 +427,16 @@ init()
       <div class="d-flex align-center">
         <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'dashboard' }" />
         <h1 class="text-h5 font-weight-bold ma-0">
-          {{ isEditing ? `Incidente #${id}` : 'Novo Incidente' }}
+          {{ isEditing ? `Chamado #${id}` : 'Novo Chamado' }}
         </h1>
       </div>
 
       <div class="d-flex align-center ga-2">
         <v-btn v-if="canManage && isEditing" variant="outlined" :to="{ name: 'incident-new' }">
-          Novo Incidente
+          Novo Chamado
         </v-btn>
         <v-btn v-if="canManage && isEditing" variant="outlined" @click="cloneAsNew">
-          Clonar Incidente
+          Clonar Chamado
         </v-btn>
         <v-btn v-if="canManage" color="primary" :loading="saving" @click="onSubmit">
           Salvar
@@ -423,16 +461,43 @@ init()
         <v-card variant="outlined" class="pa-2 bg-surface d-flex flex-column" style="min-height: 500px">
           <v-card-text class="flex-grow-1 overflow-y-auto" style="min-height: 0">
             <v-form @submit.prevent="onSubmit">
+              <v-select
+                v-model="tipo"
+                :items="tipoOptions"
+                label="Tipo"
+                required
+                :disabled="!canEditRestrictedFields"
+                :hint="restrictedFieldHint"
+                persistent-hint
+                class="mb-2"
+              />
+
               <v-autocomplete
-                v-model="customerId"
-                :items="customerOptions"
-                :item-title="customerLabel"
+                v-model="clientId"
+                :items="clientOptions"
+                item-title="name"
                 item-value="id"
-                label="Cliente"
-                no-data-text="Nenhum cliente encontrado"
+                label="Empresa"
+                no-data-text="Nenhuma empresa encontrada"
                 clearable
                 required
                 :disabled="!canEditRestrictedFields"
+                :hint="restrictedFieldHint"
+                persistent-hint
+                class="mb-2"
+                @update:model-value="onClientChange"
+              />
+
+              <v-autocomplete
+                v-model="customerId"
+                :items="filteredCustomerOptions"
+                :item-title="customerLabel"
+                item-value="id"
+                label="Solicitante"
+                :no-data-text="clientId ? 'Nenhum solicitante nesta empresa' : 'Selecione a empresa primeiro'"
+                clearable
+                required
+                :disabled="!canEditRestrictedFields || !clientId"
                 :hint="restrictedFieldHint"
                 persistent-hint
                 class="mb-2"

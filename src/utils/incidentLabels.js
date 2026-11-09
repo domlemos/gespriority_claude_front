@@ -39,6 +39,16 @@ export const ORIGEM_LABELS = {
   monitoramento: 'Monitoramento',
 }
 
+export const TIPO_LABELS = {
+  incidente: 'Incidente',
+  solicitacao: 'Solicitação',
+}
+
+export const TIPO_COLORS = {
+  incidente: 'error',
+  solicitacao: 'info',
+}
+
 export const SLA_STATUS_LABELS = {
   dentro_prazo: 'Dentro do prazo',
   estourado: 'Fora do Prazo',
