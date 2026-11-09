@@ -30,6 +30,12 @@ function formatDateTime(iso) {
   return new Date(iso).toLocaleString('pt-BR')
 }
 
+// Autor é staff (`user`) ou, na descrição de abertura feita pelo portal, o
+// próprio cliente (`customer`) — exatamente um dos dois vem preenchido.
+function authorName(entry) {
+  return entry.user?.name ?? (entry.customer ? `${entry.customer.name} (cliente)` : '')
+}
+
 function isOwnComment(entry) {
   return entry.tipo === 'comentario' && entry.user?.id === auth.user?.id
 }
@@ -177,18 +183,18 @@ defineExpose({ reload: loadFeed })
             novo duplicava a data no chip.
           -->
           <v-chip size="small" variant="tonal" color="default" :prepend-icon="systemLogIcon(entry)">
-            {{ entry.user?.name }}: {{ entry.descricao }}
+            {{ authorName(entry) }}: {{ entry.descricao }}
           </v-chip>
         </div>
 
         <div v-else class="d-flex mb-4">
           <v-avatar color="primary" size="36" class="mr-3">
-            <span class="text-caption font-weight-bold">{{ initials(entry.user?.name) }}</span>
+            <span class="text-caption font-weight-bold">{{ initials(entry.user?.name ?? entry.customer?.name) }}</span>
           </v-avatar>
 
           <div class="flex-grow-1">
             <div class="d-flex align-center">
-              <span class="font-weight-bold text-body-2 mr-2">{{ entry.user?.name }}</span>
+              <span class="font-weight-bold text-body-2 mr-2">{{ authorName(entry) }}</span>
               <span class="text-caption text-medium-emphasis">{{ formatDateTime(entry.created_at) }}</span>
 
               <v-spacer />

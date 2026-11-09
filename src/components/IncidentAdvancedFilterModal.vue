@@ -25,6 +25,7 @@ const status = ref(null)
 const prioridade = ref(null)
 const origem = ref(null)
 const tipo = ref(null)
+const semClassificacao = ref(false)
 const customerId = ref(null)
 const categoriaId = ref(null)
 const subcategoriaId = ref(null)
@@ -64,6 +65,7 @@ function resetDraft() {
   prioridade.value = props.filters.prioridade ?? null
   origem.value = props.filters.origem ?? null
   tipo.value = props.filters.tipo ?? null
+  semClassificacao.value = Boolean(props.filters.sem_classificacao)
   customerId.value = props.filters.customer_id ?? null
   grupoSolucaoId.value = props.filters.grupo_solucao_id ?? null
   responsavelId.value = props.filters.responsavel_id ?? null
@@ -88,6 +90,7 @@ function clearDraft() {
   prioridade.value = null
   origem.value = null
   tipo.value = null
+  semClassificacao.value = false
   customerId.value = null
   categoriaId.value = null
   subcategoriaId.value = null
@@ -107,6 +110,9 @@ function draftFilters() {
     prioridade: prioridade.value,
     origem: origem.value,
     tipo: tipo.value,
+    // Só envia quando marcado — `null` some no compactFilters(). `1`, não
+    // `true`: na query string vira "true", que a regra `boolean` do Laravel recusa.
+    sem_classificacao: semClassificacao.value ? 1 : null,
     customer_id: customerId.value,
     item_id: itemId.value,
     grupo_solucao_id: grupoSolucaoId.value,
@@ -159,6 +165,15 @@ function showAll() {
 
           <v-col cols="12" sm="6">
             <v-select v-model="tipo" :items="tipoOptions" label="Tipo" clearable density="compact" />
+          </v-col>
+
+          <v-col cols="12" sm="6">
+            <v-checkbox
+              v-model="semClassificacao"
+              label="Sem classificação (triagem)"
+              density="compact"
+              hide-details
+            />
           </v-col>
 
           <v-col cols="12">

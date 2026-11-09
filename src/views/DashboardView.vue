@@ -295,7 +295,9 @@ loadFilterOptions()
       </template>
 
       <template #item.prioridade="{ item }">
-        <v-chip size="small" :color="PRIORIDADE_COLORS[item.prioridade]" variant="tonal">
+        <!-- Chamado aberto pelo portal chega sem prioridade até o staff classificar. -->
+        <v-chip v-if="!item.prioridade" size="small" variant="outlined">Não classificado</v-chip>
+        <v-chip v-else size="small" :color="PRIORIDADE_COLORS[item.prioridade]" variant="tonal">
           {{ PRIORIDADE_LABELS[item.prioridade] ?? item.prioridade }}
         </v-chip>
       </template>
