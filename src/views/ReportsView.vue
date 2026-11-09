@@ -223,6 +223,8 @@ async function onGenerate() {
 
 const chartComponent = computed(() => {
   if (chartType.value === 'pizza') return Pie
+  // Inalcançável hoje: 'linha' saiu de CHART_TYPE_OPTIONS (categorias não têm ordem temporal).
+  // Mantido de propósito para a fase 2 (eixo temporal).
   if (chartType.value === 'linha') return Line
   return Bar
 })
