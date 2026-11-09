@@ -45,7 +45,7 @@ export const TIPO_LABELS = {
 }
 
 export const TIPO_COLORS = {
-  incidente: 'error',
+  incidente: 'default',
   solicitacao: 'info',
 }
 
