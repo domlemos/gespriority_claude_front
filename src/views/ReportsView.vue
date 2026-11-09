@@ -26,6 +26,7 @@ const AGRUPAMENTO_OPTIONS = [
   { value: 'status_sla', title: 'Status de SLA' },
   { value: 'responsavel', title: 'Responsável' },
   { value: 'aberto_por', title: 'Aberto por' },
+  { value: 'concluido_por', title: 'Concluído por (resolvido ou fechado)' },
   { value: 'resolvido_por', title: 'Resolvido por' },
   { value: 'fechado_por', title: 'Fechado por' },
   { value: 'encaminhado_por', title: 'Encaminhado por' },
@@ -36,13 +37,22 @@ const AGRUPAMENTO_OPTIONS = [
   { value: 'subcategoria', title: 'Subcategoria' },
   { value: 'item', title: 'Item' },
 ]
+// Agrupamentos baseados em eventos: a data do período é a da ação. Os demais
+// são baseados no Incidente e usam a data de conclusão do chamado.
+const AGRUPAMENTOS_POR_EVENTO = new Set([
+  'concluido_por',
+  'resolvido_por',
+  'fechado_por',
+  'encaminhado_por',
+  'encaminhado_para_grupo',
+  'encaminhado_para_responsavel',
+])
 const AGRUPAMENTO_LABELS = Object.fromEntries(AGRUPAMENTO_OPTIONS.map((o) => [o.value, o.title]))
 
 const CHART_TYPE_OPTIONS = [
   { value: 'colunas', title: 'Colunas' },
   { value: 'barras', title: 'Barras' },
   { value: 'pizza', title: 'Pizza' },
-  { value: 'linha', title: 'Linha' },
 ]
 
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
@@ -62,7 +72,15 @@ const categoriaId = ref(null)
 const subcategoriaId = ref(null)
 const itemId = ref(null)
 const grupoSolucaoId = ref(null)
+const grupoAnalistaId = ref(null)
 const responsavelId = ref(null)
+
+// Dica dos campos de data: muda conforme o fato que o agrupamento conta.
+const dataHint = computed(() =>
+  AGRUPAMENTOS_POR_EVENTO.has(agruparPor.value)
+    ? 'Data da ação (resolução/fechamento/encaminhamento)'
+    : 'Data da conclusão do chamado',
+)
 
 // --- saída ---
 const outputType = ref('grafico') // 'grafico' | 'planilha'
@@ -159,6 +177,7 @@ function buildFiltros() {
   if (subcategoriaId.value) filtros.subcategoria_id = subcategoriaId.value
   if (itemId.value) filtros.item_id = itemId.value
   if (grupoSolucaoId.value) filtros.grupo_solucao_id = grupoSolucaoId.value
+  if (grupoAnalistaId.value) filtros.grupo_analista_id = grupoAnalistaId.value
   if (responsavelId.value) filtros.responsavel_id = responsavelId.value
   return filtros
 }
@@ -347,6 +366,7 @@ function loadSavedIntoFilters(report) {
   customerId.value = f.customer_id ?? null
   itemId.value = f.item_id ?? null
   grupoSolucaoId.value = f.grupo_solucao_id ?? null
+  grupoAnalistaId.value = f.grupo_analista_id ?? null
   responsavelId.value = f.responsavel_id ?? null
 
   // subcategoria/categoria são resolvidas a partir do item quando ele veio
@@ -420,10 +440,10 @@ async function confirmDeleteSaved() {
                 <v-select v-model="tipo" :items="tipoOptions" label="Tipo" clearable density="compact" />
               </v-col>
               <v-col cols="6">
-                <v-text-field v-model="dataInicio" type="date" label="Data início" density="compact" clearable />
+                <v-text-field v-model="dataInicio" type="date" label="Data início" density="compact" clearable :hint="dataHint" persistent-hint />
               </v-col>
               <v-col cols="6">
-                <v-text-field v-model="dataFim" type="date" label="Data fim" density="compact" clearable />
+                <v-text-field v-model="dataFim" type="date" label="Data fim" density="compact" clearable :hint="dataHint" persistent-hint />
               </v-col>
             </v-row>
 
@@ -501,12 +521,23 @@ async function confirmDeleteSaved() {
                   :items="solutionGroupOptions"
                   item-title="nome"
                   item-value="id"
-                  label="Grupo de Solução"
+                  label="Grupo do chamado"
                   clearable
                   density="compact"
                 />
               </v-col>
               <v-col cols="6">
+                <v-select
+                  v-model="grupoAnalistaId"
+                  :items="solutionGroupOptions"
+                  item-title="nome"
+                  item-value="id"
+                  label="Grupo do analista"
+                  clearable
+                  density="compact"
+                />
+              </v-col>
+              <v-col cols="12">
                 <v-select
                   v-model="responsavelId"
                   :items="userOptions"
