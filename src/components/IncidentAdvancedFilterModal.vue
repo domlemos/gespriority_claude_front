@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { PRIORIDADE_LABELS, STATUS_LABELS, ORIGEM_LABELS } from '@/utils/incidentLabels'
+import { PRIORIDADE_LABELS, STATUS_LABELS, ORIGEM_LABELS, TIPO_LABELS } from '@/utils/incidentLabels'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -18,11 +18,13 @@ const emit = defineEmits(['update:modelValue', 'apply', 'save', 'show-all'])
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
 const priorityOptions = Object.entries(PRIORIDADE_LABELS).map(([value, title]) => ({ value, title }))
 const originOptions = Object.entries(ORIGEM_LABELS).map(([value, title]) => ({ value, title }))
+const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value, title }))
 
 const numero = ref(null)
 const status = ref(null)
 const prioridade = ref(null)
 const origem = ref(null)
+const tipo = ref(null)
 const customerId = ref(null)
 const categoriaId = ref(null)
 const subcategoriaId = ref(null)
@@ -61,6 +63,7 @@ function resetDraft() {
   status.value = props.filters.status ?? null
   prioridade.value = props.filters.prioridade ?? null
   origem.value = props.filters.origem ?? null
+  tipo.value = props.filters.tipo ?? null
   customerId.value = props.filters.customer_id ?? null
   grupoSolucaoId.value = props.filters.grupo_solucao_id ?? null
   responsavelId.value = props.filters.responsavel_id ?? null
@@ -84,6 +87,7 @@ function clearDraft() {
   status.value = null
   prioridade.value = null
   origem.value = null
+  tipo.value = null
   customerId.value = null
   categoriaId.value = null
   subcategoriaId.value = null
@@ -102,6 +106,7 @@ function draftFilters() {
     status: status.value,
     prioridade: prioridade.value,
     origem: origem.value,
+    tipo: tipo.value,
     customer_id: customerId.value,
     item_id: itemId.value,
     grupo_solucao_id: grupoSolucaoId.value,
@@ -150,6 +155,10 @@ function showAll() {
 
           <v-col cols="12" sm="6">
             <v-select v-model="origem" :items="originOptions" label="Origem" clearable density="compact" />
+          </v-col>
+
+          <v-col cols="12" sm="6">
+            <v-select v-model="tipo" :items="tipoOptions" label="Tipo" clearable density="compact" />
           </v-col>
 
           <v-col cols="12">

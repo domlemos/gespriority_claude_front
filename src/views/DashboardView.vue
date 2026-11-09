@@ -18,6 +18,8 @@ import {
   PRIORIDADE_COLORS,
   STATUS_LABELS,
   STATUS_COLORS,
+  TIPO_LABELS,
+  TIPO_COLORS,
   SLA_STATUS_LABELS,
   SLA_STATUS_COLORS,
   formatRemainingMinutes,
@@ -28,6 +30,7 @@ const router = useRouter()
 
 const headers = [
   { title: 'Número', key: 'numero', sortable: true },
+  { title: 'Tipo', key: 'tipo', sortable: false },
   { title: 'Título', key: 'titulo', sortable: true },
   { title: 'Cliente', key: 'cliente', sortable: true },
   { title: 'Classificação', key: 'classificacao', sortable: false },
@@ -245,7 +248,7 @@ loadFilterOptions()
           Filtro Avançado
         </v-btn>
         <v-btn v-if="auth.hasPermission('tickets.manage')" color="primary" prepend-icon="mdi-plus" @click="openCreate">
-          Novo Incidente
+          Novo Chamado
         </v-btn>
       </div>
     </div>
@@ -294,6 +297,12 @@ loadFilterOptions()
       <template #item.prioridade="{ item }">
         <v-chip size="small" :color="PRIORIDADE_COLORS[item.prioridade]" variant="tonal">
           {{ PRIORIDADE_LABELS[item.prioridade] ?? item.prioridade }}
+        </v-chip>
+      </template>
+
+      <template #item.tipo="{ item }">
+        <v-chip size="small" :color="TIPO_COLORS[item.tipo]" variant="tonal">
+          {{ TIPO_LABELS[item.tipo] ?? item.tipo }}
         </v-chip>
       </template>
 

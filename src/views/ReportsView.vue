@@ -15,7 +15,7 @@ import solutionGroupService from '@/services/solutionGroupService'
 import userService from '@/services/userService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
-import { STATUS_LABELS } from '@/utils/incidentLabels'
+import { STATUS_LABELS, TIPO_LABELS } from '@/utils/incidentLabels'
 
 ChartJS.register(...registerables, ChartDataLabels)
 
@@ -46,12 +46,14 @@ const CHART_TYPE_OPTIONS = [
 ]
 
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
+const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value, title }))
 
 const PALETTE = ['#FF8C1A', '#7922B9', '#2563EB', '#166534', '#F59E0B', '#E53935', '#FFA64D', '#C371FF']
 
 // --- filtros ---
 const agruparPor = ref(null)
 const status = ref(null)
+const tipo = ref(null)
 const dataInicio = ref(null)
 const dataFim = ref(null)
 const clientId = ref(null)
@@ -148,6 +150,7 @@ onMounted(() => {
 function buildFiltros() {
   const filtros = {}
   if (status.value) filtros.status = status.value
+  if (tipo.value) filtros.tipo = tipo.value
   if (dataInicio.value) filtros.data_inicio = dataInicio.value
   if (dataFim.value) filtros.data_fim = dataFim.value
   if (clientId.value) filtros.client_id = clientId.value
@@ -337,6 +340,7 @@ function loadSavedIntoFilters(report) {
   const f = report.filtros || {}
 
   status.value = f.status ?? null
+  tipo.value = f.tipo ?? null
   dataInicio.value = f.data_inicio ?? null
   dataFim.value = f.data_fim ?? null
   clientId.value = f.client_id ?? null
@@ -409,8 +413,11 @@ async function confirmDeleteSaved() {
             />
 
             <v-row dense class="mb-2">
-              <v-col cols="12">
+              <v-col cols="6">
                 <v-select v-model="status" :items="statusOptions" label="Status" clearable density="compact" />
+              </v-col>
+              <v-col cols="6">
+                <v-select v-model="tipo" :items="tipoOptions" label="Tipo" clearable density="compact" />
               </v-col>
               <v-col cols="6">
                 <v-text-field v-model="dataInicio" type="date" label="Data início" density="compact" clearable />
