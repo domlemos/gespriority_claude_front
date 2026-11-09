@@ -83,6 +83,12 @@ const routes = [
     component: () => import('@/views/PortalView.vue'),
     meta: { requiresAuth: true, guard: 'customer' },
   },
+  {
+    path: '/portal/incidentes/novo',
+    name: 'portal-incident-new',
+    component: () => import('@/views/PortalIncidentNewView.vue'),
+    meta: { requiresAuth: true, guard: 'customer' },
+  },
 
   // --- Administração (só role "admin", guard "web") ---
   {

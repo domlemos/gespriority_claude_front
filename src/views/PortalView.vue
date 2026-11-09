@@ -1,50 +1,107 @@
 <script setup>
-import { computed } from 'vue'
+import { ref } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
+import portalIncidentService from '@/services/portalIncidentService'
 import { useAuthStore } from '@/stores/auth'
+import { extractErrorMessage } from '@/utils/errors'
+import { STATUS_LABELS, STATUS_COLORS } from '@/utils/incidentLabels'
 
 const auth = useAuthStore()
 
-const expiresAtLabel = computed(() => {
-  if (!auth.expiresAt) return '—'
-  return new Date(auth.expiresAt).toLocaleString('pt-BR')
-})
+// Backend pagina fixo em 15 — sem seletor de itens por página.
+const ITEMS_PER_PAGE = 15
+
+const headers = [
+  { title: 'Número', key: 'id', sortable: false },
+  { title: 'Título', key: 'titulo', sortable: false },
+  { title: 'Status', key: 'status', sortable: false },
+  { title: 'Aberto em', key: 'created_at', sortable: false },
+  { title: 'Atualizado em', key: 'updated_at', sortable: false },
+]
+
+const items = ref([])
+const totalItems = ref(0)
+const loading = ref(false)
+const errorMessage = ref('')
+const createdMessage = ref('')
+
+function formatDateTime(iso) {
+  return iso ? new Date(iso).toLocaleString('pt-BR') : '—'
+}
+
+async function loadIncidents({ page }) {
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const { data, meta } = await portalIncidentService.list({ page })
+    items.value = data
+    totalItems.value = meta.total
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar seus chamados.')
+  } finally {
+    loading.value = false
+  }
+}
+
+// O número do incidente recém-aberto viaja no history state do redirect da
+// tela de abertura; sai do state logo em seguida pra não reaparecer num F5.
+function showCreatedFromState() {
+  const criado = window.history.state?.criado
+  if (!criado) return
+
+  createdMessage.value = `Incidente #${criado} aberto. Nossa equipe vai analisar e classificar o chamado.`
+  window.history.replaceState({ ...window.history.state, criado: undefined }, '')
+}
+
+showCreatedFromState()
 </script>
 
 <template>
   <AppLayout>
-    <h1 class="text-h5 font-weight-bold mb-1">Olá, {{ auth.user?.name }} 👋</h1>
-    <p class="text-body-2 text-medium-emphasis mb-8">
-      Bem-vindo ao portal do cliente.
-    </p>
+    <div class="d-flex align-center justify-space-between mb-6">
+      <div>
+        <h1 class="text-h5 font-weight-bold mb-1">Olá, {{ auth.user?.name }} 👋</h1>
+        <p class="text-body-2 text-medium-emphasis ma-0">Acompanhe aqui os seus chamados.</p>
+      </div>
 
-    <v-row>
-      <v-col cols="12" md="6">
-        <v-card variant="outlined" class="pa-2">
-          <v-card-title class="text-subtitle-1 font-weight-bold">Sua conta</v-card-title>
-          <v-card-text>
-            <div class="mb-3">
-              <div class="text-caption text-medium-emphasis">E-mail</div>
-              <div>{{ auth.user?.email }}</div>
-            </div>
-            <div>
-              <div class="text-caption text-medium-emphasis">Sessão expira em</div>
-              <div>{{ expiresAtLabel }}</div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
+      <v-btn color="primary" prepend-icon="mdi-plus" :to="{ name: 'portal-incident-new' }">
+        Abrir incidente
+      </v-btn>
+    </div>
 
-      <v-col cols="12" md="6">
-        <v-card variant="outlined" class="pa-2">
-          <v-card-title class="text-subtitle-1 font-weight-bold">Seus chamados</v-card-title>
-          <v-card-text class="text-body-2 text-medium-emphasis">
-            O módulo de abertura e acompanhamento de chamados ainda não foi
-            implementado no backend — esta tela existe só para validar o fluxo
-            de login do portal do cliente.
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+    <v-alert v-if="createdMessage" type="success" variant="tonal" density="comfortable" closable class="mb-4">
+      {{ createdMessage }}
+    </v-alert>
+
+    <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
+      {{ errorMessage }}
+    </v-alert>
+
+    <v-card variant="outlined">
+      <v-card-title class="text-subtitle-1 font-weight-bold">Meus chamados</v-card-title>
+
+      <v-data-table-server
+        :headers="headers"
+        :items="items"
+        :items-length="totalItems"
+        :items-per-page="ITEMS_PER_PAGE"
+        :items-per-page-options="[ITEMS_PER_PAGE]"
+        :loading="loading"
+        no-data-text="Você ainda não tem chamados."
+        @update:options="loadIncidents"
+      >
+        <template #item.id="{ item }">#{{ item.id }}</template>
+
+        <template #item.status="{ item }">
+          <v-chip size="small" :color="STATUS_COLORS[item.status]" variant="tonal">
+            {{ STATUS_LABELS[item.status] ?? item.status }}
+          </v-chip>
+        </template>
+
+        <template #item.created_at="{ item }">{{ formatDateTime(item.created_at) }}</template>
+        <template #item.updated_at="{ item }">{{ formatDateTime(item.updated_at) }}</template>
+      </v-data-table-server>
+    </v-card>
   </AppLayout>
 </template>
