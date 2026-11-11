@@ -25,6 +25,12 @@ const menuGroups = [
       { title: 'Itens', icon: 'mdi-tag-outline', to: { name: 'admin-items' } },
     ],
   },
+  {
+    title: 'Auditoria',
+    items: [
+      { title: 'Logs de ações', icon: 'mdi-history', to: { name: 'admin-audit-logs' } },
+    ],
+  },
 ]
 </script>
 
