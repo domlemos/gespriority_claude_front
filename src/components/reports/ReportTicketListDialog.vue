@@ -145,7 +145,7 @@ function fechar() {
               <th>Status</th>
               <th>Data</th>
               <th>{{ autorLabel }}</th>
-              <th>Grupo do chamado</th>
+              <th>Grupo de Solução</th>
               <th v-if="comDestino">Destino</th>
             </tr>
           </thead>

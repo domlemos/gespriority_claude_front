@@ -5,7 +5,7 @@ import api from '@/services/api'
 export const AGRUPAMENTO_LABELS = {
   analista: 'Analista',
   grupo_analista: 'Grupo do analista',
-  grupo_chamado: 'Grupo do chamado',
+  grupo_chamado: 'Grupo de Solução',
   categoria: 'Categoria',
   subcategoria: 'Subcategoria',
   item: 'Item',

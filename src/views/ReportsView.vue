@@ -824,7 +824,7 @@ async function confirmDeleteSaved() {
                   :items="solutionGroupOptions"
                   item-title="nome"
                   item-value="id"
-                  label="Grupo do chamado"
+                  label="Grupo de Solução"
                   clearable
                   density="compact"
                 />
