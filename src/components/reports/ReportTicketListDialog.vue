@@ -59,7 +59,12 @@ watch(
   () => {
     if (!props.modelValue) return
     dados.value = null
-    page.value = 1
+    // Voltar à página 1 já dispara a carga pelo watch de `page`; só carrega
+    // aqui quando a página não muda, para não duplicar a requisição.
+    if (page.value !== 1) {
+      page.value = 1
+      return
+    }
     carregar()
   },
 )

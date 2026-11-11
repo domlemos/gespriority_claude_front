@@ -336,6 +336,17 @@ async function downloadPlanilha() {
 }
 
 // --- lista de chamados por linha/célula ---
+// O atalho de período é resolvido pelo backend a cada requisição; se o dia (ou
+// o mês) virar depois de gerar, a lista divergiria da célula clicada e a
+// coluna poderia sair do intervalo. Por isso a lista recebe as datas já
+// resolvidas que o próprio resultado devolveu.
+const paramsLista = computed(() => {
+  if (!resultadoParams.value || !resultado.value) return null
+  const { periodo: _atalho, data_inicio: _ini, data_fim: _fim, ...demais } = resultadoParams.value
+  const periodo = resultado.value.periodo
+  return periodo ? { ...demais, data_inicio: periodo.inicio, data_fim: periodo.fim } : demais
+})
+
 const listaAberta = ref(false)
 const listaChave = ref(null)
 const listaColuna = ref(null)
@@ -559,7 +570,6 @@ function loadSavedIntoFilters(report) {
   subcategoriaId.value = item?.subcategoria_id ?? f.subcategoria_id ?? null
   const subcategoria = subcategoryOptions.value.find((s) => s.id === subcategoriaId.value)
   categoriaId.value = subcategoria?.categoria_id ?? f.categoria_id ?? null
-
 }
 
 // A resposta legada vira o formato novo sem quebra (uma coluna "Total"), para
@@ -939,7 +949,7 @@ async function confirmDeleteSaved() {
 
     <ReportTicketListDialog
       v-model="listaAberta"
-      :params="resultadoParams"
+      :params="paramsLista"
       :chave="listaChave"
       :coluna="listaColuna"
     />
