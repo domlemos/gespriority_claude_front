@@ -9,4 +9,12 @@ export default {
   create(payload) {
     return api.post('/customer/incidentes', payload).then((res) => res.data.data)
   },
+  // Detalhe com `descricoes`: só a abertura, os comentários do próprio
+  // cliente e a mensagem de encerramento — o resto do feed é interno.
+  get(id) {
+    return api.get(`/customer/incidentes/${id}`).then((res) => res.data.data)
+  },
+  comment(id, descricao) {
+    return api.post(`/customer/incidentes/${id}/comentarios`, { descricao }).then((res) => res.data.data)
+  },
 }

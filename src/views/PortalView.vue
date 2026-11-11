@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import portalIncidentService from '@/services/portalIncidentService'
 import { useAuthStore } from '@/stores/auth'
@@ -7,6 +8,7 @@ import { extractErrorMessage } from '@/utils/errors'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/incidentLabels'
 
 const auth = useAuthStore()
+const router = useRouter()
 
 // Backend pagina fixo em 15 — sem seletor de itens por página.
 const ITEMS_PER_PAGE = 15
@@ -25,6 +27,23 @@ const loading = ref(false)
 const errorMessage = ref('')
 const createdMessage = ref('')
 
+const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
+const busca = ref('')
+const status = ref(null)
+// Só aplica a busca depois de uma pausa na digitação, pra não disparar uma
+// requisição a cada tecla.
+const buscaAplicada = ref('')
+let buscaTimer = null
+watch(busca, (valor) => {
+  clearTimeout(buscaTimer)
+  buscaTimer = setTimeout(() => {
+    buscaAplicada.value = (valor ?? '').trim()
+  }, 400)
+})
+// `search` do v-data-table-server: quando muda, a tabela volta pra página 1
+// e emite `update:options` de novo, que recarrega com os filtros atuais.
+const filtrosChave = computed(() => JSON.stringify([buscaAplicada.value, status.value]))
+
 function formatDateTime(iso) {
   return iso ? new Date(iso).toLocaleString('pt-BR') : '—'
 }
@@ -34,7 +53,10 @@ async function loadIncidents({ page }) {
   errorMessage.value = ''
 
   try {
-    const { data, meta } = await portalIncidentService.list({ page })
+    const params = { page }
+    if (buscaAplicada.value) params.busca = buscaAplicada.value
+    if (status.value) params.status = status.value
+    const { data, meta } = await portalIncidentService.list(params)
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
@@ -52,6 +74,10 @@ function showCreatedFromState() {
 
   createdMessage.value = `Incidente #${criado} aberto. Nossa equipe vai analisar e classificar o chamado.`
   window.history.replaceState({ ...window.history.state, criado: undefined }, '')
+}
+
+function onRowClick(event, { item }) {
+  router.push({ name: 'portal-incident', params: { id: item.id } })
 }
 
 showCreatedFromState()
@@ -81,6 +107,29 @@ showCreatedFromState()
     <v-card variant="outlined">
       <v-card-title class="text-subtitle-1 font-weight-bold">Meus chamados</v-card-title>
 
+      <v-row dense class="px-4">
+        <v-col cols="12" sm="8">
+          <v-text-field
+            v-model="busca"
+            label="Buscar por número ou título"
+            prepend-inner-icon="mdi-magnify"
+            clearable
+            density="comfortable"
+            hide-details
+          />
+        </v-col>
+        <v-col cols="12" sm="4">
+          <v-select
+            v-model="status"
+            :items="statusOptions"
+            label="Status"
+            clearable
+            density="comfortable"
+            hide-details
+          />
+        </v-col>
+      </v-row>
+
       <v-data-table-server
         :headers="headers"
         :items="items"
@@ -88,8 +137,12 @@ showCreatedFromState()
         :items-per-page="ITEMS_PER_PAGE"
         :items-per-page-options="[ITEMS_PER_PAGE]"
         :loading="loading"
-        no-data-text="Você ainda não tem chamados."
+        :search="filtrosChave"
+        :no-data-text="buscaAplicada || status ? 'Nenhum chamado encontrado com esses filtros.' : 'Você ainda não tem chamados.'"
+        hover
+        class="portal-table"
         @update:options="loadIncidents"
+        @click:row="onRowClick"
       >
         <template #item.id="{ item }">#{{ item.id }}</template>
 
@@ -105,3 +158,9 @@ showCreatedFromState()
     </v-card>
   </AppLayout>
 </template>
+
+<style scoped>
+.portal-table :deep(tbody tr) {
+  cursor: pointer;
+}
+</style>

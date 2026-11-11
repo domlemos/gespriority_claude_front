@@ -196,6 +196,17 @@ defineExpose({ reload: loadFeed })
             <div class="d-flex align-center">
               <span class="font-weight-bold text-body-2 mr-2">{{ authorName(entry) }}</span>
               <span class="text-caption text-medium-emphasis">{{ formatDateTime(entry.created_at) }}</span>
+              <!-- Única entrada do staff que o cliente vê no portal. -->
+              <v-chip
+                v-if="entry.tipo === 'encerramento'"
+                size="x-small"
+                variant="tonal"
+                color="success"
+                prepend-icon="mdi-eye-outline"
+                class="ml-2"
+              >
+                Encerramento · visível ao cliente
+              </v-chip>
 
               <v-spacer />
 

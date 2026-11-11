@@ -42,6 +42,11 @@ const saving = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const successSnackbar = ref(false)
+// Status como está gravado — fechar (mudar pra 'fechado') exige a mensagem
+// de encerramento, a única entrada do staff que o cliente vê no portal.
+const statusGravado = ref(null)
+const encerramentoOpen = ref(false)
+const mensagemEncerramento = ref('')
 const feedRef = ref(null)
 const createModalOpen = ref(false)
 // Valores do chamado atual pré-preenchidos na modal ao clonar; null = novo.
@@ -218,6 +223,7 @@ async function loadIncident() {
   prioridade.value = incident.prioridade
   origem.value = incident.origem
   status.value = incident.status
+  statusGravado.value = incident.status
   grupoSolucaoId.value = incident.grupo_solucao_id ?? incident.grupo_solucao?.id ?? null
   responsavelId.value = incident.responsavel_id ?? incident.responsavel?.id ?? null
 
@@ -286,13 +292,33 @@ function buildBasePayload() {
   }
 }
 
-async function onSubmit() {
+function onSubmit() {
+  if (status.value === 'fechado' && statusGravado.value !== 'fechado') {
+    mensagemEncerramento.value = ''
+    encerramentoOpen.value = true
+    return
+  }
+
+  salvar()
+}
+
+async function confirmarEncerramento() {
+  encerramentoOpen.value = false
+  await salvar(mensagemEncerramento.value.trim())
+}
+
+async function salvar(mensagem = null) {
   saving.value = true
   errorMessage.value = ''
   successMessage.value = ''
 
   try {
-    await incidentService.update(props.id, { ...buildBasePayload(), status: status.value })
+    await incidentService.update(props.id, {
+      ...buildBasePayload(),
+      status: status.value,
+      ...(mensagem ? { mensagem_encerramento: mensagem } : {}),
+    })
+    statusGravado.value = status.value
     successMessage.value = 'Chamado atualizado com sucesso.'
     successSnackbar.value = true
     feedRef.value?.reload()
@@ -344,6 +370,34 @@ init()
     </div>
 
     <IncidentCreateModal v-model="createModalOpen" :initial="createInitial" />
+
+    <v-dialog v-model="encerramentoOpen" max-width="640">
+      <v-card>
+        <v-card-title class="text-subtitle-1 font-weight-bold">Fechar chamado</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-3">
+            Escreva a mensagem de encerramento. Ela fica visível para o cliente no portal — os demais
+            comentários continuam internos.
+          </p>
+          <v-textarea
+            v-model="mensagemEncerramento"
+            label="Mensagem de encerramento"
+            rows="5"
+            auto-grow
+            autofocus
+            counter="5000"
+            :maxlength="5000"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="encerramentoOpen = false">Cancelar</v-btn>
+          <v-btn color="primary" :disabled="!mensagemEncerramento.trim()" @click="confirmarEncerramento">
+            Fechar chamado
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
       {{ errorMessage }}

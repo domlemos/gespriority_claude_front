@@ -90,6 +90,13 @@ const routes = [
     component: () => import('@/views/PortalIncidentNewView.vue'),
     meta: { requiresAuth: true, guard: 'customer' },
   },
+  {
+    path: '/portal/incidentes/:id(\\d+)',
+    name: 'portal-incident',
+    component: () => import('@/views/PortalIncidentView.vue'),
+    props: true,
+    meta: { requiresAuth: true, guard: 'customer' },
+  },
 
   // --- Administração (só role "admin", guard "web") ---
   {
