@@ -453,6 +453,20 @@ const chartOptions = computed(() => {
       },
     },
     scales: isPizza ? undefined : { x: integerTicks, y: integerTicks },
+    // Clicar numa barra/fatia abre a mesma lista de chamados da tabela: sem
+    // quebra, a linha inteira; com quebra, a célula (linha × período do
+    // dataset clicado). Resultado legado é só leitura, como na tabela.
+    onClick: (event, elements) => {
+      if (resultadoLegado.value || !elements.length) return
+      const { index, datasetIndex } = elements[0]
+      const linha = resultado.value.linhas[index]
+      const coluna = quebrado ? resultado.value.colunas[datasetIndex].chave : null
+      const numero = coluna === null ? linha.total : (linha.celulas[coluna] ?? 0)
+      onAbrirChamados({ chave: linha.chave, coluna, numero })
+    },
+    onHover: (event, elements) => {
+      event.native.target.style.cursor = elements.length && !resultadoLegado.value ? 'pointer' : 'default'
+    },
   }
 })
 
