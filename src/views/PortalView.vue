@@ -32,21 +32,41 @@ const createdMessage = ref('')
 const page = ref(1)
 
 const createOpen = ref(false)
-const incidentOpen = ref(false)
-const incidentId = ref(null)
 
-// `?novo=1` / `?chamado=N` vêm do redirect das rotas antigas
-// (/portal/incidentes/novo e /portal/incidentes/N). Saem da URL logo em
-// seguida pra modal não reabrir num F5.
-if (route.query.novo === '1') createOpen.value = true
-if (/^\d+$/.test(route.query.chamado ?? '')) {
-  incidentId.value = Number(route.query.chamado)
-  incidentOpen.value = true
+// O chamado aberto vive na URL (`?chamado=N`): um F5 ou um link copiado
+// reabre a mesma modal, e o "voltar" do navegador a fecha. A modal só
+// reflete a query — abrir/fechar sempre passa pelo router.
+const incidentId = computed(() =>
+  /^\d+$/.test(route.query.chamado ?? '') ? Number(route.query.chamado) : null,
+)
+const incidentOpen = computed(() => incidentId.value !== null)
+// Se fomos nós que empurramos a entrada `?chamado=N` no histórico, fechar
+// volta uma entrada (o "voltar" do navegador fica coerente); se a página já
+// abriu com ela (F5, link), só remove a query.
+let chamadoEmpurrado = false
+
+function openIncident(id) {
+  chamadoEmpurrado = true
+  router.push({ query: { ...route.query, chamado: id } })
 }
-if (route.query.novo || route.query.chamado) {
+
+function closeIncident() {
+  if (chamadoEmpurrado) {
+    chamadoEmpurrado = false
+    router.back()
+    return
+  }
+  const query = { ...route.query }
+  delete query.chamado
+  router.replace({ query })
+}
+
+// `?novo=1` vem do redirect da rota antiga /portal/incidentes/novo — sai da
+// URL logo em seguida pra modal de abertura não reabrir num F5.
+if (route.query.novo === '1') {
+  createOpen.value = true
   const query = { ...route.query }
   delete query.novo
-  delete query.chamado
   router.replace({ query })
 }
 
@@ -96,8 +116,7 @@ function onCreated(id) {
 }
 
 function onRowClick(event, { item }) {
-  incidentId.value = item.id
-  incidentOpen.value = true
+  openIncident(item.id)
 }
 
 // Ao fechar a modal do chamado, recarrega a página atual — o status pode
@@ -121,7 +140,11 @@ watch(incidentOpen, (open) => {
     </div>
 
     <PortalIncidentCreateModal v-model="createOpen" @created="onCreated" />
-    <PortalIncidentModal v-model="incidentOpen" :incident-id="incidentId" />
+    <PortalIncidentModal
+      :model-value="incidentOpen"
+      :incident-id="incidentId"
+      @update:model-value="(open) => !open && closeIncident()"
+    />
 
     <v-alert v-if="createdMessage" type="success" variant="tonal" density="comfortable" closable class="mb-4">
       {{ createdMessage }}

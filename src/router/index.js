@@ -84,8 +84,8 @@ const routes = [
     component: () => import('@/views/PortalView.vue'),
     meta: { requiresAuth: true, guard: 'customer' },
   },
-  // Abrir e ver chamado são modais sobre a lista do portal; estas rotas só
-  // mantêm funcionando links antigos, abrindo a lista com a modal aberta.
+  // Abrir e ver chamado são modais sobre a lista do portal (o chamado aberto
+  // fica em `?chamado=N`); estas rotas só mantêm funcionando links antigos.
   {
     path: '/portal/incidentes/novo',
     name: 'portal-incident-new',
