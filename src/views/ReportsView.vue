@@ -72,6 +72,9 @@ const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value
 
 const PALETTE = ['#FF8C1A', '#7922B9', '#2563EB', '#166534', '#F59E0B', '#E53935', '#FFA64D', '#C371FF']
 
+// --- saída ---
+const chartType = ref('colunas')
+
 // --- filtros ---
 const contar = ref('abertos')
 const agruparPor = ref(null)
