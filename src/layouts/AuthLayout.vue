@@ -1,4 +1,6 @@
 <script setup>
+import foxy from '@/assets/foxy.webp'
+
 defineProps({
   title: { type: String, required: true },
   subtitle: { type: String, default: '' },
@@ -20,6 +22,7 @@ defineProps({
           Um único lugar para sua equipe atender, priorizar e resolver — e para seus
           clientes acompanharem cada chamado do início ao fim.
         </p>
+        <img :src="foxy" alt="Mascote raposa da Uplexis atendendo chamados com headset" class="auth-layout__mascote" />
       </div>
     </div>
 
@@ -76,6 +79,22 @@ defineProps({
   gap: 12px;
   font-size: 1.5rem;
   font-weight: 700;
+}
+
+.auth-layout__mascote {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  /* Não deixa a imagem empurrar o texto pra fora da tela em monitores
+     baixos; o recorte fica no rodapé da foto, que já some no degradê. */
+  max-height: 44vh;
+  object-fit: cover;
+  object-position: top;
+  margin-top: 32px;
+  border-radius: 20px;
+  /* Degradê leve: a foto se dissolve no fundo do painel na parte de baixo. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 }
 
 .auth-layout__form {
