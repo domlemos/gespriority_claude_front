@@ -25,7 +25,8 @@ function formatPercentual(valor) {
 }
 
 function abrir(linha, coluna) {
-  emit('abrir-chamados', { chave: linha.chave, coluna })
+  const numero = coluna === null ? linha.total : (linha.celulas[coluna] ?? 0)
+  emit('abrir-chamados', { chave: linha.chave, coluna, numero })
 }
 </script>
 

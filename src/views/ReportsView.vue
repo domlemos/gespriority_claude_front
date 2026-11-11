@@ -350,13 +350,15 @@ const paramsLista = computed(() => {
 const listaAberta = ref(false)
 const listaChave = ref(null)
 const listaColuna = ref(null)
+const listaNumero = ref(null)
 
 // A lista usa os parâmetros que produziram o resultado na tela (não os
 // filtros atuais do painel), para o total da lista bater com o da célula.
-function onAbrirChamados({ chave, coluna }) {
+function onAbrirChamados({ chave, coluna, numero }) {
   if (!resultadoParams.value) return
   listaChave.value = chave
   listaColuna.value = coluna
+  listaNumero.value = numero ?? null
   listaAberta.value = true
 }
 
@@ -952,6 +954,7 @@ async function confirmDeleteSaved() {
       :params="paramsLista"
       :chave="listaChave"
       :coluna="listaColuna"
+      :numero-clicado="listaNumero"
     />
 
     <ConfirmDeleteDialog

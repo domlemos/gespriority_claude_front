@@ -11,6 +11,8 @@ const props = defineProps({
   chave: { type: [String, Number], default: null },
   // Chave da coluna de período; null = todos os períodos da linha.
   coluna: { type: String, default: null },
+  // Número que o usuário clicou na tabela (total da linha ou célula); null se desconhecido.
+  numeroClicado: { type: Number, default: null },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -21,6 +23,11 @@ const downloading = ref(false)
 const errorMessage = ref('')
 const dados = ref(null)
 const page = ref(1)
+
+// Um chamado concluído em dois períodos conta em cada célula mas aparece uma vez na lista.
+const listaMenorQueNumero = computed(
+  () => !!dados.value && props.numeroClicado !== null && props.numeroClicado !== meta.value.total,
+)
 
 const itens = computed(() => dados.value?.data ?? [])
 const meta = computed(() => dados.value?.meta ?? { total: 0, last_page: 1 })
@@ -125,6 +132,10 @@ function fechar() {
         </v-alert>
 
         <v-progress-linear v-if="loading" indeterminate class="mb-2" />
+
+        <div v-if="listaMenorQueNumero" class="text-body-2 text-medium-emphasis mb-2">
+          {{ meta.total }} chamados distintos — a linha soma {{ numeroClicado }} porque um chamado conta em cada período em que foi concluído.
+        </div>
 
         <v-table v-if="dados" density="compact">
           <thead>
