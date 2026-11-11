@@ -50,6 +50,16 @@ export default {
     }
     return api.get('/relatorios/incidentes', { params }).then((res) => res.data)
   },
+  // Lista de chamados por trás de uma linha/célula do relatório.
+  chamados(params = {}) {
+    if (params.formato === 'xlsx') {
+      return api
+        .get('/relatorios/chamados', { params, responseType: 'blob' })
+        .then((res) => res.data)
+        .catch(parseBlobError)
+    }
+    return api.get('/relatorios/chamados', { params }).then((res) => res.data)
+  },
   listSaved(params = {}) {
     return api.get('/relatorios-salvos', { params }).then((res) => res.data)
   },
@@ -64,6 +74,7 @@ export default {
       return api
         .get(`/relatorios-salvos/${id}/executar`, { params: { formato }, responseType: 'blob' })
         .then((res) => res.data)
+        .catch(parseBlobError)
     }
     return api.get(`/relatorios-salvos/${id}/executar`, { params: { formato } }).then((res) => res.data)
   },

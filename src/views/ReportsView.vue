@@ -7,6 +7,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import reportService, { AGRUPAMENTO_LABELS } from '@/services/reportService'
 import ReportResultTable from '@/components/reports/ReportResultTable.vue'
+import ReportTicketListDialog from '@/components/reports/ReportTicketListDialog.vue'
 import clientService from '@/services/clientService'
 import customerService from '@/services/customerService'
 import categoryService from '@/services/categoryService'
@@ -203,6 +204,10 @@ const successSnackbar = ref(false)
 const resultado = ref(null)
 const resultadoParams = ref(null)
 const downloading = ref(false)
+// Preenchido quando o resultado veio de um salvo no formato antigo (resposta
+// `{agrupado_por, data}`): sem lista de chamados, sem quebra; a planilha sai
+// pelo próprio relatório salvo.
+const resultadoLegado = ref(null)
 
 async function loadFilterOptions() {
   loading.value = true
@@ -293,6 +298,7 @@ async function onGenerate() {
   errorMessage.value = ''
   generating.value = true
   resultado.value = null
+  resultadoLegado.value = null
 
   try {
     const params = { contar: contar.value, agrupar_por: agruparPor.value, quebra: quebra.value, ...buildFiltros() }
@@ -306,15 +312,20 @@ async function onGenerate() {
 }
 
 async function downloadPlanilha() {
-  if (!resultadoParams.value) return
+  if (!resultadoParams.value && !resultadoLegado.value) return
 
   errorMessage.value = ''
   downloading.value = true
 
   try {
-    const blob = await reportService.gerar({ ...resultadoParams.value, formato: 'xlsx' })
-    // Mesmo nome que o backend usa no Content-Disposition.
-    downloadBlob(blob, `relatorio-${resultadoParams.value.contar}-${resultadoParams.value.agrupar_por}.xlsx`)
+    if (resultadoLegado.value) {
+      const blob = await reportService.executarSaved(resultadoLegado.value.id, 'xlsx')
+      downloadBlob(blob, `relatorio-${resultado.value.agrupar_por}.xlsx`)
+    } else {
+      const blob = await reportService.gerar({ ...resultadoParams.value, formato: 'xlsx' })
+      // Mesmo nome que o backend usa no Content-Disposition.
+      downloadBlob(blob, `relatorio-${resultadoParams.value.contar}-${resultadoParams.value.agrupar_por}.xlsx`)
+    }
     successMessage.value = 'Planilha gerada com sucesso.'
     successSnackbar.value = true
   } catch (error) {
@@ -324,9 +335,19 @@ async function downloadPlanilha() {
   }
 }
 
-// Gráfico e tabela não ouvem o evento ainda além da emissão: a lista de
-// chamados é montada em outra etapa.
-function onAbrirChamados() {}
+// --- lista de chamados por linha/célula ---
+const listaAberta = ref(false)
+const listaChave = ref(null)
+const listaColuna = ref(null)
+
+// A lista usa os parâmetros que produziram o resultado na tela (não os
+// filtros atuais do painel), para o total da lista bater com o da célula.
+function onAbrirChamados({ chave, coluna }) {
+  if (!resultadoParams.value) return
+  listaChave.value = chave
+  listaColuna.value = coluna
+  listaAberta.value = true
+}
 
 const resultadoComQuebra = computed(() => !!resultado.value && resultado.value.quebra !== 'nenhuma')
 
@@ -454,7 +475,7 @@ function exportImage() {
 
   const link = document.createElement('a')
   link.href = canvas.toDataURL('image/png', 1)
-  link.download = `relatorio-${resultado.value.contar}-${resultado.value.agrupar_por}.png`
+  link.download = `relatorio${resultado.value.contar ? `-${resultado.value.contar}` : ''}-${resultado.value.agrupar_por}.png`
   document.body.appendChild(link)
   link.click()
   link.remove()
@@ -539,8 +560,63 @@ function loadSavedIntoFilters(report) {
   const subcategoria = subcategoryOptions.value.find((s) => s.id === subcategoriaId.value)
   categoriaId.value = subcategoria?.categoria_id ?? f.categoria_id ?? null
 
-  successMessage.value = `Filtros de "${report.nome}" carregados.`
-  successSnackbar.value = true
+}
+
+// A resposta legada vira o formato novo sem quebra (uma coluna "Total"), para
+// reaproveitar gráfico e tabela. O backend não manda título nem chamados distintos.
+function normalizarLegado(resposta, nome) {
+  const linhas = resposta.data.map((item) => ({
+    chave: item.chave,
+    rotulo: item.rotulo,
+    celulas: { total: item.total },
+    total: item.total,
+  }))
+  const totalGeral = linhas.reduce((soma, linha) => soma + linha.total, 0)
+  linhas.forEach((linha) => {
+    linha.percentual = totalGeral > 0 ? Math.round((linha.total / totalGeral) * 1000) / 10 : 0
+  })
+  return {
+    titulo: `${nome} (formato antigo)`,
+    contar: null,
+    agrupar_por: resposta.agrupado_por,
+    quebra: 'nenhuma',
+    colunas: [{ chave: 'total', rotulo: 'Total' }],
+    linhas,
+    totais: { celulas: { total: totalGeral }, total: totalGeral },
+    chamados_distintos: totalGeral,
+  }
+}
+
+// Clicar num salvo carrega os filtros no painel e roda o relatório.
+async function openSaved(report) {
+  loadSavedIntoFilters(report)
+
+  errorMessage.value = ''
+  generating.value = true
+  resultado.value = null
+  resultadoLegado.value = null
+
+  try {
+    const resposta = await reportService.executarSaved(report.id)
+    if (report.formato_antigo) {
+      resultado.value = normalizarLegado(resposta, report.nome)
+      resultadoLegado.value = { id: report.id }
+      resultadoParams.value = null
+    } else {
+      resultado.value = resposta
+      // Parâmetros equivalentes ao que o servidor executou, para planilha e lista.
+      resultadoParams.value = {
+        contar: resposta.contar,
+        agrupar_por: resposta.agrupar_por,
+        quebra: resposta.quebra,
+        ...buildFiltros(),
+      }
+    }
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível executar o relatório salvo.')
+  } finally {
+    generating.value = false
+  }
 }
 
 const deleteOpen = ref(false)
@@ -776,10 +852,13 @@ async function confirmDeleteSaved() {
                 <v-list-item
                   v-for="report in savedReports"
                   :key="report.id"
-                  :title="report.nome"
                   :subtitle="AGRUPAMENTO_LABELS[report.agrupar_por] ?? report.agrupar_por"
-                  @click="loadSavedIntoFilters(report)"
+                  @click="openSaved(report)"
                 >
+                  <template #title>
+                    {{ report.nome }}
+                    <v-chip v-if="report.formato_antigo" size="x-small" variant="tonal" class="ml-1">formato antigo</v-chip>
+                  </template>
                   <template v-if="canManage" #append>
                     <v-btn
                       icon="mdi-delete"
@@ -830,7 +909,7 @@ async function confirmDeleteSaved() {
               />
             </div>
 
-            <ReportResultTable :resultado="resultado" @abrir-chamados="onAbrirChamados" />
+            <ReportResultTable :resultado="resultado" :somente-leitura="!!resultadoLegado" @abrir-chamados="onAbrirChamados" />
           </template>
         </v-card>
       </v-col>
@@ -857,6 +936,13 @@ async function confirmDeleteSaved() {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <ReportTicketListDialog
+      v-model="listaAberta"
+      :params="resultadoParams"
+      :chave="listaChave"
+      :coluna="listaColuna"
+    />
 
     <ConfirmDeleteDialog
       v-model="deleteOpen"

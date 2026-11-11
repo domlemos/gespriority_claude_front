@@ -4,6 +4,8 @@ import { AGRUPAMENTO_LABELS } from '@/services/reportService'
 
 const props = defineProps({
   resultado: { type: Object, required: true },
+  // Resposta legada não tem lista de chamados por trás: números sem link.
+  somenteLeitura: { type: Boolean, default: false },
 })
 
 // `coluna` = null ao clicar no rótulo da linha (todos os períodos).
@@ -41,7 +43,7 @@ function abrir(linha, coluna) {
       <tr v-for="linha in resultado.linhas" :key="linha.chave">
         <td>
           <a
-            v-if="linha.total > 0"
+            v-if="!somenteLeitura && linha.total > 0"
             href="#"
             class="report-link"
             @click.prevent="abrir(linha, null)"
@@ -50,7 +52,7 @@ function abrir(linha, coluna) {
         </td>
         <td v-for="col in colunas" :key="col.chave" class="text-right">
           <a
-            v-if="linha.celulas[col.chave] > 0"
+            v-if="!somenteLeitura && linha.celulas[col.chave] > 0"
             href="#"
             class="report-link"
             @click.prevent="abrir(linha, col.chave)"
@@ -59,7 +61,7 @@ function abrir(linha, coluna) {
         </td>
         <td class="text-right font-weight-medium">
           <a
-            v-if="linha.total > 0"
+            v-if="!somenteLeitura && linha.total > 0"
             href="#"
             class="report-link"
             @click.prevent="abrir(linha, null)"
