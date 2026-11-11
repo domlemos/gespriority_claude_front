@@ -1,8 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import IncidentAdvancedFilterModal from '@/components/IncidentAdvancedFilterModal.vue'
+import IncidentCreateModal from '@/components/IncidentCreateModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import incidentService from '@/services/incidentService'
 import customerService from '@/services/customerService'
@@ -26,7 +27,17 @@ import {
 } from '@/utils/incidentLabels'
 
 const auth = useAuthStore()
+const route = useRoute()
 const router = useRouter()
+
+// `?novo=1` vem do redirect de /incidents/new (links antigos). Sai da URL
+// logo em seguida pra modal não reabrir num F5.
+const createModalOpen = ref(route.query.novo === '1' && auth.hasPermission('tickets.manage'))
+if (route.query.novo) {
+  const query = { ...route.query }
+  delete query.novo
+  router.replace({ query })
+}
 
 const headers = [
   { title: 'Número', key: 'numero', sortable: true },
@@ -230,7 +241,7 @@ function onRowClick(event, { item }) {
 }
 
 function openCreate() {
-  router.push({ name: 'incident-new' })
+  createModalOpen.value = true
 }
 
 loadFilterOptions()
@@ -270,6 +281,8 @@ loadFilterOptions()
       @save="saveAndApplyFilters"
       @show-all="showAllRecords"
     />
+
+    <IncidentCreateModal v-model="createModalOpen" />
 
     <v-snackbar v-model="filtersSavedSnackbar" :timeout="3000" color="success" transition="fade-transition">
       {{ filtersSavedMessage }}

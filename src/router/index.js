@@ -39,10 +39,11 @@ const routes = [
     meta: { requiresAuth: true, guard: 'web' },
   },
   {
+    // A abertura de chamado é uma modal no painel; a rota só mantém
+    // funcionando links antigos, abrindo o painel com a modal aberta.
     path: '/incidents/new',
     name: 'incident-new',
-    component: () => import('@/views/IncidentFormView.vue'),
-    meta: { requiresAuth: true, guard: 'web' },
+    redirect: { name: 'dashboard', query: { novo: '1' } },
   },
   {
     path: '/incidents/:id',
