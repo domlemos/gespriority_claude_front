@@ -84,18 +84,17 @@ const routes = [
     component: () => import('@/views/PortalView.vue'),
     meta: { requiresAuth: true, guard: 'customer' },
   },
+  // Abrir e ver chamado são modais sobre a lista do portal; estas rotas só
+  // mantêm funcionando links antigos, abrindo a lista com a modal aberta.
   {
     path: '/portal/incidentes/novo',
     name: 'portal-incident-new',
-    component: () => import('@/views/PortalIncidentNewView.vue'),
-    meta: { requiresAuth: true, guard: 'customer' },
+    redirect: { name: 'portal', query: { novo: '1' } },
   },
   {
     path: '/portal/incidentes/:id(\\d+)',
     name: 'portal-incident',
-    component: () => import('@/views/PortalIncidentView.vue'),
-    props: true,
-    meta: { requiresAuth: true, guard: 'customer' },
+    redirect: (to) => ({ name: 'portal', query: { chamado: to.params.id } }),
   },
 
   // --- Administração (só role "admin", guard "web") ---

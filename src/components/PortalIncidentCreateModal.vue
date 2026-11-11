@@ -1,13 +1,17 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import AppLayout from '@/layouts/AppLayout.vue'
+import { computed, ref, watch } from 'vue'
 import portalIncidentService from '@/services/portalIncidentService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
 
+const props = defineProps({
+  modelValue: { type: Boolean, default: false },
+})
+
+// `created` leva o número do incidente aberto — a lista recarrega e avisa.
+const emit = defineEmits(['update:modelValue', 'created'])
+
 const auth = useAuthStore()
-const router = useRouter()
 
 const titulo = ref('')
 const descricao = ref('')
@@ -21,11 +25,9 @@ const solicitante = computed(() =>
 )
 const empresa = computed(() => auth.user?.client?.name ?? '—')
 
-// Sessões salvas antes do `/me` passar a trazer a empresa não têm
-// `user.client` — atualiza ao abrir a tela.
-onMounted(() => {
-  auth.fetchMe().catch(() => {})
-})
+function close() {
+  if (!saving.value) emit('update:modelValue', false)
+}
 
 async function onSubmit() {
   saving.value = true
@@ -36,28 +38,50 @@ async function onSubmit() {
       titulo: titulo.value,
       descricao: descricao.value,
     })
-    router.push({ name: 'portal', state: { criado: created.id } })
+    emit('update:modelValue', false)
+    emit('created', created.id)
   } catch (error) {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível abrir o incidente.')
   } finally {
     saving.value = false
   }
 }
+
+// Formulário limpo a cada abertura. Sessões salvas antes do `/me` passar a
+// trazer a empresa não têm `user.client` — atualiza ao abrir.
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (!open) return
+    titulo.value = ''
+    descricao.value = ''
+    errorMessage.value = ''
+    auth.fetchMe().catch(() => {})
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <AppLayout>
-    <div class="d-flex align-center mb-4">
-      <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'portal' }" />
-      <h1 class="text-h5 font-weight-bold ma-0">Abrir incidente</h1>
-    </div>
+  <v-dialog
+    :model-value="modelValue"
+    max-width="720"
+    scrollable
+    :persistent="saving"
+    @update:model-value="(value) => !value && close()"
+  >
+    <v-card>
+      <v-card-title class="d-flex align-center text-subtitle-1 font-weight-bold">
+        Abrir incidente
+        <v-spacer />
+        <v-btn icon="mdi-close" variant="text" density="comfortable" :disabled="saving" @click="close" />
+      </v-card-title>
 
-    <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
-      {{ errorMessage }}
-    </v-alert>
-
-    <v-card variant="outlined" class="pa-2" max-width="720">
       <v-card-text>
+        <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
+          {{ errorMessage }}
+        </v-alert>
+
         <v-form @submit.prevent="onSubmit">
           <v-row dense>
             <v-col cols="12" sm="6">
@@ -77,22 +101,22 @@ async function onSubmit() {
             persistent-hint
             rows="6"
             required
-            class="mb-4"
           />
-
-          <div class="d-flex justify-end ga-2">
-            <v-btn variant="text" :to="{ name: 'portal' }">Cancelar</v-btn>
-            <v-btn
-              color="primary"
-              type="submit"
-              :loading="saving"
-              :disabled="!titulo.trim() || !descricao.trim()"
-            >
-              Abrir incidente
-            </v-btn>
-          </div>
         </v-form>
       </v-card-text>
+
+      <v-card-actions>
+        <v-spacer />
+        <v-btn variant="text" :disabled="saving" @click="close">Cancelar</v-btn>
+        <v-btn
+          color="primary"
+          :loading="saving"
+          :disabled="!titulo.trim() || !descricao.trim()"
+          @click="onSubmit"
+        >
+          Abrir incidente
+        </v-btn>
+      </v-card-actions>
     </v-card>
-  </AppLayout>
+  </v-dialog>
 </template>

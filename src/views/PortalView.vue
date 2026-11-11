@@ -1,13 +1,16 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
+import PortalIncidentCreateModal from '@/components/PortalIncidentCreateModal.vue'
+import PortalIncidentModal from '@/components/PortalIncidentModal.vue'
 import portalIncidentService from '@/services/portalIncidentService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/incidentLabels'
 
 const auth = useAuthStore()
+const route = useRoute()
 const router = useRouter()
 
 // Backend pagina fixo em 15 — sem seletor de itens por página.
@@ -26,6 +29,26 @@ const totalItems = ref(0)
 const loading = ref(false)
 const errorMessage = ref('')
 const createdMessage = ref('')
+const page = ref(1)
+
+const createOpen = ref(false)
+const incidentOpen = ref(false)
+const incidentId = ref(null)
+
+// `?novo=1` / `?chamado=N` vêm do redirect das rotas antigas
+// (/portal/incidentes/novo e /portal/incidentes/N). Saem da URL logo em
+// seguida pra modal não reabrir num F5.
+if (route.query.novo === '1') createOpen.value = true
+if (/^\d+$/.test(route.query.chamado ?? '')) {
+  incidentId.value = Number(route.query.chamado)
+  incidentOpen.value = true
+}
+if (route.query.novo || route.query.chamado) {
+  const query = { ...route.query }
+  delete query.novo
+  delete query.chamado
+  router.replace({ query })
+}
 
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
 const busca = ref('')
@@ -48,12 +71,13 @@ function formatDateTime(iso) {
   return iso ? new Date(iso).toLocaleString('pt-BR') : '—'
 }
 
-async function loadIncidents({ page }) {
+async function loadIncidents(options = {}) {
+  page.value = options.page ?? page.value
   loading.value = true
   errorMessage.value = ''
 
   try {
-    const params = { page }
+    const params = { page: page.value }
     if (buscaAplicada.value) params.busca = buscaAplicada.value
     if (status.value) params.status = status.value
     const { data, meta } = await portalIncidentService.list(params)
@@ -66,21 +90,21 @@ async function loadIncidents({ page }) {
   }
 }
 
-// O número do incidente recém-aberto viaja no history state do redirect da
-// tela de abertura; sai do state logo em seguida pra não reaparecer num F5.
-function showCreatedFromState() {
-  const criado = window.history.state?.criado
-  if (!criado) return
-
-  createdMessage.value = `Incidente #${criado} aberto. Nossa equipe vai analisar e classificar o chamado.`
-  window.history.replaceState({ ...window.history.state, criado: undefined }, '')
+function onCreated(id) {
+  createdMessage.value = `Incidente #${id} aberto. Nossa equipe vai analisar e classificar o chamado.`
+  loadIncidents({ page: 1 })
 }
 
 function onRowClick(event, { item }) {
-  router.push({ name: 'portal-incident', params: { id: item.id } })
+  incidentId.value = item.id
+  incidentOpen.value = true
 }
 
-showCreatedFromState()
+// Ao fechar a modal do chamado, recarrega a página atual — o status pode
+// ter mudado enquanto ela estava aberta.
+watch(incidentOpen, (open) => {
+  if (!open) loadIncidents()
+})
 </script>
 
 <template>
@@ -91,10 +115,13 @@ showCreatedFromState()
         <p class="text-body-2 text-medium-emphasis ma-0">Acompanhe aqui os seus chamados.</p>
       </div>
 
-      <v-btn color="primary" prepend-icon="mdi-plus" :to="{ name: 'portal-incident-new' }">
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="createOpen = true">
         Abrir incidente
       </v-btn>
     </div>
+
+    <PortalIncidentCreateModal v-model="createOpen" @created="onCreated" />
+    <PortalIncidentModal v-model="incidentOpen" :incident-id="incidentId" />
 
     <v-alert v-if="createdMessage" type="success" variant="tonal" density="comfortable" closable class="mb-4">
       {{ createdMessage }}

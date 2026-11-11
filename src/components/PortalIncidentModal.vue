@@ -1,13 +1,18 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import AppLayout from '@/layouts/AppLayout.vue'
 import portalIncidentService from '@/services/portalIncidentService'
 import { extractErrorMessage } from '@/utils/errors'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/incidentLabels'
 
+// Chamado do cliente: dados básicos, histórico (só a abertura, os próprios
+// comentários e a mensagem de encerramento — filtrado no backend) e
+// comentário novo enquanto o chamado não foi encerrado.
 const props = defineProps({
-  id: { type: [String, Number], required: true },
+  modelValue: { type: Boolean, default: false },
+  incidentId: { type: [String, Number], default: null },
 })
+
+const emit = defineEmits(['update:modelValue'])
 
 const incident = ref(null)
 const loading = ref(false)
@@ -32,14 +37,20 @@ function initials(name) {
     .join('')
 }
 
+function close() {
+  if (!sending.value) emit('update:modelValue', false)
+}
+
 async function load() {
-  loading.value = true
+  incident.value = null
+  comentario.value = ''
+  commentError.value = ''
   errorMessage.value = ''
+  loading.value = true
 
   try {
-    incident.value = await portalIncidentService.get(props.id)
+    incident.value = await portalIncidentService.get(props.incidentId)
   } catch (error) {
-    incident.value = null
     errorMessage.value =
       error?.response?.status === 404
         ? 'Chamado não encontrado.'
@@ -54,7 +65,7 @@ async function enviarComentario() {
   commentError.value = ''
 
   try {
-    const entrada = await portalIncidentService.comment(props.id, comentario.value.trim())
+    const entrada = await portalIncidentService.comment(props.incidentId, comentario.value.trim())
     incident.value.descricoes.push(entrada)
     comentario.value = ''
   } catch (error) {
@@ -64,43 +75,52 @@ async function enviarComentario() {
   }
 }
 
-watch(() => props.id, load, { immediate: true })
+watch(
+  () => [props.modelValue, props.incidentId],
+  ([open, id]) => {
+    if (open && id) load()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <AppLayout>
-    <div class="d-flex align-center mb-4">
-      <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'portal' }" />
-      <h1 class="text-h5 font-weight-bold ma-0">Chamado #{{ id }}</h1>
-    </div>
+  <v-dialog
+    :model-value="modelValue"
+    max-width="860"
+    scrollable
+    :persistent="sending"
+    @update:model-value="(value) => !value && close()"
+  >
+    <v-card>
+      <v-card-title class="d-flex align-center text-subtitle-1 font-weight-bold">
+        Chamado #{{ incidentId }}
+        <v-spacer />
+        <v-btn icon="mdi-close" variant="text" density="comfortable" :disabled="sending" @click="close" />
+      </v-card-title>
 
-    <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
-      {{ errorMessage }}
-    </v-alert>
+      <v-card-text>
+        <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
+          {{ errorMessage }}
+        </v-alert>
 
-    <div v-if="loading" class="d-flex justify-center py-12">
-      <v-progress-circular indeterminate color="primary" />
-    </div>
+        <div v-if="loading" class="d-flex justify-center py-12">
+          <v-progress-circular indeterminate color="primary" />
+        </div>
 
-    <template v-else-if="incident">
-      <v-card variant="outlined" class="mb-4" max-width="860">
-        <v-card-text>
-          <div class="d-flex align-center flex-wrap ga-2 mb-2">
+        <template v-else-if="incident">
+          <div class="d-flex align-center flex-wrap ga-2 mb-1">
             <span class="text-h6 font-weight-bold">{{ incident.titulo }}</span>
             <v-chip size="small" :color="STATUS_COLORS[incident.status]" variant="tonal">
               {{ STATUS_LABELS[incident.status] ?? incident.status }}
             </v-chip>
           </div>
-          <div class="text-caption text-medium-emphasis">
+          <div class="text-caption text-medium-emphasis mb-4">
             Aberto em {{ formatDateTime(incident.created_at) }} · Atualizado em {{ formatDateTime(incident.updated_at) }}
           </div>
-        </v-card-text>
-      </v-card>
 
-      <v-card variant="outlined" max-width="860">
-        <v-card-title class="text-subtitle-1 font-weight-bold">Histórico</v-card-title>
+          <div class="text-subtitle-2 font-weight-bold mb-3">Histórico</div>
 
-        <v-card-text>
           <div v-for="entry in incident.descricoes" :key="entry.id" class="d-flex mb-4">
             <v-avatar :color="entry.autor.equipe ? 'primary' : 'grey-darken-1'" size="36" class="mr-3">
               <span class="text-caption font-weight-bold">{{ initials(entry.autor.nome) }}</span>
@@ -140,19 +160,28 @@ watch(() => props.id, load, { immediate: true })
               auto-grow
               counter="5000"
               :maxlength="5000"
-              class="mb-2"
             />
-            <div class="d-flex justify-end">
-              <v-btn color="primary" :loading="sending" :disabled="!comentario.trim()" @click="enviarComentario">
-                Comentar
-              </v-btn>
-            </div>
           </template>
           <div v-else class="text-body-2 text-medium-emphasis">
             Este chamado foi encerrado e não aceita novos comentários.
           </div>
-        </v-card-text>
-      </v-card>
-    </template>
-  </AppLayout>
+        </template>
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer />
+        <!-- "Voltar", não "Fechar": evita parecer que encerra o chamado. -->
+        <v-btn variant="text" :disabled="sending" @click="close">Voltar</v-btn>
+        <v-btn
+          v-if="aceitaComentario"
+          color="primary"
+          :loading="sending"
+          :disabled="!comentario.trim()"
+          @click="enviarComentario"
+        >
+          Comentar
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
