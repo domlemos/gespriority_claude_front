@@ -2,10 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { Chart as ChartJS, registerables } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
-import { Bar, Line, Pie } from 'vue-chartjs'
+import { Bar, Pie } from 'vue-chartjs'
 import AppLayout from '@/layouts/AppLayout.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
-import reportService from '@/services/reportService'
+import reportService, { AGRUPAMENTO_LABELS } from '@/services/reportService'
+import ReportResultTable from '@/components/reports/ReportResultTable.vue'
+import ReportTicketListDialog from '@/components/reports/ReportTicketListDialog.vue'
 import clientService from '@/services/clientService'
 import customerService from '@/services/customerService'
 import categoryService from '@/services/categoryService'
@@ -22,46 +24,63 @@ ChartJS.register(...registerables, ChartDataLabels)
 const auth = useAuthStore()
 const canManage = computed(() => auth.hasPermission('relatorios.manage'))
 
-const AGRUPAMENTO_OPTIONS = [
-  { value: 'status_sla', title: 'Status de SLA' },
-  { value: 'responsavel', title: 'Responsável' },
-  { value: 'aberto_por', title: 'Aberto por' },
-  { value: 'concluido_por', title: 'Concluído por (resolvido ou fechado)' },
-  { value: 'resolvido_por', title: 'Resolvido por' },
-  { value: 'fechado_por', title: 'Fechado por' },
-  { value: 'encaminhado_por', title: 'Encaminhado por' },
-  { value: 'encaminhado_para_grupo', title: 'Encaminhado para (grupo)' },
-  { value: 'encaminhado_para_responsavel', title: 'Encaminhado para (responsável)' },
-  { value: 'grupo_solucao', title: 'Grupo de Solução' },
-  { value: 'categoria', title: 'Categoria' },
-  { value: 'subcategoria', title: 'Subcategoria' },
-  { value: 'item', title: 'Item' },
+const CONTAR_OPTIONS = [
+  { value: 'abertos', title: 'Abertos' },
+  { value: 'concluidos', title: 'Concluídos' },
+  { value: 'resolvidos', title: 'Resolvidos' },
+  { value: 'fechados', title: 'Fechados' },
+  { value: 'cancelados', title: 'Cancelados' },
+  { value: 'encaminhamentos', title: 'Encaminhamentos' },
 ]
-// Agrupamentos baseados em eventos: a data do período é a da ação. Os demais
-// são baseados no Incidente e usam a data de conclusão do chamado.
-const AGRUPAMENTOS_POR_EVENTO = new Set([
-  'concluido_por',
-  'resolvido_por',
-  'fechado_por',
-  'encaminhado_por',
-  'encaminhado_para_grupo',
-  'encaminhado_para_responsavel',
-])
-const AGRUPAMENTO_LABELS = Object.fromEntries(AGRUPAMENTO_OPTIONS.map((o) => [o.value, o.title]))
+
+// Matriz contar -> agrupamentos válidos (espelha o backend).
+const AGRUPAR_POR_INCIDENTE = ['categoria', 'subcategoria', 'item', 'grupo_chamado', 'responsavel', 'aberto_por', 'cliente', 'tipo']
+const AGRUPAR_POR_CONCLUSAO = ['analista', 'grupo_analista', 'grupo_chamado', 'categoria', 'subcategoria', 'item', 'cliente', 'tipo', 'status_sla']
+const AGRUPAR_POR_CONTAR = {
+  abertos: AGRUPAR_POR_INCIDENTE,
+  cancelados: AGRUPAR_POR_INCIDENTE,
+  concluidos: AGRUPAR_POR_CONCLUSAO,
+  resolvidos: AGRUPAR_POR_CONCLUSAO,
+  fechados: AGRUPAR_POR_CONCLUSAO,
+  encaminhamentos: ['quem_encaminhou', 'para_grupo', 'para_responsavel'],
+}
+
+const QUEBRA_OPTIONS = [
+  { value: 'nenhuma', title: 'Não' },
+  { value: 'dia', title: 'Dia' },
+  { value: 'semana', title: 'Semana' },
+  { value: 'mes', title: 'Mês' },
+]
+const QUEBRA_NOMES = { dia: 'dia', semana: 'semana', mes: 'mês' }
+const QUEBRA_LIMITES = { dia: 62, semana: 53, mes: 24 }
+
+const PERIODO_OPTIONS = [
+  { value: 'este_mes', title: 'Este mês' },
+  { value: 'mes_passado', title: 'Mês passado' },
+  { value: 'ultimos_7_dias', title: 'Últimos 7 dias' },
+  { value: 'personalizado', title: 'Personalizado' },
+]
 
 const CHART_TYPE_OPTIONS = [
   { value: 'colunas', title: 'Colunas' },
   { value: 'barras', title: 'Barras' },
   { value: 'pizza', title: 'Pizza' },
 ]
+const CHART_TYPE_OPTIONS_QUEBRA = CHART_TYPE_OPTIONS.filter((o) => o.value !== 'pizza')
 
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
 const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value, title }))
 
 const PALETTE = ['#FF8C1A', '#7922B9', '#2563EB', '#166534', '#F59E0B', '#E53935', '#FFA64D', '#C371FF']
 
+// --- saída ---
+const chartType = ref('colunas')
+
 // --- filtros ---
+const contar = ref('abertos')
 const agruparPor = ref(null)
+const quebra = ref('nenhuma')
+const periodoAtalho = ref(null) // este_mes | mes_passado | ultimos_7_dias | personalizado | null
 const status = ref(null)
 const tipo = ref(null)
 const dataInicio = ref(null)
@@ -75,16 +94,75 @@ const grupoSolucaoId = ref(null)
 const grupoAnalistaId = ref(null)
 const responsavelId = ref(null)
 
-// Dica dos campos de data: muda conforme o fato que o agrupamento conta.
-const dataHint = computed(() =>
-  AGRUPAMENTOS_POR_EVENTO.has(agruparPor.value)
-    ? 'Data da ação (resolução/fechamento/encaminhamento)'
-    : 'Data da conclusão do chamado',
+const agruparPorOptions = computed(() =>
+  AGRUPAR_POR_CONTAR[contar.value].map((value) => ({ value, title: AGRUPAMENTO_LABELS[value] })),
 )
 
-// --- saída ---
-const outputType = ref('grafico') // 'grafico' | 'planilha'
-const chartType = ref('colunas')
+// Trocar "o que contar" muda a lista de agrupamentos; se o escolhido deixou de
+// existir, limpa para o usuário não enviar uma combinação que o backend recusa.
+function onContarChange() {
+  if (agruparPor.value && !AGRUPAR_POR_CONTAR[contar.value].includes(agruparPor.value)) {
+    agruparPor.value = null
+  }
+}
+
+// Rótulo do período: diz qual data o "o que contar" usa.
+const periodoLabel = computed(() => {
+  const data =
+    contar.value === 'abertos'
+      ? 'data da abertura'
+      : contar.value === 'cancelados'
+        ? 'data do cancelamento'
+        : contar.value === 'encaminhamentos'
+          ? 'data do encaminhamento'
+          : 'data da conclusão'
+  return `Período — ${data}`
+})
+
+const comQuebra = computed(() => quebra.value !== 'nenhuma')
+const chartTypeOptions = computed(() => (comQuebra.value ? CHART_TYPE_OPTIONS_QUEBRA : CHART_TYPE_OPTIONS))
+
+// Pizza não faz sentido com colunas de período (uma fatia por linha esconderia a quebra).
+function onQuebraChange() {
+  if (comQuebra.value && chartType.value === 'pizza') chartType.value = 'colunas'
+}
+
+function parseDia(valor) {
+  const [y, m, d] = valor.split('-').map(Number)
+  return Date.UTC(y, m - 1, d)
+}
+
+// Número de colunas que a quebra geraria no período personalizado. Os atalhos
+// nunca estouram o limite (no máximo ~31 dias), então só o personalizado é checado.
+function contarColunas(inicio, fim, tipoQuebra) {
+  const DIA = 86400000
+  const ini = parseDia(inicio)
+  const end = parseDia(fim)
+  if (tipoQuebra === 'dia') return Math.floor((end - ini) / DIA) + 1
+  if (tipoQuebra === 'semana') {
+    const segunda = (t) => t - ((new Date(t).getUTCDay() + 6) % 7) * DIA
+    return Math.round((segunda(end) - segunda(ini)) / (7 * DIA)) + 1
+  }
+  const i = new Date(ini)
+  const f = new Date(end)
+  return (f.getUTCFullYear() - i.getUTCFullYear()) * 12 + f.getUTCMonth() - i.getUTCMonth() + 1
+}
+
+// Mesmas mensagens do backend, mostradas antes de enviar.
+function validarQuebra() {
+  if (!comQuebra.value) return ''
+  const nome = QUEBRA_NOMES[quebra.value]
+  const personalizado = periodoAtalho.value === 'personalizado'
+  const temPeriodo = personalizado ? dataInicio.value && dataFim.value : periodoAtalho.value
+  if (!temPeriodo) return `Informe um período para quebrar por ${nome}.`
+  if (personalizado && parseDia(dataFim.value) >= parseDia(dataInicio.value)) {
+    const limite = QUEBRA_LIMITES[quebra.value]
+    if (contarColunas(dataInicio.value, dataFim.value, quebra.value) > limite) {
+      return `Período longo demais para quebra por ${nome}: máximo de ${limite} colunas.`
+    }
+  }
+  return ''
+}
 
 const clientOptions = ref([])
 const customerOptions = ref([])
@@ -121,7 +199,15 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const successSnackbar = ref(false)
 
-const chartResult = ref(null)
+// Resultado exibido e os parâmetros que o geraram (a planilha usa os mesmos,
+// mesmo que o usuário mexa nos filtros depois).
+const resultado = ref(null)
+const resultadoParams = ref(null)
+const downloading = ref(false)
+// Preenchido quando o resultado veio de um salvo no formato antigo (resposta
+// `{agrupado_por, data}`): sem lista de chamados, sem quebra; a planilha sai
+// pelo próprio relatório salvo.
+const resultadoLegado = ref(null)
 
 async function loadFilterOptions() {
   loading.value = true
@@ -169,8 +255,13 @@ function buildFiltros() {
   const filtros = {}
   if (status.value) filtros.status = status.value
   if (tipo.value) filtros.tipo = tipo.value
-  if (dataInicio.value) filtros.data_inicio = dataInicio.value
-  if (dataFim.value) filtros.data_fim = dataFim.value
+  // Atalho e datas são mutuamente exclusivos no backend.
+  if (periodoAtalho.value === 'personalizado') {
+    if (dataInicio.value) filtros.data_inicio = dataInicio.value
+    if (dataFim.value) filtros.data_fim = dataFim.value
+  } else if (periodoAtalho.value) {
+    filtros.periodo = periodoAtalho.value
+  }
   if (clientId.value) filtros.client_id = clientId.value
   if (customerId.value) filtros.customer_id = customerId.value
   if (categoriaId.value) filtros.categoria_id = categoriaId.value
@@ -198,22 +289,21 @@ async function onGenerate() {
     errorMessage.value = 'Selecione o agrupamento do relatório.'
     return
   }
+  const erroQuebra = validarQuebra()
+  if (erroQuebra) {
+    errorMessage.value = erroQuebra
+    return
+  }
 
   errorMessage.value = ''
   generating.value = true
-  chartResult.value = null
+  resultado.value = null
+  resultadoLegado.value = null
 
   try {
-    const params = { agrupar_por: agruparPor.value, ...buildFiltros() }
-
-    if (outputType.value === 'planilha') {
-      const blob = await reportService.gerar({ ...params, formato: 'xlsx' })
-      downloadBlob(blob, `relatorio-${agruparPor.value}.xlsx`)
-      successMessage.value = 'Planilha gerada com sucesso.'
-      successSnackbar.value = true
-    } else {
-      chartResult.value = await reportService.gerar({ ...params, formato: 'json' })
-    }
+    const params = { contar: contar.value, agrupar_por: agruparPor.value, quebra: quebra.value, ...buildFiltros() }
+    resultado.value = await reportService.gerar({ ...params, formato: 'json' })
+    resultadoParams.value = params
   } catch (error) {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível gerar o relatório.')
   } finally {
@@ -221,42 +311,118 @@ async function onGenerate() {
   }
 }
 
+async function downloadPlanilha() {
+  if (!resultadoParams.value && !resultadoLegado.value) return
+
+  errorMessage.value = ''
+  downloading.value = true
+
+  try {
+    if (resultadoLegado.value) {
+      const blob = await reportService.executarSaved(resultadoLegado.value.id, 'xlsx')
+      downloadBlob(blob, `relatorio-${resultado.value.agrupar_por}.xlsx`)
+    } else {
+      const blob = await reportService.gerar({ ...resultadoParams.value, formato: 'xlsx' })
+      // Mesmo nome que o backend usa no Content-Disposition.
+      downloadBlob(blob, `relatorio-${resultadoParams.value.contar}-${resultadoParams.value.agrupar_por}.xlsx`)
+    }
+    successMessage.value = 'Planilha gerada com sucesso.'
+    successSnackbar.value = true
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível baixar a planilha.')
+  } finally {
+    downloading.value = false
+  }
+}
+
+// --- lista de chamados por linha/célula ---
+// O atalho de período é resolvido pelo backend a cada requisição; se o dia (ou
+// o mês) virar depois de gerar, a lista divergiria da célula clicada e a
+// coluna poderia sair do intervalo. Por isso a lista recebe as datas já
+// resolvidas que o próprio resultado devolveu.
+const paramsLista = computed(() => {
+  if (!resultadoParams.value || !resultado.value) return null
+  const { periodo: _atalho, data_inicio: _ini, data_fim: _fim, ...demais } = resultadoParams.value
+  const periodo = resultado.value.periodo
+  return periodo ? { ...demais, data_inicio: periodo.inicio, data_fim: periodo.fim } : demais
+})
+
+const listaAberta = ref(false)
+const listaChave = ref(null)
+const listaColuna = ref(null)
+const listaNumero = ref(null)
+
+// A lista usa os parâmetros que produziram o resultado na tela (não os
+// filtros atuais do painel), para o total da lista bater com o da célula.
+function onAbrirChamados({ chave, coluna, numero }) {
+  if (!resultadoParams.value) return
+  listaChave.value = chave
+  listaColuna.value = coluna
+  listaNumero.value = numero ?? null
+  listaAberta.value = true
+}
+
+const resultadoComQuebra = computed(() => !!resultado.value && resultado.value.quebra !== 'nenhuma')
+
 const chartComponent = computed(() => {
-  if (chartType.value === 'pizza') return Pie
-  // Inalcançável hoje: 'linha' saiu de CHART_TYPE_OPTIONS (categorias não têm ordem temporal).
-  // Mantido de propósito para a fase 2 (eixo temporal).
-  if (chartType.value === 'linha') return Line
+  if (chartType.value === 'pizza' && !resultadoComQuebra.value) return Pie
   return Bar
 })
 
 const chartJsData = computed(() => {
-  if (!chartResult.value) return null
-  const rows = chartResult.value.data
+  if (!resultado.value) return null
+  const rows = resultado.value.linhas
+  const labels = rows.map((row) => row.rotulo)
+
+  // Com quebra: barras agrupadas, um dataset por coluna de período.
+  if (resultadoComQuebra.value) {
+    return {
+      labels,
+      datasets: resultado.value.colunas.map((col, index) => ({
+        label: col.rotulo,
+        data: rows.map((row) => row.celulas[col.chave] ?? 0),
+        backgroundColor: PALETTE[index % PALETTE.length],
+        borderWidth: 0,
+      })),
+    }
+  }
 
   return {
-    labels: rows.map((row) => row.rotulo),
+    labels,
     datasets: [
       {
-        label: AGRUPAMENTO_LABELS[chartResult.value.agrupado_por] ?? chartResult.value.agrupado_por,
+        label: AGRUPAMENTO_LABELS[resultado.value.agrupar_por] ?? resultado.value.agrupar_por,
         data: rows.map((row) => row.total),
         backgroundColor: rows.map((_, index) => PALETTE[index % PALETTE.length]),
-        borderColor: chartType.value === 'linha' ? PALETTE[0] : undefined,
-        borderWidth: chartType.value === 'linha' ? 2 : 0,
-        fill: false,
-        tension: 0.3,
+        borderWidth: 0,
       },
     ],
   }
 })
 
-const chartOptions = computed(() => {
-  const isPizza = chartType.value === 'pizza'
+// Quebra o título em linhas de até `max` caracteres (sem cortar palavras) para
+// caber no canvas e na imagem exportada.
+function quebrarTitulo(texto, max = 90) {
+  const linhas = []
+  let atual = ''
+  for (const palavra of (texto ?? '').split(' ')) {
+    if (atual && `${atual} ${palavra}`.length > max) {
+      linhas.push(atual)
+      atual = palavra
+    } else {
+      atual = atual ? `${atual} ${palavra}` : palavra
+    }
+  }
+  if (atual) linhas.push(atual)
+  return linhas
+}
 
-  // Os dados são sempre contagens (total de incidentes) — não faz sentido o
-  // eixo numérico mostrar valores quebrados (0,5, 1,5...) quando o maior
-  // valor é pequeno. `stepSize: 1` força o Chart.js a gerar só ticks
-  // inteiros, em vez do espaçamento "bonito" default dele.
-  const integerTicks = { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }
+const chartOptions = computed(() => {
+  const isPizza = chartType.value === 'pizza' && !resultadoComQuebra.value
+  const quebrado = resultadoComQuebra.value
+
+  // Os dados são sempre contagens — `precision: 0` evita ticks quebrados (0,5, 1,5...).
+  const integerTicks = { beginAtZero: true, ticks: { precision: 0 } }
 
   return {
     responsive: true,
@@ -266,27 +432,50 @@ const chartOptions = computed(() => {
     // quando a barra/coluna mais alta chega perto do topo do gráfico.
     layout: { padding: { top: 24, right: isPizza ? 0 : 24 } },
     plugins: {
+      // O título vem pronto do backend; fica dentro do canvas para sair
+      // também na imagem exportada.
       title: {
         display: true,
-        text: AGRUPAMENTO_LABELS[chartResult.value?.agrupado_por] ?? '',
-        font: { size: 16, weight: 'bold' },
+        text: quebrarTitulo(resultado.value?.titulo),
+        font: { size: 14, weight: 'bold' },
         padding: { bottom: 16 },
       },
-      legend: { display: isPizza, position: 'right' },
-      // Mostra o número de cada barra/coluna/fatia direto no gráfico, não só
-      // no tooltip ao passar o mouse.
+      legend: { display: isPizza || quebrado, position: isPizza ? 'right' : 'top' },
+      // Mostra o número de cada barra/coluna/fatia direto no gráfico. Com
+      // quebra são muitas barras: esconde os zeros e usa fonte menor.
       datalabels: {
+        display: quebrado ? (ctx) => ctx.dataset.data[ctx.dataIndex] > 0 : true,
         color: isPizza ? '#FFFFFF' : '#3A3A3A',
-        font: { weight: 'bold', size: 12 },
+        font: { weight: 'bold', size: quebrado ? 10 : 12 },
         anchor: isPizza ? 'center' : 'end',
-        // Pontos de linha não têm "lado final" como uma barra — o padrão
-        // pra esse caso é ancorar no ponto e alinhar o texto acima dele.
-        align: isPizza ? 'center' : chartType.value === 'linha' ? 'top' : 'end',
+        align: isPizza ? 'center' : 'end',
         offset: isPizza ? 0 : 4,
       },
     },
     scales: isPizza ? undefined : { x: integerTicks, y: integerTicks },
+    // Clicar numa barra/fatia abre a mesma lista de chamados da tabela: sem
+    // quebra, a linha inteira; com quebra, a célula (linha × período do
+    // dataset clicado). Resultado legado é só leitura, como na tabela.
+    onClick: (event, elements) => {
+      if (resultadoLegado.value || !elements.length) return
+      const { index, datasetIndex } = elements[0]
+      const linha = resultado.value.linhas[index]
+      const coluna = quebrado ? resultado.value.colunas[datasetIndex].chave : null
+      const numero = coluna === null ? linha.total : (linha.celulas[coluna] ?? 0)
+      onAbrirChamados({ chave: linha.chave, coluna, numero })
+    },
+    onHover: (event, elements) => {
+      event.native.target.style.cursor = elements.length && !resultadoLegado.value ? 'pointer' : 'default'
+    },
   }
+})
+
+// Barras horizontais com muitas linhas precisam de altura proporcional.
+const chartHeight = computed(() => {
+  const linhas = resultado.value?.linhas.length ?? 0
+  if (chartType.value !== 'barras') return 420
+  const porLinha = resultadoComQuebra.value ? 14 * (resultado.value.colunas.length + 1) : 28
+  return Math.max(420, linhas * porLinha + 120)
 })
 
 const chartRef = ref(null)
@@ -295,7 +484,7 @@ const chartRef = ref(null)
 // transparente por padrão (nenhum problema dentro do card branco da tela,
 // mas some/vira ilegível se a imagem for aberta sobre um fundo escuro fora
 // do app). Compõe num canvas novo com fundo branco antes de exportar; o
-// título do gráfico (`plugins.title` acima) já identifica o indicador tanto
+// título do gráfico (`plugins.title` acima) já identifica o relatório tanto
 // na tela quanto na imagem exportada, sem precisar de lógica separada aqui.
 function exportImage() {
   const chart = chartRef.value?.chart
@@ -313,7 +502,7 @@ function exportImage() {
 
   const link = document.createElement('a')
   link.href = canvas.toDataURL('image/png', 1)
-  link.download = `relatorio-${agruparPor.value}.png`
+  link.download = `relatorio${resultado.value.contar ? `-${resultado.value.contar}` : ''}-${resultado.value.agrupar_por}.png`
   document.body.appendChild(link)
   link.click()
   link.remove()
@@ -329,6 +518,11 @@ function openSaveModal() {
     errorMessage.value = 'Selecione o agrupamento antes de salvar o relatório.'
     return
   }
+  const erroQuebra = validarQuebra()
+  if (erroQuebra) {
+    errorMessage.value = erroQuebra
+    return
+  }
   saveName.value = ''
   saveModalOpen.value = true
 }
@@ -342,7 +536,9 @@ async function confirmSave() {
   try {
     await reportService.createSaved({
       nome: saveName.value,
+      contar: contar.value,
       agrupar_por: agruparPor.value,
+      quebra: quebra.value,
       filtros: buildFiltros(),
     })
     saveModalOpen.value = false
@@ -357,8 +553,20 @@ async function confirmSave() {
 }
 
 function loadSavedIntoFilters(report) {
-  agruparPor.value = report.agrupar_por
+  // Salvos antes da Fase 2 podem vir sem `contar`; nesse caso mantém o atual.
+  if (report.contar) contar.value = report.contar
+  agruparPor.value = AGRUPAR_POR_CONTAR[contar.value].includes(report.agrupar_por) ? report.agrupar_por : null
+  quebra.value = report.quebra ?? 'nenhuma'
+  onQuebraChange()
   const f = report.filtros || {}
+
+  if (f.periodo) {
+    periodoAtalho.value = f.periodo
+  } else if (f.data_inicio || f.data_fim) {
+    periodoAtalho.value = 'personalizado'
+  } else {
+    periodoAtalho.value = null
+  }
 
   status.value = f.status ?? null
   tipo.value = f.tipo ?? null
@@ -378,9 +586,63 @@ function loadSavedIntoFilters(report) {
   subcategoriaId.value = item?.subcategoria_id ?? f.subcategoria_id ?? null
   const subcategoria = subcategoryOptions.value.find((s) => s.id === subcategoriaId.value)
   categoriaId.value = subcategoria?.categoria_id ?? f.categoria_id ?? null
+}
 
-  successMessage.value = `Filtros de "${report.nome}" carregados.`
-  successSnackbar.value = true
+// A resposta legada vira o formato novo sem quebra (uma coluna "Total"), para
+// reaproveitar gráfico e tabela. O backend não manda título nem chamados distintos.
+function normalizarLegado(resposta, nome) {
+  const linhas = resposta.data.map((item) => ({
+    chave: item.chave,
+    rotulo: item.rotulo,
+    celulas: { total: item.total },
+    total: item.total,
+  }))
+  const totalGeral = linhas.reduce((soma, linha) => soma + linha.total, 0)
+  linhas.forEach((linha) => {
+    linha.percentual = totalGeral > 0 ? Math.round((linha.total / totalGeral) * 1000) / 10 : 0
+  })
+  return {
+    titulo: `${nome} (formato antigo)`,
+    contar: null,
+    agrupar_por: resposta.agrupado_por,
+    quebra: 'nenhuma',
+    colunas: [{ chave: 'total', rotulo: 'Total' }],
+    linhas,
+    totais: { celulas: { total: totalGeral }, total: totalGeral },
+    chamados_distintos: totalGeral,
+  }
+}
+
+// Clicar num salvo carrega os filtros no painel e roda o relatório.
+async function openSaved(report) {
+  loadSavedIntoFilters(report)
+
+  errorMessage.value = ''
+  generating.value = true
+  resultado.value = null
+  resultadoLegado.value = null
+
+  try {
+    const resposta = await reportService.executarSaved(report.id)
+    if (report.formato_antigo) {
+      resultado.value = normalizarLegado(resposta, report.nome)
+      resultadoLegado.value = { id: report.id }
+      resultadoParams.value = null
+    } else {
+      resultado.value = resposta
+      // Parâmetros equivalentes ao que o servidor executou, para planilha e lista.
+      resultadoParams.value = {
+        contar: resposta.contar,
+        agrupar_por: resposta.agrupar_por,
+        quebra: resposta.quebra,
+        ...buildFiltros(),
+      }
+    }
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível executar o relatório salvo.')
+  } finally {
+    generating.value = false
+  }
 }
 
 const deleteOpen = ref(false)
@@ -426,13 +688,58 @@ async function confirmDeleteSaved() {
       <v-col cols="12" md="4">
         <v-card variant="outlined" class="pa-2 bg-surface">
           <v-card-text>
+            <div class="text-caption text-medium-emphasis mb-1">O que contar</div>
+            <v-btn-toggle
+              v-model="contar"
+              mandatory
+              color="primary"
+              density="comfortable"
+              class="mb-3 flex-wrap"
+              style="height: auto"
+              @update:model-value="onContarChange"
+            >
+              <v-btn v-for="o in CONTAR_OPTIONS" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
+            </v-btn-toggle>
+
             <v-select
               v-model="agruparPor"
-              :items="AGRUPAMENTO_OPTIONS"
+              :items="agruparPorOptions"
               label="Agrupar por"
               required
               class="mb-2"
             />
+
+            <div class="text-caption text-medium-emphasis mb-1">Quebrar por período</div>
+            <v-btn-toggle
+              v-model="quebra"
+              mandatory
+              color="primary"
+              density="comfortable"
+              class="mb-3"
+              @update:model-value="onQuebraChange"
+            >
+              <v-btn v-for="o in QUEBRA_OPTIONS" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
+            </v-btn-toggle>
+
+            <div class="text-caption text-medium-emphasis mb-1">{{ periodoLabel }}</div>
+            <v-btn-toggle
+              v-model="periodoAtalho"
+              color="primary"
+              density="comfortable"
+              class="mb-2 flex-wrap"
+              style="height: auto"
+            >
+              <v-btn v-for="o in PERIODO_OPTIONS" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
+            </v-btn-toggle>
+            <v-row v-if="periodoAtalho === 'personalizado'" dense class="mb-2">
+              <v-col cols="6">
+                <v-text-field v-model="dataInicio" type="date" label="Data início" density="compact" clearable />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field v-model="dataFim" type="date" label="Data fim" density="compact" clearable />
+              </v-col>
+            </v-row>
+            <div v-else-if="!periodoAtalho" class="text-caption text-medium-emphasis mb-2">Sem período: todo o histórico.</div>
 
             <v-row dense class="mb-2">
               <v-col cols="6">
@@ -440,12 +747,6 @@ async function confirmDeleteSaved() {
               </v-col>
               <v-col cols="6">
                 <v-select v-model="tipo" :items="tipoOptions" label="Tipo" clearable density="compact" />
-              </v-col>
-              <v-col cols="6">
-                <v-text-field v-model="dataInicio" type="date" label="Data início" density="compact" clearable :hint="dataHint" persistent-hint />
-              </v-col>
-              <v-col cols="6">
-                <v-text-field v-model="dataFim" type="date" label="Data fim" density="compact" clearable :hint="dataHint" persistent-hint />
               </v-col>
             </v-row>
 
@@ -554,16 +855,9 @@ async function confirmDeleteSaved() {
 
             <v-divider class="my-3" />
 
-            <div class="text-caption text-medium-emphasis mb-2">Saída</div>
-            <v-btn-toggle v-model="outputType" mandatory color="primary" density="comfortable" class="mb-3">
-              <v-btn value="grafico" prepend-icon="mdi-chart-bar">Gráfico</v-btn>
-              <v-btn value="planilha" prepend-icon="mdi-file-excel-outline">Planilha (.xlsx)</v-btn>
-            </v-btn-toggle>
-
             <v-select
-              v-if="outputType === 'grafico'"
               v-model="chartType"
-              :items="CHART_TYPE_OPTIONS"
+              :items="chartTypeOptions"
               label="Tipo de gráfico"
               class="mb-2"
             />
@@ -584,10 +878,13 @@ async function confirmDeleteSaved() {
                 <v-list-item
                   v-for="report in savedReports"
                   :key="report.id"
-                  :title="report.nome"
-                  :subtitle="AGRUPAMENTO_LABELS[report.agrupar_por]"
-                  @click="loadSavedIntoFilters(report)"
+                  :subtitle="AGRUPAMENTO_LABELS[report.agrupar_por] ?? report.agrupar_por"
+                  @click="openSaved(report)"
                 >
+                  <template #title>
+                    {{ report.nome }}
+                    <v-chip v-if="report.formato_antigo" size="x-small" variant="tonal" class="ml-1">formato antigo</v-chip>
+                  </template>
                   <template v-if="canManage" #append>
                     <v-btn
                       icon="mdi-delete"
@@ -606,14 +903,7 @@ async function confirmDeleteSaved() {
 
       <v-col cols="12" md="8">
         <v-card variant="outlined" class="pa-4 bg-surface d-flex flex-column" style="min-height: 560px">
-          <template v-if="outputType === 'planilha'">
-            <div class="d-flex flex-column align-center justify-center flex-grow-1 text-medium-emphasis">
-              <v-icon icon="mdi-file-excel-outline" size="64" class="mb-2" />
-              <div>Clique em "Gerar Relatório" para baixar a planilha .xlsx</div>
-            </div>
-          </template>
-
-          <template v-else-if="!chartResult">
+          <template v-if="!resultado">
             <div class="d-flex flex-column align-center justify-center flex-grow-1 text-medium-emphasis">
               <v-icon icon="mdi-chart-bar" size="64" class="mb-2" />
               <div>Configure os filtros e clique em "Gerar Relatório"</div>
@@ -621,13 +911,22 @@ async function confirmDeleteSaved() {
           </template>
 
           <template v-else>
-            <div class="d-flex justify-end mb-3">
+            <div class="d-flex justify-end mb-3" style="gap: 8px">
               <v-btn variant="tonal" size="small" prepend-icon="mdi-image" @click="exportImage">
                 Exportar imagem
               </v-btn>
+              <v-btn
+                variant="tonal"
+                size="small"
+                prepend-icon="mdi-file-excel-outline"
+                :loading="downloading"
+                @click="downloadPlanilha"
+              >
+                Baixar planilha
+              </v-btn>
             </div>
 
-            <div class="flex-grow-1" style="position: relative; min-height: 0">
+            <div :style="{ position: 'relative', height: `${chartHeight}px` }" class="mb-4">
               <component
                 :is="chartComponent"
                 ref="chartRef"
@@ -635,6 +934,8 @@ async function confirmDeleteSaved() {
                 :options="chartOptions"
               />
             </div>
+
+            <ReportResultTable :resultado="resultado" :somente-leitura="!!resultadoLegado" @abrir-chamados="onAbrirChamados" />
           </template>
         </v-card>
       </v-col>
@@ -661,6 +962,14 @@ async function confirmDeleteSaved() {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <ReportTicketListDialog
+      v-model="listaAberta"
+      :params="paramsLista"
+      :chave="listaChave"
+      :coluna="listaColuna"
+      :numero-clicado="listaNumero"
+    />
 
     <ConfirmDeleteDialog
       v-model="deleteOpen"
