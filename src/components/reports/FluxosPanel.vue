@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import FluxosMapa from '@/components/reports/FluxosMapa.vue'
 import ReportPeriodControls from '@/components/reports/ReportPeriodControls.vue'
+import ReportTicketListDialog from '@/components/reports/ReportTicketListDialog.vue'
 import reportService from '@/services/reportService'
 import solutionGroupService from '@/services/solutionGroupService'
 import { baixarImagemGraficos } from '@/utils/chartImage'
@@ -120,9 +121,20 @@ async function exportImage() {
 // `{ modo: 'no', no, metrica, rotulo }` ou `{ modo: 'seta', origem, destino, rotulo }`,
 // emitido pelo mapa; o diálogo de lista (fonte 'fluxos') abre a partir deste alvo.
 const listaAlvo = ref(null)
+const listaAberta = ref(false)
+
+// O atalho de período é resolvido pelo backend a cada requisição; a lista recebe
+// as datas já resolvidas que o resultado devolveu, para bater com o número clicado.
+const paramsLista = computed(() => {
+  if (!resultadoParams.value || !resultado.value) return null
+  const { periodo: _atalho, data_inicio: _ini, data_fim: _fim, ...demais } = resultadoParams.value
+  const periodo = resultado.value.periodo
+  return periodo ? { ...demais, data_inicio: periodo.inicio, data_fim: periodo.fim } : demais
+})
 
 function abrirChamados(alvo) {
   listaAlvo.value = alvo
+  listaAberta.value = true
 }
 </script>
 
@@ -212,6 +224,8 @@ function abrirChamados(alvo) {
         </div>
       </template>
     </v-card>
+
+    <ReportTicketListDialog v-model="listaAberta" fonte="fluxos" :params="paramsLista" :alvo="listaAlvo" />
   </div>
 </template>
 

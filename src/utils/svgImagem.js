@@ -20,6 +20,9 @@ const PROPRIEDADES = [
 
 // Copia os estilos computados (com as cores do tema atual) para atributos
 // inline, serializa e desenha num canvas de fundo branco do tamanho do SVG.
+// Largura mínima do PNG: mapas pequenos ficam centralizados em fundo branco.
+const LARGURA_MINIMA = 800
+
 export function svgParaCanvas(svgElement) {
   const clone = svgElement.cloneNode(true)
   const originais = [svgElement, ...svgElement.querySelectorAll('*')]
@@ -45,12 +48,12 @@ export function svgParaCanvas(svgElement) {
     const imagem = new Image()
     imagem.onload = () => {
       const canvas = document.createElement('canvas')
-      canvas.width = width
+      canvas.width = Math.max(width, LARGURA_MINIMA)
       canvas.height = height
       const ctx = canvas.getContext('2d')
       ctx.fillStyle = '#FFFFFF'
-      ctx.fillRect(0, 0, width, height)
-      ctx.drawImage(imagem, 0, 0, width, height)
+      ctx.fillRect(0, 0, canvas.width, height)
+      ctx.drawImage(imagem, Math.round((canvas.width - width) / 2), 0, width, height)
       URL.revokeObjectURL(url)
       resolve(canvas)
     }
