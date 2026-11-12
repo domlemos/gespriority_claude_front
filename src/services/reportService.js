@@ -60,6 +60,27 @@ export default {
     }
     return api.get('/relatorios/chamados', { params }).then((res) => res.data)
   },
+  // Indicadores por grupo: abertos, resolvidos, fechados e cancelados por grupo
+  // de solução (ou por integrante de um grupo).
+  indicadores(params = {}) {
+    if (params.formato === 'xlsx') {
+      return api
+        .get('/relatorios/indicadores', { params, responseType: 'blob' })
+        .then((res) => res.data)
+        .catch(parseBlobError)
+    }
+    return api.get('/relatorios/indicadores', { params }).then((res) => res.data)
+  },
+  // Lista de chamados por trás de uma célula dos indicadores (linha × indicador [× coluna]).
+  indicadoresChamados(params = {}) {
+    if (params.formato === 'xlsx') {
+      return api
+        .get('/relatorios/indicadores/chamados', { params, responseType: 'blob' })
+        .then((res) => res.data)
+        .catch(parseBlobError)
+    }
+    return api.get('/relatorios/indicadores/chamados', { params }).then((res) => res.data)
+  },
   listSaved(params = {}) {
     return api.get('/relatorios-salvos', { params }).then((res) => res.data)
   },
