@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import IncidentViewModal from '@/components/IncidentViewModal.vue'
 import reportService from '@/services/reportService'
 import { extractErrorMessage } from '@/utils/errors'
 import { STATUS_LABELS } from '@/utils/incidentLabels'
@@ -147,6 +148,16 @@ function formatData(iso) {
 function fechar() {
   emit('update:modelValue', false)
 }
+
+// O chamado abre numa modal por cima da lista: uma aba nova não herda a sessão
+// (token no sessionStorage desta aba) e cairia no login.
+const chamadoAberto = ref(false)
+const chamadoId = ref(null)
+
+function verChamado(id) {
+  chamadoId.value = id
+  chamadoAberto.value = true
+}
 </script>
 
 <template>
@@ -193,9 +204,14 @@ function fechar() {
           <tbody>
             <tr v-for="(item, index) in itens" :key="`${item.incidente_id}-${index}`">
               <td class="text-no-wrap">
-                <router-link v-if="item.acessivel" :to="`/incidents/${item.incidente_id}`" target="_blank">
+                <a
+                  v-if="item.acessivel"
+                  href="#"
+                  :aria-label="`Ver chamado #${item.incidente_id}`"
+                  @click.prevent="verChamado(item.incidente_id)"
+                >
                   #{{ item.incidente_id }}
-                </router-link>
+                </a>
                 <template v-else>
                   #{{ item.incidente_id }}
                   <v-chip size="x-small" variant="tonal" class="ml-1">fora dos seus grupos</v-chip>
@@ -231,5 +247,6 @@ function fechar() {
         <v-btn variant="text" @click="fechar">Fechar</v-btn>
       </v-card-actions>
     </v-card>
+    <IncidentViewModal v-model="chamadoAberto" :incident-id="chamadoId" />
   </v-dialog>
 </template>
