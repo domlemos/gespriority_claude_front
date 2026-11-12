@@ -3,20 +3,22 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { Chart as ChartJS, registerables } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { Bar } from 'vue-chartjs'
+import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import IndicadoresTable from '@/components/reports/IndicadoresTable.vue'
 import ReportPeriodControls from '@/components/reports/ReportPeriodControls.vue'
+import ReportTicketListDialog from '@/components/reports/ReportTicketListDialog.vue'
 import reportService from '@/services/reportService'
 import solutionGroupService from '@/services/solutionGroupService'
 import { baixarImagemGraficos } from '@/utils/chartImage'
+import { useAuthStore } from '@/stores/auth'
 import { downloadBlob } from '@/utils/download'
 import { extractErrorMessage } from '@/utils/errors'
 import { paramsPeriodo, validarQuebra } from '@/utils/reportPeriod'
 
 ChartJS.register(...registerables, ChartDataLabels)
 
-// `{chave, indicador, coluna, rotulo}`: chave e rótulo da linha, chave do
-// indicador e chave da coluna de período (null = Total do indicador).
-const emit = defineEmits(['abrir-chamados'])
+const auth = useAuthStore()
+const canManage = computed(() => auth.hasPermission('relatorios.manage'))
 
 // Uma cor por indicador (sem quebra) ou por linha (com quebra).
 const PALETTE = ['#FF8C1A', '#7922B9', '#2563EB', '#166534', '#F59E0B', '#E53935', '#FFA64D', '#C371FF']
@@ -210,8 +212,146 @@ function chartOptions(grafico) {
 
 const chartHeight = computed(() => (resultadoComQuebra.value ? 300 : 420))
 
-function abrirChamados(payload) {
-  emit('abrir-chamados', payload)
+// --- lista de chamados por trás de uma célula ---
+// O atalho de período é resolvido pelo backend a cada requisição; a lista recebe
+// as datas já resolvidas que o resultado devolveu, para bater com o número clicado.
+const paramsLista = computed(() => {
+  if (!resultadoParams.value || !resultado.value) return null
+  const { periodo: _atalho, data_inicio: _ini, data_fim: _fim, ...demais } = resultadoParams.value
+  const periodo = resultado.value.periodo
+  return periodo ? { ...demais, data_inicio: periodo.inicio, data_fim: periodo.fim } : demais
+})
+
+const listaAberta = ref(false)
+const listaChave = ref(null)
+const listaIndicador = ref(null)
+const listaColuna = ref(null)
+const listaNumero = ref(null)
+
+// `{chave, indicador, coluna, rotulo}`: chave e rótulo da linha, chave do
+// indicador e chave da coluna de período (null = Total do indicador).
+function abrirChamados({ chave, indicador, coluna }) {
+  if (!resultadoParams.value || !resultado.value) return
+  const linha = resultado.value.linhas.find((l) => l.chave === chave)
+  const valor = linha?.valores[indicador]
+  listaChave.value = chave
+  listaIndicador.value = indicador
+  listaColuna.value = coluna
+  listaNumero.value = coluna ? (valor?.celulas[coluna] ?? 0) : (valor?.total ?? null)
+  listaAberta.value = true
+}
+
+// --- relatórios salvos ---
+const AGRUPAR_POR_LABELS = { grupo: 'Por grupo', integrante: 'Por integrante' }
+const savedReports = ref([])
+const successSnackbar = ref(false)
+
+async function loadSavedReports() {
+  try {
+    const { data } = await reportService.listSaved({ per_page: 50 })
+    // Os salvos de indicadores moram nesta aba; a aba Avançado mostra o resto.
+    savedReports.value = data.filter((r) => r.contar === 'indicadores')
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os relatórios salvos.')
+  }
+}
+
+onMounted(loadSavedReports)
+
+const saveModalOpen = ref(false)
+const saveName = ref('')
+const saving = ref(false)
+
+function openSaveModal() {
+  const erro = validar()
+  if (erro) {
+    errorMessage.value = erro
+    return
+  }
+  errorMessage.value = ''
+  saveName.value = ''
+  saveModalOpen.value = true
+}
+
+async function confirmSave() {
+  if (!saveName.value.trim()) return
+
+  saving.value = true
+  errorMessage.value = ''
+
+  try {
+    const { grupos: gruposSel, quebra: quebraSel, por_integrante: _pi, ...periodo } = buildParams()
+    const filtros = { ...periodo }
+    if (gruposSel.length) filtros.grupos = gruposSel
+    await reportService.createSaved({
+      nome: saveName.value,
+      contar: 'indicadores',
+      agrupar_por: porIntegrante.value ? 'integrante' : 'grupo',
+      quebra: quebraSel,
+      filtros,
+    })
+    saveModalOpen.value = false
+    successSnackbar.value = true
+    await loadSavedReports()
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o relatório.')
+  } finally {
+    saving.value = false
+  }
+}
+
+function loadSavedIntoFilters(report) {
+  const f = report.filtros || {}
+  grupos.value = f.grupos ?? []
+  quebra.value = report.quebra ?? 'nenhuma'
+  porIntegrante.value = report.agrupar_por === 'integrante'
+  dataInicio.value = f.data_inicio ?? null
+  dataFim.value = f.data_fim ?? null
+  if (f.periodo) periodoAtalho.value = f.periodo
+  else if (f.data_inicio || f.data_fim) periodoAtalho.value = 'personalizado'
+  else periodoAtalho.value = null
+}
+
+// Clicar num salvo carrega os filtros no painel e roda o relatório.
+async function openSaved(report) {
+  loadSavedIntoFilters(report)
+
+  errorMessage.value = ''
+  generating.value = true
+  resultado.value = null
+
+  try {
+    resultado.value = await reportService.executarSaved(report.id)
+    // Parâmetros equivalentes ao que o servidor executou, para planilha e lista.
+    resultadoParams.value = buildParams()
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível executar o relatório salvo.')
+  } finally {
+    generating.value = false
+  }
+}
+
+const deleteOpen = ref(false)
+const deleting = ref(false)
+const reportToDelete = ref(null)
+
+function askDeleteSaved(report) {
+  reportToDelete.value = report
+  deleteOpen.value = true
+}
+
+async function confirmDeleteSaved() {
+  deleting.value = true
+  try {
+    await reportService.removeSaved(reportToDelete.value.id)
+    deleteOpen.value = false
+    await loadSavedReports()
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o relatório salvo.')
+    deleteOpen.value = false
+  } finally {
+    deleting.value = false
+  }
 }
 
 // Componentes dos gráficos na ordem de `graficos` (a imagem os empilha nessa ordem).
@@ -233,6 +373,10 @@ function exportImage() {
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="comfortable" class="mb-4">
       {{ errorMessage }}
     </v-alert>
+
+    <v-snackbar v-model="successSnackbar" :timeout="3000" color="success" transition="fade-transition">
+      Relatório salvo com sucesso.
+    </v-snackbar>
 
     <v-card variant="outlined" class="pa-2 bg-surface mb-4">
       <v-card-text>
@@ -276,9 +420,35 @@ function exportImage() {
             />
           </v-col>
         </v-row>
-        <div class="d-flex justify-end">
+        <div class="d-flex justify-end" style="gap: 8px">
+          <v-btn v-if="canManage" color="primary" variant="tonal" @click="openSaveModal">Salvar Relatório</v-btn>
           <v-btn color="primary" :loading="generating" @click="onGenerate">Gerar Relatório</v-btn>
         </div>
+
+        <template v-if="savedReports.length">
+          <v-divider class="my-3" />
+          <div class="text-caption text-medium-emphasis mb-1">Relatórios salvos</div>
+          <v-list density="compact" class="pa-0">
+            <v-list-item
+              v-for="report in savedReports"
+              :key="report.id"
+              :title="report.nome"
+              :subtitle="AGRUPAR_POR_LABELS[report.agrupar_por] ?? report.agrupar_por"
+              @click="openSaved(report)"
+            >
+              <template v-if="canManage" #append>
+                <v-btn
+                  icon="mdi-delete"
+                  variant="text"
+                  size="x-small"
+                  color="error"
+                  aria-label="Excluir relatório salvo"
+                  @click.stop="askDeleteSaved(report)"
+                />
+              </template>
+            </v-list-item>
+          </v-list>
+        </template>
       </v-card-text>
     </v-card>
 
@@ -329,6 +499,37 @@ function exportImage() {
         </div>
       </template>
     </v-card>
+
+    <v-dialog v-model="saveModalOpen" max-width="480">
+      <v-card>
+        <v-card-title class="text-subtitle-1 font-weight-bold">Salvar relatório</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="saveName" label="Nome do relatório" autofocus hide-details @keyup.enter="confirmSave" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="saveModalOpen = false">Cancelar</v-btn>
+          <v-btn color="primary" :loading="saving" :disabled="!saveName.trim()" @click="confirmSave">Salvar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <ReportTicketListDialog
+      v-model="listaAberta"
+      fonte="indicadores"
+      :params="paramsLista"
+      :chave="listaChave"
+      :indicador="listaIndicador"
+      :coluna="listaColuna"
+      :numero-clicado="listaNumero"
+    />
+
+    <ConfirmDeleteDialog
+      v-model="deleteOpen"
+      message="Excluir este relatório salvo? Essa ação não pode ser desfeita."
+      :loading="deleting"
+      @confirm="confirmDeleteSaved"
+    />
   </div>
 </template>
 

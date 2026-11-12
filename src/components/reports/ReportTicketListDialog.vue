@@ -13,6 +13,10 @@ const props = defineProps({
   coluna: { type: String, default: null },
   // Número que o usuário clicou na tabela (total da linha ou célula); null se desconhecido.
   numeroClicado: { type: Number, default: null },
+  // 'consulta' = relatório Avançado; 'indicadores' = aba Indicadores por grupo.
+  fonte: { type: String, default: 'consulta', validator: (v) => ['consulta', 'indicadores'].includes(v) },
+  // Só 'indicadores': chave do indicador (abertos, resolvidos...) da célula clicada.
+  indicador: { type: String, default: null },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -31,7 +35,14 @@ const listaMenorQueNumero = computed(
 
 const itens = computed(() => dados.value?.data ?? [])
 const meta = computed(() => dados.value?.meta ?? { total: 0, last_page: 1 })
-const comDestino = computed(() => props.params?.contar === 'encaminhamentos')
+const comDestino = computed(() => props.fonte === 'consulta' && props.params?.contar === 'encaminhamentos')
+
+// Cada fonte tem seu endpoint de lista; as duas respondem no mesmo formato de itens.
+function buscarChamados(consulta) {
+  return props.fonte === 'indicadores'
+    ? reportService.indicadoresChamados(consulta)
+    : reportService.chamados(consulta)
+}
 
 // Encaminhamentos mostram também o destino; a coluna de pessoa é quem encaminhou.
 const autorLabel = computed(() => (comDestino.value ? 'Quem encaminhou' : 'Analista'))
@@ -41,6 +52,7 @@ const autorLabel = computed(() => (comDestino.value ? 'Quem encaminhou' : 'Anali
 function montarParams(extra = {}) {
   const consulta = { ...props.params, chave: String(props.chave), ...extra }
   if (props.coluna) consulta.coluna = props.coluna
+  if (props.fonte === 'indicadores') consulta.indicador = props.indicador
   return consulta
 }
 
@@ -50,7 +62,7 @@ async function carregar() {
   loading.value = true
   errorMessage.value = ''
   try {
-    dados.value = await reportService.chamados(
+    dados.value = await buscarChamados(
       montarParams({ page: page.value, per_page: PER_PAGE, formato: 'json' }),
     )
   } catch (error) {
@@ -62,7 +74,7 @@ async function carregar() {
 
 // Cada abertura começa limpa na página 1, sem mostrar a lista anterior.
 watch(
-  () => [props.modelValue, props.chave, props.coluna],
+  () => [props.modelValue, props.chave, props.coluna, props.indicador],
   () => {
     if (!props.modelValue) return
     dados.value = null
@@ -82,7 +94,7 @@ async function baixarLista() {
   downloading.value = true
   errorMessage.value = ''
   try {
-    const blob = await reportService.chamados(montarParams({ formato: 'xlsx' }))
+    const blob = await buscarChamados(montarParams({ formato: 'xlsx' }))
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -120,7 +132,7 @@ function fechar() {
         <div>
           <div class="text-subtitle-1 font-weight-bold">{{ dados?.titulo ?? 'Chamados' }}</div>
           <div v-if="dados" class="text-body-2 text-medium-emphasis">
-            Linha: {{ dados.linha?.rotulo }}<template v-if="dados.coluna"> · {{ dados.coluna.rotulo }}</template>
+            Linha: {{ dados.linha?.rotulo }}<template v-if="dados.indicador"> · {{ dados.indicador.rotulo }}</template><template v-if="dados.coluna"> · {{ dados.coluna.rotulo }}</template>
           </div>
         </div>
         <v-btn icon="mdi-close" variant="text" size="small" aria-label="Fechar" @click="fechar" />
@@ -134,7 +146,12 @@ function fechar() {
         <v-progress-linear v-if="loading" indeterminate class="mb-2" />
 
         <div v-if="listaMenorQueNumero" class="text-body-2 text-medium-emphasis mb-2">
-          {{ meta.total }} chamados distintos — a linha soma {{ numeroClicado }} porque um chamado conta em cada período em que foi concluído.
+          <template v-if="fonte === 'indicadores'">
+            {{ meta.total }} chamados — o total soma {{ numeroClicado }} porque um chamado conta em cada período em que o evento ocorreu, mas aparece uma vez nesta lista.
+          </template>
+          <template v-else>
+            {{ meta.total }} chamados distintos — a linha soma {{ numeroClicado }} porque um chamado conta em cada período em que foi concluído.
+          </template>
         </div>
 
         <v-table v-if="dados" density="compact">

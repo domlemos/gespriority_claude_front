@@ -200,7 +200,8 @@ const savedReports = ref([])
 async function loadSavedReports() {
   try {
     const { data } = await reportService.listSaved({ per_page: 50 })
-    savedReports.value = data
+    // Os salvos de indicadores aparecem na aba Indicadores por grupo.
+    savedReports.value = data.filter((r) => r.contar !== 'indicadores')
   } catch (error) {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os relatórios salvos.')
   }
