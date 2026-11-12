@@ -99,7 +99,7 @@ async function baixarLista() {
     const link = document.createElement('a')
     link.href = url
     // Mesmo nome que o backend usa no Content-Disposition.
-    link.download = 'relatorio-chamados.xlsx'
+    link.download = props.fonte === 'indicadores' ? 'indicadores-chamados.xlsx' : 'relatorio-chamados.xlsx'
     document.body.appendChild(link)
     link.click()
     link.remove()
