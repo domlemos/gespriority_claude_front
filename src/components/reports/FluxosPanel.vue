@@ -78,14 +78,30 @@ async function onGenerate() {
   }
 }
 
+// O atalho de período é resolvido pelo backend a cada requisição; a planilha e a
+// lista recebem as datas já resolvidas que o resultado devolveu, para bater com a
+// tela mesmo que o dia (ou o mês) tenha virado desde a geração.
+function paramsDoResultado() {
+  if (!resultadoParams.value || !resultado.value) return null
+  const params = { ...resultadoParams.value }
+  const periodo = resultado.value.periodo
+  if (periodo) {
+    delete params.periodo
+    params.data_inicio = periodo.inicio
+    params.data_fim = periodo.fim
+  }
+  return params
+}
+
 async function downloadPlanilha() {
-  if (!resultadoParams.value) return
+  const params = paramsDoResultado()
+  if (!params) return
 
   errorMessage.value = ''
   downloading.value = true
 
   try {
-    const blob = await reportService.fluxos({ ...resultadoParams.value, formato: 'xlsx' })
+    const blob = await reportService.fluxos({ ...params, formato: 'xlsx' })
     // Mesmo nome que o backend usa no Content-Disposition.
     downloadBlob(blob, 'mapa-de-fluxos.xlsx')
   } catch (error) {
@@ -123,14 +139,7 @@ async function exportImage() {
 const listaAlvo = ref(null)
 const listaAberta = ref(false)
 
-// O atalho de período é resolvido pelo backend a cada requisição; a lista recebe
-// as datas já resolvidas que o resultado devolveu, para bater com o número clicado.
-const paramsLista = computed(() => {
-  if (!resultadoParams.value || !resultado.value) return null
-  const { periodo: _atalho, data_inicio: _ini, data_fim: _fim, ...demais } = resultadoParams.value
-  const periodo = resultado.value.periodo
-  return periodo ? { ...demais, data_inicio: periodo.inicio, data_fim: periodo.fim } : demais
-})
+const paramsLista = computed(paramsDoResultado)
 
 function abrirChamados(alvo) {
   listaAlvo.value = alvo

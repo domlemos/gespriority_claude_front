@@ -18,11 +18,12 @@ const PROPRIEDADES = [
   'paint-order',
 ]
 
-// Copia os estilos computados (com as cores do tema atual) para atributos
-// inline, serializa e desenha num canvas de fundo branco do tamanho do SVG.
 // Largura mínima do PNG: mapas pequenos ficam centralizados em fundo branco.
 const LARGURA_MINIMA = 800
 
+// Copia os estilos computados (com as cores do tema atual) para atributos
+// inline, serializa e desenha num canvas de fundo branco com a altura do SVG e
+// pelo menos LARGURA_MINIMA (800px) de largura, com o mapa centralizado.
 export function svgParaCanvas(svgElement) {
   const clone = svgElement.cloneNode(true)
   const originais = [svgElement, ...svgElement.querySelectorAll('*')]
