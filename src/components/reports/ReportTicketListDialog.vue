@@ -13,10 +13,13 @@ const props = defineProps({
   coluna: { type: String, default: null },
   // Número que o usuário clicou na tabela (total da linha ou célula); null se desconhecido.
   numeroClicado: { type: Number, default: null },
-  // 'consulta' = relatório Avançado; 'indicadores' = aba Indicadores por grupo.
-  fonte: { type: String, default: 'consulta', validator: (v) => ['consulta', 'indicadores'].includes(v) },
+  // 'consulta' = relatório Avançado; 'indicadores' = aba Indicadores por grupo;
+  // 'fluxos' = aba Mapa de fluxos (número de um nó ou seta).
+  fonte: { type: String, default: 'consulta', validator: (v) => ['consulta', 'indicadores', 'fluxos'].includes(v) },
   // Só 'indicadores': chave do indicador (abertos, resolvidos...) da célula clicada.
   indicador: { type: String, default: null },
+  // Só 'fluxos': `{ modo: 'no', no, metrica }` ou `{ modo: 'seta', origem, destino }`.
+  alvo: { type: Object, default: null },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -35,10 +38,25 @@ const listaMenorQueNumero = computed(
 
 const itens = computed(() => dados.value?.data ?? [])
 const meta = computed(() => dados.value?.meta ?? { total: 0, last_page: 1 })
-const comDestino = computed(() => props.fonte === 'consulta' && props.params?.contar === 'encaminhamentos')
+const comDestino = computed(
+  () =>
+    (props.fonte === 'consulta' && props.params?.contar === 'encaminhamentos') ||
+    (props.fonte === 'fluxos' && (props.alvo?.modo === 'seta' || ['recebidos', 'encaminhados'].includes(props.alvo?.metrica))),
+)
+
+// Segunda linha do cabeçalho: o rótulo do filtro (fluxos) ou da linha/coluna clicada.
+const subtitulo = computed(() => {
+  const d = dados.value
+  if (!d) return ''
+  if (props.fonte === 'fluxos') return d.filtro?.rotulo ?? ''
+  return [`Linha: ${d.linha?.rotulo}`, d.indicador?.rotulo, d.coluna?.rotulo].filter(Boolean).join(' · ')
+})
+
+const pronto = computed(() => (props.fonte === 'fluxos' ? !!props.alvo : props.chave !== null))
 
 // Cada fonte tem seu endpoint de lista; as duas respondem no mesmo formato de itens.
 function buscarChamados(consulta) {
+  if (props.fonte === 'fluxos') return reportService.fluxosChamados(consulta)
   return props.fonte === 'indicadores'
     ? reportService.indicadoresChamados(consulta)
     : reportService.chamados(consulta)
@@ -50,6 +68,11 @@ const autorLabel = computed(() => (comDestino.value ? 'Quem encaminhou' : 'Anali
 // Mesmo parâmetros do relatório + a linha/célula clicada. `chave` vai sempre
 // como string: `__vazio__` e ids numéricos são comparados como texto no backend.
 function montarParams(extra = {}) {
+  if (props.fonte === 'fluxos') {
+    const a = props.alvo
+    const selecao = a.modo === 'seta' ? { origem: a.origem, destino: a.destino } : { no: a.no, metrica: a.metrica }
+    return { ...props.params, ...selecao, ...extra }
+  }
   const consulta = { ...props.params, chave: String(props.chave), ...extra }
   if (props.coluna) consulta.coluna = props.coluna
   if (props.fonte === 'indicadores') consulta.indicador = props.indicador
@@ -57,7 +80,7 @@ function montarParams(extra = {}) {
 }
 
 async function carregar() {
-  if (!props.modelValue || !props.params || props.chave === null) return
+  if (!props.modelValue || !props.params || !pronto.value) return
 
   loading.value = true
   errorMessage.value = ''
@@ -74,7 +97,7 @@ async function carregar() {
 
 // Cada abertura começa limpa na página 1, sem mostrar a lista anterior.
 watch(
-  () => [props.modelValue, props.chave, props.coluna, props.indicador],
+  () => [props.modelValue, props.chave, props.coluna, props.indicador, props.alvo],
   () => {
     if (!props.modelValue) return
     dados.value = null
@@ -99,7 +122,8 @@ async function baixarLista() {
     const link = document.createElement('a')
     link.href = url
     // Mesmo nome que o backend usa no Content-Disposition.
-    link.download = props.fonte === 'indicadores' ? 'indicadores-chamados.xlsx' : 'relatorio-chamados.xlsx'
+    const nomes = { indicadores: 'indicadores-chamados.xlsx', fluxos: 'mapa-de-fluxos-chamados.xlsx' }
+    link.download = nomes[props.fonte] ?? 'relatorio-chamados.xlsx'
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -132,7 +156,7 @@ function fechar() {
         <div>
           <div class="text-subtitle-1 font-weight-bold">{{ dados?.titulo ?? 'Chamados' }}</div>
           <div v-if="dados" class="text-body-2 text-medium-emphasis">
-            Linha: {{ dados.linha?.rotulo }}<template v-if="dados.indicador"> · {{ dados.indicador.rotulo }}</template><template v-if="dados.coluna"> · {{ dados.coluna.rotulo }}</template>
+            {{ subtitulo }}
           </div>
         </div>
         <v-btn icon="mdi-close" variant="text" size="small" aria-label="Fechar" @click="fechar" />

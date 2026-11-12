@@ -81,6 +81,27 @@ export default {
     }
     return api.get('/relatorios/indicadores/chamados', { params }).then((res) => res.data)
   },
+  // Mapa de fluxos: passagens entre o cliente e os grupos no período, com os
+  // números de cada grupo (`formato: 'xlsx'` devolve a planilha).
+  fluxos(params = {}) {
+    if (params.formato === 'xlsx') {
+      return api
+        .get('/relatorios/fluxos', { params, responseType: 'blob' })
+        .then((res) => res.data)
+        .catch(parseBlobError)
+    }
+    return api.get('/relatorios/fluxos', { params }).then((res) => res.data)
+  },
+  // Lista de chamados por trás de um número do mapa (`no` + `metrica`) ou de uma seta (`origem` + `destino`).
+  fluxosChamados(params = {}) {
+    if (params.formato === 'xlsx') {
+      return api
+        .get('/relatorios/fluxos/chamados', { params, responseType: 'blob' })
+        .then((res) => res.data)
+        .catch(parseBlobError)
+    }
+    return api.get('/relatorios/fluxos/chamados', { params }).then((res) => res.data)
+  },
   listSaved(params = {}) {
     return api.get('/relatorios-salvos', { params }).then((res) => res.data)
   },

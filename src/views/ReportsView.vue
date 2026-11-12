@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import AdvancedReportPanel from '@/components/reports/AdvancedReportPanel.vue'
+import FluxosPanel from '@/components/reports/FluxosPanel.vue'
 import IndicadoresPanel from '@/components/reports/IndicadoresPanel.vue'
 
 const aba = ref('indicadores')
@@ -15,12 +16,14 @@ const aba = ref('indicadores')
 
     <v-tabs v-model="aba" color="primary" class="mb-4">
       <v-tab value="indicadores">Indicadores por grupo</v-tab>
+      <v-tab value="fluxos">Mapa de fluxos</v-tab>
       <v-tab value="avancado">Avançado</v-tab>
     </v-tabs>
 
-    <!-- v-show (e não v-if/v-window): as duas abas ficam montadas, então trocar
+    <!-- v-show (e não v-if/v-window): as abas ficam montadas, então trocar
          de aba preserva filtros e resultado de cada uma. -->
     <IndicadoresPanel v-show="aba === 'indicadores'" />
+    <FluxosPanel v-show="aba === 'fluxos'" />
     <AdvancedReportPanel v-show="aba === 'avancado'" />
   </AppLayout>
 </template>

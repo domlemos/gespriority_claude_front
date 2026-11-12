@@ -1,30 +1,35 @@
 <script setup>
 import { PERIODO_OPTIONS, QUEBRA_OPTIONS } from '@/utils/reportPeriod'
 
-// Controles de quebra e período (atalhos + personalizado) dos relatórios.
+// Controles de quebra (opcional) e período (atalhos + personalizado) dos relatórios.
 defineProps({
   periodoLabel: { type: String, default: 'Período' },
   // Período obrigatório: o atalho não pode ser desmarcado e não há "todo o histórico".
   obrigatorio: { type: Boolean, default: false },
+  // Esconde a quebra por período (Mapa de fluxos não tem quebra).
+  mostrarQuebra: { type: Boolean, default: true },
 })
 
-const quebra = defineModel('quebra', { type: String, required: true })
+// Os painéis com quebra ligam este modelo; com `mostrarQuebra` falso ele não é usado.
+const quebra = defineModel('quebra', { type: String, default: 'nenhuma' })
 const periodo = defineModel('periodo', { type: String, default: null })
 const dataInicio = defineModel('dataInicio', { type: String, default: null })
 const dataFim = defineModel('dataFim', { type: String, default: null })
 </script>
 
 <template>
-  <div class="text-caption text-medium-emphasis mb-1">Quebrar por período</div>
-  <v-btn-toggle
-    v-model="quebra"
-    mandatory
-    color="primary"
-    density="comfortable"
-    class="mb-3"
-  >
-    <v-btn v-for="o in QUEBRA_OPTIONS" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
-  </v-btn-toggle>
+  <template v-if="mostrarQuebra">
+    <div class="text-caption text-medium-emphasis mb-1">Quebrar por período</div>
+    <v-btn-toggle
+      v-model="quebra"
+      mandatory
+      color="primary"
+      density="comfortable"
+      class="mb-3"
+    >
+      <v-btn v-for="o in QUEBRA_OPTIONS" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
+    </v-btn-toggle>
+  </template>
 
   <div class="text-caption text-medium-emphasis mb-1">{{ periodoLabel }}</div>
   <v-btn-toggle
