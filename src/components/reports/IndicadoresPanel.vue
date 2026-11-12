@@ -31,9 +31,16 @@ const dataFim = ref(null)
 const quebra = ref('nenhuma')
 const porIntegrante = ref(false)
 
-const podeDetalhar = computed(() => grupos.value.length === 1)
-watch(podeDetalhar, (pode) => {
-  if (!pode) porIntegrante.value = false
+// "Ver por Analista" é o detalhamento por integrante, que exige exatamente um
+// grupo: nesse modo o seletor de grupos vira escolha única.
+const grupoUnico = computed({
+  get: () => grupos.value[0] ?? null,
+  set: (id) => {
+    grupos.value = id == null ? [] : [id]
+  },
+})
+watch(porIntegrante, (analista) => {
+  if (analista && grupos.value.length > 1) grupos.value = [grupos.value[0]]
 })
 
 const solutionGroupOptions = ref([])
@@ -75,6 +82,7 @@ function validar() {
   const periodo = { periodoAtalho: periodoAtalho.value, dataInicio: dataInicio.value, dataFim: dataFim.value }
   const erroQuebra = validarQuebra({ quebra: quebra.value, ...periodo })
   if (erroQuebra) return erroQuebra
+  if (porIntegrante.value && grupos.value.length !== 1) return 'Selecione o grupo de solução para ver por analista.'
   const temPeriodo = periodoAtalho.value === 'personalizado' ? dataInicio.value && dataFim.value : periodoAtalho.value
   return temPeriodo ? '' : 'Informe um período.'
 }
@@ -242,7 +250,7 @@ function abrirChamados({ chave, indicador, coluna }) {
 }
 
 // --- relatórios salvos ---
-const AGRUPAR_POR_LABELS = { grupo: 'Por grupo', integrante: 'Por integrante' }
+const AGRUPAR_POR_LABELS = { grupo: 'Por grupo', integrante: 'Por analista' }
 const savedReports = ref([])
 const successSnackbar = ref(false)
 
@@ -382,7 +390,35 @@ function exportImage() {
       <v-card-text>
         <v-row>
           <v-col cols="12" md="5">
+            <div class="text-caption text-medium-emphasis mb-1">Ver por</div>
+            <v-btn-toggle
+              v-model="porIntegrante"
+              mandatory
+              color="primary"
+              variant="outlined"
+              density="compact"
+              divided
+              class="mb-3"
+            >
+              <v-btn :value="false" prepend-icon="mdi-account-group">Grupo</v-btn>
+              <v-btn :value="true" prepend-icon="mdi-account">Analista</v-btn>
+            </v-btn-toggle>
             <v-autocomplete
+              v-if="porIntegrante"
+              v-model="grupoUnico"
+              :items="solutionGroupOptions"
+              :loading="loadingGrupos"
+              item-title="nome"
+              item-value="id"
+              label="Grupo de solução"
+              placeholder="Escolha o grupo dos analistas"
+              persistent-placeholder
+              hint="Um bloco de colunas por analista do grupo, com os quatro indicadores."
+              persistent-hint
+              density="compact"
+            />
+            <v-autocomplete
+              v-else
               v-model="grupos"
               :items="solutionGroupOptions"
               :loading="loadingGrupos"
@@ -396,19 +432,7 @@ function exportImage() {
               closable-chips
               clearable
               density="compact"
-              class="mb-2"
             />
-            <v-switch
-              v-model="porIntegrante"
-              :disabled="!podeDetalhar"
-              label="Detalhar por integrante"
-              color="primary"
-              density="compact"
-              hide-details
-            />
-            <div v-if="!podeDetalhar" class="text-caption text-medium-emphasis">
-              Selecione um único grupo para detalhar por integrante.
-            </div>
           </v-col>
           <v-col cols="12" md="7">
             <ReportPeriodControls
