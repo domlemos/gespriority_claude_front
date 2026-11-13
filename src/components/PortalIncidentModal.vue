@@ -6,13 +6,14 @@ import { STATUS_LABELS, STATUS_COLORS } from '@/utils/incidentLabels'
 
 // Chamado do cliente: dados básicos, histórico (só a abertura, os próprios
 // comentários e a mensagem de encerramento — filtrado no backend) e
-// comentário novo enquanto o chamado não foi encerrado.
+// comentário novo enquanto o chamado não foi encerrado. Chamado fechado há
+// até 7 dias pode ser reaberto pelo cliente, com motivo (`pode_reabrir`).
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   incidentId: { type: [String, Number], default: null },
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'reopened'])
 
 const incident = ref(null)
 const loading = ref(false)
@@ -20,6 +21,11 @@ const errorMessage = ref('')
 const comentario = ref('')
 const sending = ref(false)
 const commentError = ref('')
+
+const reabrindo = ref(false)
+const motivo = ref('')
+const reopenError = ref('')
+const reopenedMessage = ref('')
 
 // Mesma regra do backend: chamado encerrado não aceita comentário novo.
 const aceitaComentario = computed(() => incident.value && !['fechado', 'cancelado'].includes(incident.value.status))
@@ -37,8 +43,37 @@ function initials(name) {
     .join('')
 }
 
+const fechadoSemReabertura = computed(() => incident.value?.status === 'fechado' && !incident.value.pode_reabrir)
+
+function formatDate(iso) {
+  return iso ? new Date(iso).toLocaleDateString('pt-BR') : '—'
+}
+
 function close() {
   if (!sending.value) emit('update:modelValue', false)
+}
+
+function iniciarReabertura() {
+  reabrindo.value = true
+  motivo.value = ''
+  reopenError.value = ''
+}
+
+async function confirmarReabertura() {
+  sending.value = true
+  reopenError.value = ''
+
+  try {
+    incident.value = await portalIncidentService.reopen(props.incidentId, motivo.value.trim())
+    reabrindo.value = false
+    motivo.value = ''
+    reopenedMessage.value = 'Chamado reaberto. A equipe de suporte vai retomar o atendimento.'
+    emit('reopened', incident.value)
+  } catch (error) {
+    reopenError.value = extractErrorMessage(error, 'Não foi possível reabrir o chamado.')
+  } finally {
+    sending.value = false
+  }
 }
 
 async function load() {
@@ -46,6 +81,10 @@ async function load() {
   comentario.value = ''
   commentError.value = ''
   errorMessage.value = ''
+  reabrindo.value = false
+  motivo.value = ''
+  reopenError.value = ''
+  reopenedMessage.value = ''
   loading.value = true
 
   try {
@@ -109,6 +148,9 @@ watch(
         </div>
 
         <template v-else-if="incident">
+          <v-alert v-if="reopenedMessage" type="success" variant="tonal" density="comfortable" class="mb-4">
+            {{ reopenedMessage }}
+          </v-alert>
           <div class="d-flex align-center flex-wrap ga-2 mb-1">
             <span class="text-h6 font-weight-bold">{{ incident.titulo }}</span>
             <v-chip size="small" :color="STATUS_COLORS[incident.status]" variant="tonal">
@@ -162,8 +204,39 @@ watch(
               :maxlength="5000"
             />
           </template>
+          <template v-else-if="incident.pode_reabrir">
+            <div v-if="!reabrindo" class="d-flex align-center flex-wrap ga-3">
+              <span class="text-body-2 text-medium-emphasis flex-grow-1">
+                O problema voltou ou não foi resolvido? Você pode reabrir este chamado até
+                {{ formatDate(incident.reabrir_ate) }}.
+              </span>
+              <v-btn color="primary" variant="tonal" prepend-icon="mdi-restore" @click="iniciarReabertura">
+                Reabrir chamado
+              </v-btn>
+            </div>
+            <template v-else>
+              <v-alert v-if="reopenError" type="error" variant="tonal" density="comfortable" class="mb-3">
+                {{ reopenError }}
+              </v-alert>
+              <v-textarea
+                v-model="motivo"
+                label="Motivo da reabertura"
+                hint="Conte o que aconteceu para a equipe de suporte retomar o atendimento."
+                persistent-hint
+                rows="3"
+                auto-grow
+                counter="5000"
+                :maxlength="5000"
+                autofocus
+              />
+            </template>
+          </template>
           <div v-else class="text-body-2 text-medium-emphasis">
-            Este chamado foi encerrado e não aceita novos comentários.
+            <template v-if="fechadoSemReabertura">
+              Este chamado foi encerrado em definitivo: o prazo para reabrir terminou em
+              {{ formatDate(incident.reabrir_ate) }}. Se precisar, abra um novo chamado.
+            </template>
+            <template v-else>Este chamado foi encerrado e não aceita novos comentários.</template>
           </div>
         </template>
       </v-card-text>
@@ -172,6 +245,16 @@ watch(
         <v-spacer />
         <!-- "Voltar", não "Fechar": evita parecer que encerra o chamado. -->
         <v-btn variant="text" :disabled="sending" @click="close">Voltar</v-btn>
+        <v-btn v-if="reabrindo" variant="text" :disabled="sending" @click="reabrindo = false">Cancelar</v-btn>
+        <v-btn
+          v-if="reabrindo"
+          color="primary"
+          :loading="sending"
+          :disabled="!motivo.trim()"
+          @click="confirmarReabertura"
+        >
+          Reabrir
+        </v-btn>
         <v-btn
           v-if="aceitaComentario"
           color="primary"
