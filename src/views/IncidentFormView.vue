@@ -432,6 +432,16 @@ init()
         <v-card variant="outlined" class="pa-2 bg-surface d-flex flex-column" style="min-height: 500px">
           <v-card-text class="flex-grow-1 overflow-y-auto" style="min-height: 0">
             <v-form @submit.prevent="onSubmit">
+              <v-text-field
+                v-model="titulo"
+                label="Título"
+                required
+                :disabled="!canEditRestrictedFields"
+                :hint="restrictedFieldHint"
+                persistent-hint
+                class="mb-2"
+              />
+
               <v-select
                 v-model="tipo"
                 :items="tipoOptions"
@@ -469,16 +479,6 @@ init()
                 clearable
                 required
                 :disabled="!canEditRestrictedFields || !clientId"
-                :hint="restrictedFieldHint"
-                persistent-hint
-                class="mb-2"
-              />
-
-              <v-text-field
-                v-model="titulo"
-                label="Título"
-                required
-                :disabled="!canEditRestrictedFields"
                 :hint="restrictedFieldHint"
                 persistent-hint
                 class="mb-2"
