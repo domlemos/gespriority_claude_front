@@ -27,8 +27,9 @@ const motivo = ref('')
 const reopenError = ref('')
 const reopenedMessage = ref('')
 
-// Mesma regra do backend: chamado encerrado não aceita comentário novo.
-const aceitaComentario = computed(() => incident.value && !['fechado', 'cancelado'].includes(incident.value.status))
+// Mesma regra do backend: só chamado fechado recusa comentário (para ele há a
+// reabertura); cancelado aceita, já que em geral foi o cliente quem pediu.
+const aceitaComentario = computed(() => incident.value && incident.value.status !== 'fechado')
 
 function formatDateTime(iso) {
   return iso ? new Date(iso).toLocaleString('pt-BR') : '—'
@@ -236,7 +237,7 @@ watch(
               Este chamado foi encerrado em definitivo: o prazo para reabrir terminou em
               {{ formatDate(incident.reabrir_ate) }}. Se precisar, abra um novo chamado.
             </template>
-            <template v-else>Este chamado foi encerrado e não aceita novos comentários.</template>
+            <template v-else>Este chamado foi fechado e não aceita novos comentários.</template>
           </div>
         </template>
       </v-card-text>
