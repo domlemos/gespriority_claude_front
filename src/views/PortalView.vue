@@ -144,6 +144,7 @@ watch(incidentOpen, (open) => {
       :model-value="incidentOpen"
       :incident-id="incidentId"
       @update:model-value="(open) => !open && closeIncident()"
+      @reopened="loadIncidents()"
     />
 
     <v-alert v-if="createdMessage" type="success" variant="tonal" density="comfortable" closable class="mb-4">

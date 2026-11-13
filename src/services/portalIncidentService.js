@@ -17,4 +17,9 @@ export default {
   comment(id, descricao) {
     return api.post(`/customer/incidentes/${id}/comentarios`, { descricao }).then((res) => res.data.data)
   },
+  // Só chamado fechado, até 7 dias do fechamento (regra no backend). Devolve
+  // o chamado no formato do detalhe, já reaberto.
+  reopen(id, motivo) {
+    return api.post(`/customer/incidentes/${id}/reabrir`, { motivo }).then((res) => res.data.data)
+  },
 }
