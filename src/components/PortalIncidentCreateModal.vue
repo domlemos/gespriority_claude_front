@@ -83,6 +83,8 @@ watch(
         </v-alert>
 
         <v-form @submit.prevent="onSubmit">
+          <v-text-field v-model="titulo" label="Título" counter="255" maxlength="255" required class="mb-2" />
+
           <v-row dense>
             <v-col cols="12" sm="6">
               <v-text-field :model-value="solicitante" label="Solicitante" readonly variant="filled" />
@@ -91,8 +93,6 @@ watch(
               <v-text-field :model-value="empresa" label="Empresa" readonly variant="filled" />
             </v-col>
           </v-row>
-
-          <v-text-field v-model="titulo" label="Título" counter="255" maxlength="255" required class="mb-2" />
 
           <v-textarea
             v-model="descricao"

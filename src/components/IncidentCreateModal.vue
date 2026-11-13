@@ -308,6 +308,8 @@ watch(
         </div>
 
         <v-form v-else-if="!loadFailed" @submit.prevent="onSubmit">
+          <v-text-field v-model="titulo" label="Título" required class="mb-2" />
+
           <v-select v-model="tipo" :items="tipoOptions" label="Tipo" required class="mb-2" />
 
           <v-row dense class="mb-2">
@@ -338,8 +340,6 @@ watch(
               />
             </v-col>
           </v-row>
-
-          <v-text-field v-model="titulo" label="Título" required class="mb-2" />
 
           <v-row dense class="mb-2">
             <v-col cols="6">
