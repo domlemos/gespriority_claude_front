@@ -149,8 +149,7 @@ function fechar() {
   emit('update:modelValue', false)
 }
 
-// O chamado abre numa modal por cima da lista: uma aba nova não herda a sessão
-// (token no sessionStorage desta aba) e cairia no login.
+// O chamado abre numa modal por cima da lista, sem perder o contexto do relatório.
 const chamadoAberto = ref(false)
 const chamadoId = ref(null)
 

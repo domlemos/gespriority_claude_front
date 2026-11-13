@@ -15,8 +15,7 @@ import {
 } from '@/utils/incidentLabels'
 
 // Visualização do chamado sem sair da tela atual (ex.: lista de chamados de um
-// relatório). Uma aba nova não herda a sessão — o token fica no sessionStorage
-// desta aba — e cairia no login. Edição continua na página do chamado.
+// relatório). Edição continua na página do chamado.
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   incidentId: { type: [String, Number], default: null },

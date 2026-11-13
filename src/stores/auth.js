@@ -1,49 +1,28 @@
 import { defineStore } from 'pinia'
 import authService from '@/services/authService'
+import { definirCsrf } from '@/services/csrf'
 
-const STORAGE_KEY = 'upITSM.auth'
+// Sessão por cookie HttpOnly (Sanctum SPA, padrão OWASP): o front nunca vê
+// nem guarda credencial — nada em sessionStorage/localStorage. O estado aqui
+// é só "quem está logado neste perfil", conferido com o backend (`/me`) ao
+// abrir a aplicação ou ao entrar numa rota de outro perfil. Como o cookie vale
+// para o site todo, uma aba nova já nasce logada. Ver BACKEND_SPECS.md §1.3.
 
-// sessionStorage (não localStorage) por decisão da spec do backend: minimiza
-// exposição a XSS, mas ainda permite sobreviver a um reload de página — o
-// ideal seria manter só em memória, mas isso derrubaria a sessão a cada F5.
-function persist(state) {
-  if (!state.token) {
-    sessionStorage.removeItem(STORAGE_KEY)
-    return
-  }
-
-  sessionStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      token: state.token,
-      guard: state.guard,
-      expiresAt: state.expiresAt,
-      user: state.user,
-    }),
-  )
-}
-
-function readPersisted() {
-  try {
-    return JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? 'null')
-  } catch {
-    return null
-  }
-}
-
-let refreshTimeoutId = null
+// Chave do armazenamento antigo (token em sessionStorage) — limpa na
+// primeira carga para não deixar token velho para trás.
+const CHAVE_LEGADA = 'upITSM.auth'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: null,
     guard: null, // 'web' (staff) | 'customer'
     user: null,
-    expiresAt: null,
+    // Perfis já conferidos com o backend nesta carga da aplicação.
+    conferidos: { web: false, customer: false },
     hydrated: false,
   }),
 
   getters: {
-    isAuthenticated: (state) => Boolean(state.token),
+    isAuthenticated: (state) => Boolean(state.user),
     isStaff: (state) => state.guard === 'web',
     isCustomer: (state) => state.guard === 'customer',
     roles: (state) => state.user?.roles ?? [],
@@ -55,54 +34,44 @@ export const useAuthStore = defineStore('auth', {
       return this.permissions.includes(slug)
     },
 
-    setSession({ token, expires_at: expiresAt, user }, guard) {
-      this.token = token
-      this.guard = guard
-      this.user = user
-      this.expiresAt = expiresAt
-      persist(this.$state)
-      this.scheduleRefresh()
-    },
-
     async login(guard, credentials) {
       const data = await authService.login(guard, credentials)
-      this.setSession(data, guard)
+      if (data.csrf_token) definirCsrf(data.csrf_token)
+      this.guard = guard
+      this.user = data.user
+      this.conferidos[guard] = true
       return data
     },
 
     async fetchMe() {
-      const user = await authService.me()
+      if (!this.guard) return null
+      const user = await authService.me(this.guard)
       this.user = user
-      persist(this.$state)
       return user
     },
 
-    async refresh() {
+    // Confere com o backend se há sessão do perfil pedido (uma vez por carga).
+    // Achou: passa a ser o perfil ativo desta aba.
+    async conferir(guard) {
+      if (this.guard === guard && this.user) return true
+      if (this.conferidos[guard]) return false
+
+      this.conferidos[guard] = true
+
       try {
-        const data = await authService.refresh()
-        this.token = data.token
-        this.expiresAt = data.expires_at
-        persist(this.$state)
-        this.scheduleRefresh()
+        const user = await authService.me(guard)
+        this.guard = guard
+        this.user = user
+        return true
       } catch {
-        this.forceLogout()
+        return false
       }
-    },
-
-    scheduleRefresh() {
-      if (refreshTimeoutId) clearTimeout(refreshTimeoutId)
-      if (!this.expiresAt) return
-
-      const msUntilExpiry = new Date(this.expiresAt).getTime() - Date.now()
-      // Aos 80% do TTL, conforme sugerido na spec do backend (seção 1.3).
-      const delay = Math.max(msUntilExpiry * 0.8, 5_000)
-
-      refreshTimeoutId = setTimeout(() => this.refresh(), delay)
     },
 
     async logout() {
       try {
-        await authService.logout()
+        const data = await authService.logout(this.guard)
+        if (data?.csrf_token) definirCsrf(data.csrf_token)
       } finally {
         this.clearState()
       }
@@ -110,7 +79,8 @@ export const useAuthStore = defineStore('auth', {
 
     async logoutAll() {
       try {
-        await authService.logoutAll()
+        const data = await authService.logoutAll(this.guard)
+        if (data?.csrf_token) definirCsrf(data.csrf_token)
       } finally {
         this.clearState()
       }
@@ -125,40 +95,22 @@ export const useAuthStore = defineStore('auth', {
     },
 
     clearState() {
-      if (refreshTimeoutId) clearTimeout(refreshTimeoutId)
-      refreshTimeoutId = null
-      this.token = null
+      if (this.guard) this.conferidos[this.guard] = true
       this.guard = null
       this.user = null
-      this.expiresAt = null
-      sessionStorage.removeItem(STORAGE_KEY)
     },
 
-    // Usado pelo interceptor 401 do axios — sem chamar o backend de volta
-    // (o token já é inválido do lado do servidor).
+    // Interceptor 401 do axios: a sessão expirou/foi invalidada no servidor.
     forceLogout() {
       this.clearState()
     },
 
-    // Restaura a sessão do sessionStorage e confirma com o backend que o
-    // token ainda é válido (pode ter expirado enquanto a aba ficava fechada).
-    async hydrate() {
-      const saved = readPersisted()
-
-      if (saved?.token) {
-        this.token = saved.token
-        this.guard = saved.guard
-        this.user = saved.user
-        this.expiresAt = saved.expiresAt
-
-        try {
-          await this.fetchMe()
-          this.scheduleRefresh()
-        } catch {
-          this.clearState()
-        }
+    hydrate() {
+      try {
+        sessionStorage.removeItem(CHAVE_LEGADA)
+      } catch {
+        // armazenamento indisponível: nada a limpar
       }
-
       this.hydrated = true
     },
   },
