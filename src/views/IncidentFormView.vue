@@ -45,6 +45,18 @@ const successSnackbar = ref(false)
 // Status como está gravado — fechar (mudar pra 'fechado') exige a mensagem
 // de encerramento, a única entrada do staff que o cliente vê no portal.
 const statusGravado = ref(null)
+// Grupo como está gravado: trocar o grupo devolve o chamado para 'aberto' no
+// backend (exceto fechado/cancelado) — o formulário avisa e não pede a
+// mensagem de encerramento, já que o fechamento seria ignorado.
+const grupoGravado = ref(null)
+const STATUS_MANTIDOS_NA_TROCA_DE_GRUPO = ['fechado', 'cancelado']
+const trocaGrupoReabre = computed(
+  () =>
+    props.id &&
+    statusGravado.value !== null &&
+    grupoSolucaoId.value !== grupoGravado.value &&
+    !STATUS_MANTIDOS_NA_TROCA_DE_GRUPO.includes(statusGravado.value),
+)
 const encerramentoOpen = ref(false)
 const mensagemEncerramento = ref('')
 const feedRef = ref(null)
@@ -225,6 +237,7 @@ async function loadIncident() {
   status.value = incident.status
   statusGravado.value = incident.status
   grupoSolucaoId.value = incident.grupo_solucao_id ?? incident.grupo_solucao?.id ?? null
+  grupoGravado.value = grupoSolucaoId.value
   responsavelId.value = incident.responsavel_id ?? incident.responsavel?.id ?? null
 
   // Não resolve a classificação aqui: `loadIncident` roda em paralelo com
@@ -293,7 +306,7 @@ function buildBasePayload() {
 }
 
 function onSubmit() {
-  if (status.value === 'fechado' && statusGravado.value !== 'fechado') {
+  if (status.value === 'fechado' && statusGravado.value !== 'fechado' && !trocaGrupoReabre.value) {
     mensagemEncerramento.value = ''
     encerramentoOpen.value = true
     return
@@ -313,12 +326,15 @@ async function salvar(mensagem = null) {
   successMessage.value = ''
 
   try {
-    await incidentService.update(props.id, {
+    const atualizado = await incidentService.update(props.id, {
       ...buildBasePayload(),
       status: status.value,
       ...(mensagem ? { mensagem_encerramento: mensagem } : {}),
     })
-    statusGravado.value = status.value
+    // O backend pode ter mudado o status (troca de grupo → 'aberto'): vale o que voltou.
+    status.value = atualizado.status
+    statusGravado.value = atualizado.status
+    grupoGravado.value = grupoSolucaoId.value
     successMessage.value = 'Chamado atualizado com sucesso.'
     successSnackbar.value = true
     feedRef.value?.reload()
@@ -551,6 +567,8 @@ init()
                     label="Grupo de Solução"
                     clearable
                     :disabled="!canManage"
+                    :hint="trocaGrupoReabre ? 'Ao salvar, o status volta para Aberto.' : ''"
+                    persistent-hint
                     @update:model-value="watchGrupoSolucaoChange"
                   />
                 </v-col>
