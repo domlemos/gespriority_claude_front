@@ -3,10 +3,10 @@ import { useAuthStore } from '@/stores/auth'
 
 const routes = [
   // Sem `redirect` estático aqui de propósito: a opção `redirect` é resolvida
-  // ANTES dos guards globais (`beforeEach`) rodarem, ou seja, antes da sessão
-  // ser hidratada do sessionStorage — resultaria num "pisca" para /login antes
-  // de corrigir para /dashboard. O redirect de "/" é tratado no beforeEach,
-  // depois de `auth.hydrate()`.
+  // ANTES dos guards globais (`beforeEach`) rodarem, ou seja, antes de a
+  // sessão ser conferida com o backend — resultaria num "pisca" para /login
+  // antes de corrigir para /dashboard. O redirect de "/" é tratado no
+  // beforeEach, depois de `auth.conferir()`.
   {
     path: '/',
     name: 'root',
@@ -177,20 +177,26 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
   if (!auth.hydrated) {
-    await auth.hydrate()
+    auth.hydrate()
+  }
+
+  // A sessão é um cookie HttpOnly que o front não lê: confere com o backend
+  // se há sessão do perfil da rota (uma vez por carga da aplicação).
+  if (to.meta.guard) {
+    await auth.conferir(to.meta.guard)
   }
 
   if (to.name === 'root') {
-    return auth.isAuthenticated ? homeRouteFor(auth.guard) : loginRouteFor('web')
+    if ((await auth.conferir('web')) || (await auth.conferir('customer'))) {
+      return homeRouteFor(auth.guard)
+    }
+    return loginRouteFor('web')
   }
 
   if (to.meta.requiresAuth) {
-    if (!auth.isAuthenticated) {
+    // Sem sessão do perfil desta rota (mesmo que haja do outro): login dele.
+    if (!auth.isAuthenticated || (to.meta.guard && auth.guard !== to.meta.guard)) {
       return { ...loginRouteFor(to.meta.guard), query: { redirect: to.fullPath } }
-    }
-
-    if (to.meta.guard && auth.guard !== to.meta.guard) {
-      return homeRouteFor(auth.guard)
     }
 
     if (to.meta.requiresAdmin && !auth.roles.includes('admin')) {
@@ -202,7 +208,7 @@ router.beforeEach(async (to) => {
     }
   }
 
-  if (to.meta.guestOnly && auth.isAuthenticated) {
+  if (to.meta.guestOnly && auth.isAuthenticated && (!to.meta.guard || auth.guard === to.meta.guard)) {
     return homeRouteFor(auth.guard)
   }
 
