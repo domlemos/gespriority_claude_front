@@ -1,10 +1,17 @@
 // Posicionamento do mapa de fluxos (spec 5.2), sem dependência de Vue nem do DOM.
 //
-// Colunas: o Cliente fica na coluna 0 e cada nó na coluna da sua menor
-// distância (BFS) a partir dele. "Sem grupo" e "Origem desconhecida" também
-// ficam na coluna 0, e os nós sem caminho a partir do Cliente são posicionados
-// por BFS a partir deles (coluna 1 em diante). O que ainda sobrar começa na
-// coluna 1. "Outros grupos" fica sozinho na última coluna.
+// Colunas: o Cliente, "Sem grupo" e "Origem desconhecida" ficam na coluna 0.
+// As setas, da maior quantidade para a menor, viram restrições "origem antes do
+// destino" quando não fecham ciclo com as já aceitas; cada nó fica na coluna do
+// caminho mais longo até ele por essas restrições (o fluxo principal corre da
+// esquerda para a direita e cadeias N1 → N2 → N3 não se amontoam numa coluna).
+// Nó sem restrição de entrada começa na coluna 1. "Outros grupos" fica sozinho
+// na última coluna.
+//
+// Altura: todas as colunas ocupam a mesma faixa vertical (no mínimo
+// `alturaMinima`). As caixas começam distribuídas por igual nessa faixa e depois
+// se aproximam da altura média dos nós com que trocam chamados (ponderada pela
+// quantidade), mantendo a ordem e o espaçamento mínimo na coluna.
 //
 // Setas: para a frente, uma curva cúbica da borda direita da origem à borda
 // esquerda do destino. Para trás ou na mesma coluna (`retorno: true`), um arco
@@ -19,8 +26,10 @@ export const MEDIDAS = {
   alturaLinha: 22,
   alturaEspecial: 44, // caixa tracejada só com o nome
   diametroCliente: 104,
-  espacoColunas: 150, // corredor entre colunas, onde passam as setas
-  espacoLinhas: 28,
+  espacoColunas: 200, // corredor entre colunas, onde passam as setas
+  espacoLinhas: 56, // distância mínima entre caixas na mesma coluna
+  alturaMinima: 560, // faixa vertical mínima das caixas (espalha mapas pequenos)
+  folgaVertical: 1.2, // a faixa é pelo menos esta fração da coluna mais alta empilhada
   faixaRetorno: 24, // distância entre as faixas dos arcos de retorno
   corredorRetorno: 10, // distância entre arcos de retorno no mesmo corredor
   raio: 10, // raio dos cantos do arco de retorno
@@ -40,53 +49,52 @@ function tamanho(no) {
   return { largura: m.largura, altura: m.alturaEspecial }
 }
 
-// BFS a partir de `sementes` ({chave: coluna}), só por nós ainda sem coluna.
-function bfs(coluna, vizinhos, sementes) {
-  const fila = []
-  for (const [chave, col] of sementes) {
-    if (coluna.has(chave)) continue
-    coluna.set(chave, col)
-    fila.push(chave)
-  }
-  while (fila.length) {
-    const atual = fila.shift()
-    for (const prox of vizinhos.get(atual) ?? []) {
-      if (coluna.has(prox) || prox === 'outros') continue
-      coluna.set(prox, coluna.get(atual) + 1)
-      fila.push(prox)
-    }
-  }
-}
-
+// Colunas pelo caminho mais longo num grafo sem ciclos montado com as setas
+// mais volumosas primeiro (uma seta que fecharia ciclo vira retorno).
 function atribuirColunas(nos, arestas) {
   const chaves = nos.map((n) => n.chave)
   const existe = new Set(chaves)
-  const vizinhos = new Map()
-  for (const a of arestas) {
-    if (a.origem === a.destino || !existe.has(a.origem) || !existe.has(a.destino)) continue
-    if (!vizinhos.has(a.origem)) vizinhos.set(a.origem, [])
-    vizinhos.get(a.origem).push(a.destino)
+  const iniciais = new Set(['cliente', ...ESPECIAIS_INICIAIS].filter((c) => existe.has(c)))
+
+  const depois = new Map(chaves.map((c) => [c, new Set()]))
+  const alcanca = (de, ate) => {
+    const visto = new Set([de])
+    const pilha = [de]
+    while (pilha.length) {
+      const atual = pilha.pop()
+      if (atual === ate) return true
+      for (const prox of depois.get(atual)) {
+        if (visto.has(prox)) continue
+        visto.add(prox)
+        pilha.push(prox)
+      }
+    }
+    return false
+  }
+  const ordenadas = arestas
+    .map((a, i) => ({ ...a, i }))
+    .sort((a, b) => b.quantidade - a.quantidade || a.i - b.i)
+  for (const a of ordenadas) {
+    if (a.origem === 'outros' || a.destino === 'outros' || iniciais.has(a.destino)) continue
+    if (depois.get(a.origem).has(a.destino) || alcanca(a.destino, a.origem)) continue
+    depois.get(a.origem).add(a.destino)
   }
 
+  // Caminho mais longo (Kahn, na ordem da resposta para ser estável).
+  const entrada = new Map(chaves.map((c) => [c, 0]))
+  for (const destinos of depois.values()) for (const d of destinos) entrada.set(d, entrada.get(d) + 1)
   const coluna = new Map()
-  if (existe.has('cliente')) bfs(coluna, vizinhos, [['cliente', 0]])
-  bfs(
-    coluna,
-    vizinhos,
-    ESPECIAIS_INICIAIS.filter((c) => existe.has(c)).map((c) => [c, 0]),
-  )
-
-  // Sobra: nós alcançáveis só a partir de "Outros grupos", ciclos ou nós sem
-  // seta. Começa pelos que não recebem seta de outro nó da sobra (ou, num ciclo,
-  // pelo primeiro na ordem da resposta) e segue por BFS a partir da coluna 1.
-  for (;;) {
-    const sobra = chaves.filter((c) => !coluna.has(c) && c !== 'outros')
-    if (!sobra.length) break
-    const naSobra = new Set(sobra)
-    const recebe = new Set()
-    for (const c of sobra) for (const d of vizinhos.get(c) ?? []) if (naSobra.has(d)) recebe.add(d)
-    const raizes = sobra.filter((c) => !recebe.has(c))
-    bfs(coluna, vizinhos, (raizes.length ? raizes : [sobra[0]]).map((c) => [c, 1]))
+  for (const c of chaves) {
+    if (c !== 'outros' && entrada.get(c) === 0) coluna.set(c, iniciais.has(c) ? 0 : 1)
+  }
+  const fila = chaves.filter((c) => coluna.has(c))
+  while (fila.length) {
+    const atual = fila.shift()
+    for (const prox of depois.get(atual)) {
+      coluna.set(prox, Math.max(coluna.get(prox) ?? 0, coluna.get(atual) + 1))
+      entrada.set(prox, entrada.get(prox) - 1)
+      if (entrada.get(prox) === 0) fila.push(prox)
+    }
   }
 
   if (existe.has('outros')) {
@@ -135,6 +143,22 @@ function caminhoArredondado(pontos, raio) {
   return `${d} L ${ultimo.x} ${ultimo.y}`
 }
 
+// Ponto da cúbica (x crescente) na abscissa `x`, por bisseção em t.
+function pontoNaCubica(p0, p1, p2, p3, x) {
+  const em = (t, k) => {
+    const u = 1 - t
+    return u * u * u * p0[k] + 3 * u * u * t * p1[k] + 3 * u * t * t * p2[k] + t * t * t * p3[k]
+  }
+  let [lo, hi] = [0, 1]
+  for (let i = 0; i < 30; i++) {
+    const t = (lo + hi) / 2
+    if (em(t, 'x') < x) lo = t
+    else hi = t
+  }
+  const t = (lo + hi) / 2
+  return { x: em(t, 'x'), y: em(t, 'y') }
+}
+
 // Ponto na borda esquerda/direita de um nó, na altura `y`. No círculo do
 // Cliente, o ponto fica sobre a circunferência.
 function pontoNaBorda(pos, tipo, lado, y) {
@@ -160,19 +184,70 @@ export function layoutFluxos(nos, arestas) {
   const indiceColuna = new Map()
   colunas.forEach((col, i) => col.forEach((chave) => indiceColuna.set(chave, i)))
 
-  // --- caixas: empilhadas em cada coluna, colunas centralizadas na vertical ---
-  const alturaColuna = colunas.map(
-    (col) => col.reduce((s, c) => s + tamanho(porChave.get(c)).altura, 0) + (col.length - 1) * m.espacoLinhas,
+  // --- caixas: faixa vertical comum, distribuição uniforme e depois atração
+  // pela altura média dos vizinhos ---
+  const alturas = new Map(nos.map((n) => [n.chave, tamanho(n).altura]))
+  const empilhada = colunas.map(
+    (col) => col.reduce((s, c) => s + alturas.get(c), 0) + (col.length - 1) * m.espacoLinhas,
   )
-  const alturaCaixas = Math.max(0, ...alturaColuna)
+  const alturaCaixas = Math.max(nos.length > 2 ? m.alturaMinima : 0, ...empilhada.map((h) => h * m.folgaVertical))
+
+  const centro = new Map()
+  colunas.forEach((col) => {
+    const livre = alturaCaixas - col.reduce((s, c) => s + alturas.get(c), 0)
+    const vao = livre / col.length
+    let y = vao / 2
+    for (const chave of col) {
+      centro.set(chave, y + alturas.get(chave) / 2)
+      y += alturas.get(chave) + vao
+    }
+  })
+
+  const pesos = new Map(nos.map((n) => [n.chave, []]))
+  for (const a of validas) {
+    pesos.get(a.origem).push([a.destino, a.quantidade])
+    pesos.get(a.destino).push([a.origem, a.quantidade])
+  }
+  // Mantém a ordem da coluna, garante o espaço mínimo e cabe na faixa.
+  const acomodar = (col) => {
+    const topo = (c) => centro.get(c) - alturas.get(c) / 2
+    for (let i = 1; i < col.length; i++) {
+      const minimo = topo(col[i - 1]) + alturas.get(col[i - 1]) + m.espacoLinhas
+      if (topo(col[i]) < minimo) centro.set(col[i], minimo + alturas.get(col[i]) / 2)
+    }
+    const ultimo = col[col.length - 1]
+    const excesso = topo(ultimo) + alturas.get(ultimo) - alturaCaixas
+    if (excesso > 0) for (const c of col) centro.set(c, centro.get(c) - excesso)
+    for (let i = 0; i < col.length; i++) {
+      const minimo = i === 0 ? 0 : topo(col[i - 1]) + alturas.get(col[i - 1]) + m.espacoLinhas
+      if (topo(col[i]) < minimo) centro.set(col[i], minimo + alturas.get(col[i]) / 2)
+    }
+  }
+  for (let rodada = 0; rodada < 6; rodada++) {
+    for (const col of colunas) {
+      for (const chave of col) {
+        const lista = pesos.get(chave)
+        if (!lista.length) continue
+        const total = lista.reduce((s, [, q]) => s + q, 0)
+        const media = lista.reduce((s, [outro, q]) => s + centro.get(outro) * q, 0) / total
+        // Meio caminho: aproxima sem colar todo mundo na mesma altura.
+        centro.set(chave, (centro.get(chave) + media) / 2)
+      }
+      acomodar(col)
+    }
+  }
+
   const posicoes = {}
   colunas.forEach((col, i) => {
     const xColuna = m.margem + i * (m.largura + m.espacoColunas)
-    let y = m.margem + (alturaCaixas - alturaColuna[i]) / 2
     for (const chave of col) {
       const t = tamanho(porChave.get(chave))
-      posicoes[chave] = { x: xColuna + (m.largura - t.largura) / 2, y, largura: t.largura, altura: t.altura }
-      y += t.altura + m.espacoLinhas
+      posicoes[chave] = {
+        x: xColuna + (m.largura - t.largura) / 2,
+        y: m.margem + centro.get(chave) - t.altura / 2,
+        largura: t.largura,
+        altura: t.altura,
+      }
     }
   })
   const baseCaixas = m.margem + alturaCaixas
@@ -231,12 +306,15 @@ export function layoutFluxos(nos, arestas) {
       const ini = pontoNaBorda(po, tipoO, 'direita', portas.get(`${i}:origem`))
       const fim = pontoNaBorda(pd, tipoD, 'esquerda', portas.get(`${i}:destino`))
       const dx = (fim.x - ini.x) / 2
+      // Rótulo no meio do corredor logo depois da origem: numa seta que pula
+      // colunas, o ponto médio cairia em cima de uma caixa do caminho.
+      const xCorredor = m.margem + indiceColuna.get(a.origem) * (m.largura + m.espacoColunas) + m.largura + m.espacoColunas / 2
+      const rotulo = pontoNaCubica(ini, { x: ini.x + dx, y: ini.y }, { x: fim.x - dx, y: fim.y }, fim, xCorredor)
       return {
         ...base,
         d: `M ${ini.x} ${ini.y} C ${ini.x + dx} ${ini.y}, ${fim.x - dx} ${fim.y}, ${fim.x} ${fim.y}`,
-        // Ponto médio da cúbica simétrica.
-        rotuloX: (ini.x + fim.x) / 2,
-        rotuloY: (ini.y + fim.y) / 2,
+        rotuloX: rotulo.x,
+        rotuloY: rotulo.y,
         retorno: false,
       }
     }
