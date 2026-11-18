@@ -296,5 +296,46 @@
       "attachHint": "Optional. PDF, Word, Excel, CSV, JPG or PNG, up to 10 MB each.",
       "uploadFallback": "upload error"
     }
+  },
+  "portal": {
+    "greeting": "Hello, {name} 👋",
+    "subtitle": "Follow your tickets here.",
+    "openIncident": "Open ticket",
+    "myIncidents": "My tickets",
+    "searchLabel": "Search by number or title",
+    "openedAt": "Opened at",
+    "updatedAt": "Updated at",
+    "noResultsFiltered": "No tickets found with these filters.",
+    "noIncidents": "You don't have any tickets yet.",
+    "loadListError": "Could not load your tickets.",
+    "created": "Ticket #{id} opened. Our team will review and classify it.",
+    "modal": {
+      "title": "Ticket #{id}",
+      "openedUpdated": "Opened at {created} · Updated at {updated}",
+      "history": "History",
+      "supportTeam": "(support team)",
+      "closing": "Closing",
+      "addComment": "Add comment",
+      "commentHint": "Send more details or reply to the support team.",
+      "reopenPrompt": "Did the problem come back or was it not resolved? You can reopen this ticket until {date}.",
+      "reopen": "Reopen ticket",
+      "reopenReason": "Reason for reopening",
+      "reopenHint": "Tell us what happened so the support team can resume handling it.",
+      "finalClosed": "This ticket was permanently closed: the deadline to reopen ended on {date}. If needed, open a new ticket.",
+      "closedNoComments": "This ticket is closed and does not accept new comments.",
+      "back": "Back",
+      "reopenConfirm": "Reopen",
+      "comment": "Comment",
+      "reopened": "Ticket reopened. The support team will resume handling it.",
+      "reopenError": "Could not reopen the ticket.",
+      "notFound": "Ticket not found.",
+      "loadError": "Could not load the ticket.",
+      "commentError": "Could not send the comment."
+    },
+    "create": {
+      "title": "Open ticket",
+      "descriptionHint": "Tell us what happened, since when, and what you already tried.",
+      "error": "Could not open the ticket."
+    }
   }
 }

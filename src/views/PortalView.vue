@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import PortalIncidentCreateModal from '@/components/PortalIncidentCreateModal.vue'
@@ -7,12 +8,14 @@ import PortalIncidentModal from '@/components/PortalIncidentModal.vue'
 import portalIncidentService from '@/services/portalIncidentService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
+import { formatDateTime } from '@/utils/format'
 import {
   statusLabel,
   statusOptions as statusOptionsFn,
   STATUS_COLORS,
 } from '@/utils/incidentLabels'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -20,13 +23,13 @@ const router = useRouter()
 // Backend pagina fixo em 15 — sem seletor de itens por página.
 const ITEMS_PER_PAGE = 15
 
-const headers = [
-  { title: 'Número', key: 'id', sortable: false },
-  { title: 'Título', key: 'titulo', sortable: false },
-  { title: 'Status', key: 'status', sortable: false },
-  { title: 'Aberto em', key: 'created_at', sortable: false },
-  { title: 'Atualizado em', key: 'updated_at', sortable: false },
-]
+const headers = computed(() => [
+  { title: t('incidents.headers.numero'), key: 'id', sortable: false },
+  { title: t('incidents.headers.titulo'), key: 'titulo', sortable: false },
+  { title: t('incidents.headers.status'), key: 'status', sortable: false },
+  { title: t('portal.openedAt'), key: 'created_at', sortable: false },
+  { title: t('portal.updatedAt'), key: 'updated_at', sortable: false },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -91,10 +94,6 @@ watch(busca, (valor) => {
 // e emite `update:options` de novo, que recarrega com os filtros atuais.
 const filtrosChave = computed(() => JSON.stringify([buscaAplicada.value, status.value]))
 
-function formatDateTime(iso) {
-  return iso ? new Date(iso).toLocaleString('pt-BR') : '—'
-}
-
 async function loadIncidents(options = {}) {
   page.value = options.page ?? page.value
   loading.value = true
@@ -108,14 +107,14 @@ async function loadIncidents(options = {}) {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar seus chamados.')
+    errorMessage.value = extractErrorMessage(error, t('portal.loadListError'))
   } finally {
     loading.value = false
   }
 }
 
 function onCreated(id) {
-  createdMessage.value = `Incidente #${id} aberto. Nossa equipe vai analisar e classificar o chamado.`
+  createdMessage.value = t('portal.created', { id })
   loadIncidents({ page: 1 })
 }
 
@@ -134,12 +133,12 @@ watch(incidentOpen, (open) => {
   <AppLayout>
     <div class="d-flex align-center justify-space-between mb-6">
       <div>
-        <h1 class="text-h5 font-weight-bold mb-1">Olá, {{ auth.user?.name }} 👋</h1>
-        <p class="text-body-2 text-medium-emphasis ma-0">Acompanhe aqui os seus chamados.</p>
+        <h1 class="text-h5 font-weight-bold mb-1">{{ $t('portal.greeting', { name: auth.user?.name }) }}</h1>
+        <p class="text-body-2 text-medium-emphasis ma-0">{{ $t('portal.subtitle') }}</p>
       </div>
 
       <v-btn color="primary" prepend-icon="mdi-plus" @click="createOpen = true">
-        Abrir incidente
+        {{ $t('portal.openIncident') }}
       </v-btn>
     </div>
 
@@ -160,13 +159,13 @@ watch(incidentOpen, (open) => {
     </v-alert>
 
     <v-card variant="outlined">
-      <v-card-title class="text-subtitle-1 font-weight-bold">Meus chamados</v-card-title>
+      <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('portal.myIncidents') }}</v-card-title>
 
       <v-row dense class="px-4">
         <v-col cols="12" sm="8">
           <v-text-field
             v-model="busca"
-            label="Buscar por número ou título"
+            :label="$t('portal.searchLabel')"
             prepend-inner-icon="mdi-magnify"
             clearable
             density="comfortable"
@@ -177,7 +176,7 @@ watch(incidentOpen, (open) => {
           <v-select
             v-model="status"
             :items="statusOptions"
-            label="Status"
+            :label="$t('incidents.filters.status')"
             clearable
             density="comfortable"
             hide-details
@@ -193,7 +192,7 @@ watch(incidentOpen, (open) => {
         :items-per-page-options="[ITEMS_PER_PAGE]"
         :loading="loading"
         :search="filtrosChave"
-        :no-data-text="buscaAplicada || status ? 'Nenhum chamado encontrado com esses filtros.' : 'Você ainda não tem chamados.'"
+        :no-data-text="buscaAplicada || status ? $t('portal.noResultsFiltered') : $t('portal.noIncidents')"
         hover
         class="portal-table"
         @update:options="loadIncidents"
@@ -207,8 +206,8 @@ watch(incidentOpen, (open) => {
           </v-chip>
         </template>
 
-        <template #item.created_at="{ item }">{{ formatDateTime(item.created_at) }}</template>
-        <template #item.updated_at="{ item }">{{ formatDateTime(item.updated_at) }}</template>
+        <template #item.created_at="{ item }">{{ item.created_at ? formatDateTime(item.created_at) : '—' }}</template>
+        <template #item.updated_at="{ item }">{{ item.updated_at ? formatDateTime(item.updated_at) : '—' }}</template>
       </v-data-table-server>
     </v-card>
   </AppLayout>

@@ -1,7 +1,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import portalIncidentService from '@/services/portalIncidentService'
 import { extractErrorMessage } from '@/utils/errors'
+import { formatDate, formatDateTime } from '@/utils/format'
 import { statusLabel, STATUS_COLORS } from '@/utils/incidentLabels'
 
 // Chamado do cliente: dados básicos, histórico (só a abertura, os próprios
@@ -14,6 +16,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'reopened'])
+
+const { t } = useI18n()
 
 const incident = ref(null)
 const loading = ref(false)
@@ -31,10 +35,6 @@ const reopenedMessage = ref('')
 // reabertura); cancelado aceita, já que em geral foi o cliente quem pediu.
 const aceitaComentario = computed(() => incident.value && incident.value.status !== 'fechado')
 
-function formatDateTime(iso) {
-  return iso ? new Date(iso).toLocaleString('pt-BR') : '—'
-}
-
 function initials(name) {
   return (name ?? '')
     .split(' ')
@@ -46,8 +46,12 @@ function initials(name) {
 
 const fechadoSemReabertura = computed(() => incident.value?.status === 'fechado' && !incident.value.pode_reabrir)
 
-function formatDate(iso) {
-  return iso ? new Date(iso).toLocaleDateString('pt-BR') : '—'
+function dateOrDash(iso) {
+  return iso ? formatDate(iso) : '—'
+}
+
+function dateTimeOrDash(iso) {
+  return iso ? formatDateTime(iso) : '—'
 }
 
 function close() {
@@ -68,10 +72,10 @@ async function confirmarReabertura() {
     incident.value = await portalIncidentService.reopen(props.incidentId, motivo.value.trim())
     reabrindo.value = false
     motivo.value = ''
-    reopenedMessage.value = 'Chamado reaberto. A equipe de suporte vai retomar o atendimento.'
+    reopenedMessage.value = t('portal.modal.reopened')
     emit('reopened', incident.value)
   } catch (error) {
-    reopenError.value = extractErrorMessage(error, 'Não foi possível reabrir o chamado.')
+    reopenError.value = extractErrorMessage(error, t('portal.modal.reopenError'))
   } finally {
     sending.value = false
   }
@@ -93,8 +97,8 @@ async function load() {
   } catch (error) {
     errorMessage.value =
       error?.response?.status === 404
-        ? 'Chamado não encontrado.'
-        : extractErrorMessage(error, 'Não foi possível carregar o chamado.')
+        ? t('portal.modal.notFound')
+        : extractErrorMessage(error, t('portal.modal.loadError'))
   } finally {
     loading.value = false
   }
@@ -109,7 +113,7 @@ async function enviarComentario() {
     incident.value.descricoes.push(entrada)
     comentario.value = ''
   } catch (error) {
-    commentError.value = extractErrorMessage(error, 'Não foi possível enviar o comentário.')
+    commentError.value = extractErrorMessage(error, t('portal.modal.commentError'))
   } finally {
     sending.value = false
   }
@@ -134,7 +138,7 @@ watch(
   >
     <v-card>
       <v-card-title class="d-flex align-center text-subtitle-1 font-weight-bold">
-        Chamado #{{ incidentId }}
+        {{ $t('portal.modal.title', { id: incidentId }) }}
         <v-spacer />
         <v-btn icon="mdi-close" variant="text" density="comfortable" :disabled="sending" @click="close" />
       </v-card-title>
@@ -159,10 +163,10 @@ watch(
             </v-chip>
           </div>
           <div class="text-caption text-medium-emphasis mb-4">
-            Aberto em {{ formatDateTime(incident.created_at) }} · Atualizado em {{ formatDateTime(incident.updated_at) }}
+            {{ $t('portal.modal.openedUpdated', { created: dateTimeOrDash(incident.created_at), updated: dateTimeOrDash(incident.updated_at) }) }}
           </div>
 
-          <div class="text-subtitle-2 font-weight-bold mb-3">Histórico</div>
+          <div class="text-subtitle-2 font-weight-bold mb-3">{{ $t('portal.modal.history') }}</div>
 
           <div v-for="entry in incident.descricoes" :key="entry.id" class="d-flex mb-4">
             <v-avatar :color="entry.autor.equipe ? 'primary' : 'grey-darken-1'" size="36" class="mr-3">
@@ -172,8 +176,8 @@ watch(
             <div class="flex-grow-1">
               <div class="d-flex align-center flex-wrap ga-2">
                 <span class="font-weight-bold text-body-2">{{ entry.autor.nome }}</span>
-                <span v-if="entry.autor.equipe" class="text-caption text-medium-emphasis">(equipe de suporte)</span>
-                <span class="text-caption text-medium-emphasis">{{ formatDateTime(entry.created_at) }}</span>
+                <span v-if="entry.autor.equipe" class="text-caption text-medium-emphasis">{{ $t('portal.modal.supportTeam') }}</span>
+                <span class="text-caption text-medium-emphasis">{{ dateTimeOrDash(entry.created_at) }}</span>
                 <v-chip
                   v-if="entry.tipo === 'encerramento'"
                   size="x-small"
@@ -181,7 +185,7 @@ watch(
                   color="success"
                   prepend-icon="mdi-check-circle-outline"
                 >
-                  Encerramento
+                  {{ $t('portal.modal.closing') }}
                 </v-chip>
               </div>
               <div class="text-body-2" style="white-space: pre-wrap">{{ entry.descricao }}</div>
@@ -196,8 +200,8 @@ watch(
             </v-alert>
             <v-textarea
               v-model="comentario"
-              label="Adicionar comentário"
-              hint="Envie mais detalhes ou responda à equipe de suporte."
+              :label="$t('portal.modal.addComment')"
+              :hint="$t('portal.modal.commentHint')"
               persistent-hint
               rows="3"
               auto-grow
@@ -208,11 +212,10 @@ watch(
           <template v-else-if="incident.pode_reabrir">
             <div v-if="!reabrindo" class="d-flex align-center flex-wrap ga-3">
               <span class="text-body-2 text-medium-emphasis flex-grow-1">
-                O problema voltou ou não foi resolvido? Você pode reabrir este chamado até
-                {{ formatDate(incident.reabrir_ate) }}.
+                {{ $t('portal.modal.reopenPrompt', { date: dateOrDash(incident.reabrir_ate) }) }}
               </span>
               <v-btn color="primary" variant="tonal" prepend-icon="mdi-restore" @click="iniciarReabertura">
-                Reabrir chamado
+                {{ $t('portal.modal.reopen') }}
               </v-btn>
             </div>
             <template v-else>
@@ -221,8 +224,8 @@ watch(
               </v-alert>
               <v-textarea
                 v-model="motivo"
-                label="Motivo da reabertura"
-                hint="Conte o que aconteceu para a equipe de suporte retomar o atendimento."
+                :label="$t('portal.modal.reopenReason')"
+                :hint="$t('portal.modal.reopenHint')"
                 persistent-hint
                 rows="3"
                 auto-grow
@@ -234,10 +237,9 @@ watch(
           </template>
           <div v-else class="text-body-2 text-medium-emphasis">
             <template v-if="fechadoSemReabertura">
-              Este chamado foi encerrado em definitivo: o prazo para reabrir terminou em
-              {{ formatDate(incident.reabrir_ate) }}. Se precisar, abra um novo chamado.
+              {{ $t('portal.modal.finalClosed', { date: dateOrDash(incident.reabrir_ate) }) }}
             </template>
-            <template v-else>Este chamado foi fechado e não aceita novos comentários.</template>
+            <template v-else>{{ $t('portal.modal.closedNoComments') }}</template>
           </div>
         </template>
       </v-card-text>
@@ -245,8 +247,8 @@ watch(
       <v-card-actions>
         <v-spacer />
         <!-- "Voltar", não "Fechar": evita parecer que encerra o chamado. -->
-        <v-btn variant="text" :disabled="sending" @click="close">Voltar</v-btn>
-        <v-btn v-if="reabrindo" variant="text" :disabled="sending" @click="reabrindo = false">Cancelar</v-btn>
+        <v-btn variant="text" :disabled="sending" @click="close">{{ $t('portal.modal.back') }}</v-btn>
+        <v-btn v-if="reabrindo" variant="text" :disabled="sending" @click="reabrindo = false">{{ $t('common.cancel') }}</v-btn>
         <v-btn
           v-if="reabrindo"
           color="primary"
@@ -254,7 +256,7 @@ watch(
           :disabled="!motivo.trim()"
           @click="confirmarReabertura"
         >
-          Reabrir
+          {{ $t('portal.modal.reopenConfirm') }}
         </v-btn>
         <v-btn
           v-if="aceitaComentario"
@@ -263,7 +265,7 @@ watch(
           :disabled="!comentario.trim()"
           @click="enviarComentario"
         >
-          Comentar
+          {{ $t('portal.modal.comment') }}
         </v-btn>
       </v-card-actions>
     </v-card>

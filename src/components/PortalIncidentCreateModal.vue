@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import portalIncidentService from '@/services/portalIncidentService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
@@ -11,6 +12,7 @@ const props = defineProps({
 // `created` leva o número do incidente aberto — a lista recarrega e avisa.
 const emit = defineEmits(['update:modelValue', 'created'])
 
+const { t } = useI18n()
 const auth = useAuthStore()
 
 const titulo = ref('')
@@ -41,7 +43,7 @@ async function onSubmit() {
     emit('update:modelValue', false)
     emit('created', created.id)
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível abrir o incidente.')
+    errorMessage.value = extractErrorMessage(error, t('portal.create.error'))
   } finally {
     saving.value = false
   }
@@ -72,7 +74,7 @@ watch(
   >
     <v-card>
       <v-card-title class="d-flex align-center text-subtitle-1 font-weight-bold">
-        Abrir incidente
+        {{ $t('portal.create.title') }}
         <v-spacer />
         <v-btn icon="mdi-close" variant="text" density="comfortable" :disabled="saving" @click="close" />
       </v-card-title>
@@ -83,21 +85,21 @@ watch(
         </v-alert>
 
         <v-form @submit.prevent="onSubmit">
-          <v-text-field v-model="titulo" label="Título" counter="255" maxlength="255" required class="mb-2" />
+          <v-text-field v-model="titulo" :label="$t('incidents.form.titulo')" counter="255" maxlength="255" required class="mb-2" />
 
           <v-row dense>
             <v-col cols="12" sm="6">
-              <v-text-field :model-value="solicitante" label="Solicitante" readonly variant="filled" />
+              <v-text-field :model-value="solicitante" :label="$t('incidents.form.solicitante')" readonly variant="filled" />
             </v-col>
             <v-col cols="12" sm="6">
-              <v-text-field :model-value="empresa" label="Empresa" readonly variant="filled" />
+              <v-text-field :model-value="empresa" :label="$t('incidents.form.empresa')" readonly variant="filled" />
             </v-col>
           </v-row>
 
           <v-textarea
             v-model="descricao"
-            label="Descrição"
-            hint="Conte o que aconteceu, desde quando e o que você já tentou."
+            :label="$t('incidents.form.descricao')"
+            :hint="$t('portal.create.descriptionHint')"
             persistent-hint
             rows="6"
             required
@@ -107,14 +109,14 @@ watch(
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" :disabled="saving" @click="close">Cancelar</v-btn>
+        <v-btn variant="text" :disabled="saving" @click="close">{{ $t('common.cancel') }}</v-btn>
         <v-btn
           color="primary"
           :loading="saving"
           :disabled="!titulo.trim() || !descricao.trim()"
           @click="onSubmit"
         >
-          Abrir incidente
+          {{ $t('portal.create.title') }}
         </v-btn>
       </v-card-actions>
     </v-card>

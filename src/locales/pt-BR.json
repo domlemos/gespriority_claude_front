@@ -296,5 +296,46 @@
       "attachHint": "Opcional. PDF, Word, Excel, CSV, JPG ou PNG, até 10 MB cada.",
       "uploadFallback": "erro no envio"
     }
+  },
+  "portal": {
+    "greeting": "Olá, {name} 👋",
+    "subtitle": "Acompanhe aqui os seus chamados.",
+    "openIncident": "Abrir incidente",
+    "myIncidents": "Meus chamados",
+    "searchLabel": "Buscar por número ou título",
+    "openedAt": "Aberto em",
+    "updatedAt": "Atualizado em",
+    "noResultsFiltered": "Nenhum chamado encontrado com esses filtros.",
+    "noIncidents": "Você ainda não tem chamados.",
+    "loadListError": "Não foi possível carregar seus chamados.",
+    "created": "Incidente #{id} aberto. Nossa equipe vai analisar e classificar o chamado.",
+    "modal": {
+      "title": "Chamado #{id}",
+      "openedUpdated": "Aberto em {created} · Atualizado em {updated}",
+      "history": "Histórico",
+      "supportTeam": "(equipe de suporte)",
+      "closing": "Encerramento",
+      "addComment": "Adicionar comentário",
+      "commentHint": "Envie mais detalhes ou responda à equipe de suporte.",
+      "reopenPrompt": "O problema voltou ou não foi resolvido? Você pode reabrir este chamado até {date}.",
+      "reopen": "Reabrir chamado",
+      "reopenReason": "Motivo da reabertura",
+      "reopenHint": "Conte o que aconteceu para a equipe de suporte retomar o atendimento.",
+      "finalClosed": "Este chamado foi encerrado em definitivo: o prazo para reabrir terminou em {date}. Se precisar, abra um novo chamado.",
+      "closedNoComments": "Este chamado foi fechado e não aceita novos comentários.",
+      "back": "Voltar",
+      "reopenConfirm": "Reabrir",
+      "comment": "Comentar",
+      "reopened": "Chamado reaberto. A equipe de suporte vai retomar o atendimento.",
+      "reopenError": "Não foi possível reabrir o chamado.",
+      "notFound": "Chamado não encontrado.",
+      "loadError": "Não foi possível carregar o chamado.",
+      "commentError": "Não foi possível enviar o comentário."
+    },
+    "create": {
+      "title": "Abrir incidente",
+      "descriptionHint": "Conte o que aconteceu, desde quando e o que você já tentou.",
+      "error": "Não foi possível abrir o incidente."
+    }
   }
 }
