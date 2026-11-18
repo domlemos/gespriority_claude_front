@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { AGRUPAMENTO_LABELS } from '@/services/reportService'
+import { agrupamentoLabel } from '@/services/reportService'
 
 const props = defineProps({
   resultado: { type: Object, required: true },
@@ -14,7 +14,7 @@ const emit = defineEmits(['abrir-chamados'])
 const comQuebra = computed(() => props.resultado.quebra && props.resultado.quebra !== 'nenhuma')
 const colunas = computed(() => (comQuebra.value ? props.resultado.colunas : []))
 const cabecalho = computed(
-  () => AGRUPAMENTO_LABELS[props.resultado.agrupar_por] ?? props.resultado.agrupar_por,
+  () => agrupamentoLabel(props.resultado.agrupar_por),
 )
 const mostrarDistintos = computed(
   () => props.resultado.chamados_distintos !== props.resultado.totais.total,

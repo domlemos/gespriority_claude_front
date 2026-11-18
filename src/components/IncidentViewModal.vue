@@ -5,12 +5,12 @@ import IncidentFeedPanel from '@/components/IncidentFeedPanel.vue'
 import incidentService from '@/services/incidentService'
 import { extractErrorMessage } from '@/utils/errors'
 import {
-  PRIORIDADE_LABELS,
+  prioridadeLabel,
   PRIORIDADE_COLORS,
-  STATUS_LABELS,
+  statusLabel,
   STATUS_COLORS,
-  ORIGEM_LABELS,
-  TIPO_LABELS,
+  origemLabel,
+  tipoLabel,
   TIPO_COLORS,
 } from '@/utils/incidentLabels'
 
@@ -91,13 +91,13 @@ watch(
           <div class="text-h6 mb-2">{{ incident.titulo }}</div>
           <div class="d-flex flex-wrap mb-4" style="gap: 8px">
             <v-chip size="small" variant="tonal" :color="STATUS_COLORS[incident.status]">
-              {{ STATUS_LABELS[incident.status] ?? incident.status }}
+              {{ statusLabel(incident.status) }}
             </v-chip>
             <v-chip size="small" variant="tonal" :color="TIPO_COLORS[incident.tipo]">
-              {{ TIPO_LABELS[incident.tipo] ?? incident.tipo }}
+              {{ tipoLabel(incident.tipo) }}
             </v-chip>
             <v-chip v-if="incident.prioridade" size="small" variant="tonal" :color="PRIORIDADE_COLORS[incident.prioridade]">
-              Prioridade {{ PRIORIDADE_LABELS[incident.prioridade] ?? incident.prioridade }}
+              Prioridade {{ prioridadeLabel(incident.prioridade) }}
             </v-chip>
           </div>
 
@@ -112,7 +112,7 @@ watch(
             </v-col>
             <v-col cols="12" sm="6" md="4">
               <div class="text-caption text-medium-emphasis">Origem</div>
-              <div>{{ ORIGEM_LABELS[incident.origem] ?? incident.origem ?? '—' }}</div>
+              <div>{{ origemLabel(incident.origem) ?? '—' }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
               <div class="text-caption text-medium-emphasis">Grupo de Solução</div>

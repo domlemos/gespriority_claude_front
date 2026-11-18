@@ -1,10 +1,11 @@
-function pluralize(value, singular, plural) {
-  return value === 1 ? singular : plural
-}
+import { t } from '@/plugins/i18n'
 
 function joinParts(parts) {
   if (parts.length <= 1) return parts.join('')
-  return `${parts.slice(0, -1).join(', ')} e ${parts[parts.length - 1]}`
+  return t('duration.list', {
+    rest: parts.slice(0, -1).join(', '),
+    last: parts[parts.length - 1],
+  })
 }
 
 export function formatDurationMinutes(minutes) {
@@ -14,9 +15,9 @@ export function formatDurationMinutes(minutes) {
   const mins = abs % 60
 
   const parts = []
-  if (days > 0) parts.push(`${days} ${pluralize(days, 'dia', 'dias')}`)
-  if (hours > 0) parts.push(`${hours} ${pluralize(hours, 'hora', 'horas')}`)
-  if (mins > 0 || parts.length === 0) parts.push(`${mins} ${pluralize(mins, 'minuto', 'minutos')}`)
+  if (days > 0) parts.push(t('duration.days', days))
+  if (hours > 0) parts.push(t('duration.hours', hours))
+  if (mins > 0 || parts.length === 0) parts.push(t('duration.minutes', mins))
 
   return joinParts(parts)
 }

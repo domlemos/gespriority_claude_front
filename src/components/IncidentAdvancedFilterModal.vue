@@ -1,6 +1,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { PRIORIDADE_LABELS, STATUS_LABELS, ORIGEM_LABELS, TIPO_LABELS } from '@/utils/incidentLabels'
+import {
+  prioridadeOptions as prioridadeOptionsFn,
+  statusOptions as statusOptionsFn,
+  origemOptions as origemOptionsFn,
+  tipoOptions as tipoOptionsFn,
+} from '@/utils/incidentLabels'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -15,10 +20,10 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'apply', 'save', 'show-all'])
 
-const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
-const priorityOptions = Object.entries(PRIORIDADE_LABELS).map(([value, title]) => ({ value, title }))
-const originOptions = Object.entries(ORIGEM_LABELS).map(([value, title]) => ({ value, title }))
-const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value, title }))
+const statusOptions = computed(() => statusOptionsFn())
+const priorityOptions = computed(() => prioridadeOptionsFn())
+const originOptions = computed(() => origemOptionsFn())
+const tipoOptions = computed(() => tipoOptionsFn())
 
 const numero = ref(null)
 const status = ref(null)

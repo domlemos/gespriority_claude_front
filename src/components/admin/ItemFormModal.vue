@@ -1,9 +1,9 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import itemService from '@/services/itemService'
 import subcategoryService from '@/services/subcategoryService'
 import { extractErrorMessage } from '@/utils/errors'
-import { PRIORIDADE_LABELS } from '@/utils/incidentLabels'
+import { prioridadeOptions } from '@/utils/incidentLabels'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -20,10 +20,7 @@ const subcategoryOptions = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
 
-const prioridadePadraoOptions = Object.entries(PRIORIDADE_LABELS).map(([value, title]) => ({
-  value,
-  title,
-}))
+const prioridadePadraoOptions = computed(() => prioridadeOptions())
 
 function subcategoryLabel(subcategory) {
   if (!subcategory || typeof subcategory !== 'object') return ''

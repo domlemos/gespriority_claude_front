@@ -1,29 +1,12 @@
 import api from '@/services/api'
+import { t } from '@/plugins/i18n'
 
 // Rótulos de agrupamento (capitalizados) dos dois caminhos: o novo (`contar`) e
 // os nomes legados, que ainda aparecem em relatórios salvos antes da Fase 2.
-export const AGRUPAMENTO_LABELS = {
-  analista: 'Analista',
-  grupo_analista: 'Grupo do analista',
-  grupo_chamado: 'Grupo de Solução',
-  categoria: 'Categoria',
-  subcategoria: 'Subcategoria',
-  item: 'Item',
-  cliente: 'Cliente',
-  tipo: 'Tipo',
-  status_sla: 'Status de SLA',
-  responsavel: 'Responsável',
-  aberto_por: 'Quem abriu',
-  quem_encaminhou: 'Quem encaminhou',
-  para_grupo: 'Grupo de destino',
-  para_responsavel: 'Responsável de destino',
-  concluido_por: 'Concluído por (resolvido ou fechado)',
-  resolvido_por: 'Resolvido por',
-  fechado_por: 'Fechado por',
-  encaminhado_por: 'Encaminhado por',
-  encaminhado_para_grupo: 'Encaminhado para (grupo)',
-  encaminhado_para_responsavel: 'Encaminhado para (responsável)',
-  grupo_solucao: 'Grupo de Solução',
+export function agrupamentoLabel(code) {
+  const key = `reports.agrupamento.${code}`
+  const text = t(key)
+  return text === key ? code : text
 }
 
 // Com `responseType: 'blob'` o corpo do 422 também chega como Blob; converte

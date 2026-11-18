@@ -1,3 +1,5 @@
+import { t } from '@/plugins/i18n'
+
 // Conversão de um <svg> da tela em canvas, para exportar como PNG.
 
 // Propriedades que o SVG pega de classes/CSS (tokens do tema) e que se perdem
@@ -60,7 +62,7 @@ export function svgParaCanvas(svgElement) {
     }
     imagem.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(new Error('Não foi possível gerar a imagem do mapa.'))
+      reject(new Error(t('errors.mapImage')))
     }
     imagem.src = url
   })

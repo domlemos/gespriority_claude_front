@@ -1,5 +1,9 @@
 <script setup>
-import { PERIODO_OPTIONS, QUEBRA_OPTIONS } from '@/utils/reportPeriod'
+import { computed } from 'vue'
+import { periodoOptions, quebraOptions } from '@/utils/reportPeriod'
+
+const quebraItens = computed(() => quebraOptions())
+const periodoItens = computed(() => periodoOptions())
 
 // Controles de quebra (opcional) e período (atalhos + personalizado) dos relatórios.
 defineProps({
@@ -27,7 +31,7 @@ const dataFim = defineModel('dataFim', { type: String, default: null })
       density="comfortable"
       class="mb-3"
     >
-      <v-btn v-for="o in QUEBRA_OPTIONS" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
+      <v-btn v-for="o in quebraItens" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
     </v-btn-toggle>
   </template>
 
@@ -40,7 +44,7 @@ const dataFim = defineModel('dataFim', { type: String, default: null })
     class="mb-2 flex-wrap"
     style="height: auto"
   >
-    <v-btn v-for="o in PERIODO_OPTIONS" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
+    <v-btn v-for="o in periodoItens" :key="o.value" :value="o.value" size="small">{{ o.title }}</v-btn>
   </v-btn-toggle>
   <v-row v-if="periodo === 'personalizado'" dense class="mb-2">
     <v-col cols="6">

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import IncidentViewModal from '@/components/IncidentViewModal.vue'
 import reportService from '@/services/reportService'
 import { extractErrorMessage } from '@/utils/errors'
-import { STATUS_LABELS } from '@/utils/incidentLabels'
+import { statusLabel } from '@/utils/incidentLabels'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -217,7 +217,7 @@ function verChamado(id) {
                 </template>
               </td>
               <td>{{ item.titulo }}</td>
-              <td class="text-no-wrap">{{ STATUS_LABELS[item.status] ?? item.status }}</td>
+              <td class="text-no-wrap">{{ statusLabel(item.status) }}</td>
               <td class="text-no-wrap">{{ formatData(item.data) }}</td>
               <td>{{ item.autor?.name ?? '—' }}</td>
               <td>{{ item.grupo_chamado?.nome ?? '—' }}</td>

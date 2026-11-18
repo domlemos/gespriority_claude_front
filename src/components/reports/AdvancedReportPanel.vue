@@ -4,7 +4,7 @@ import { Chart as ChartJS, registerables } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { Bar, Pie } from 'vue-chartjs'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
-import reportService, { AGRUPAMENTO_LABELS } from '@/services/reportService'
+import reportService, { agrupamentoLabel } from '@/services/reportService'
 import ReportPeriodControls from '@/components/reports/ReportPeriodControls.vue'
 import ReportResultTable from '@/components/reports/ReportResultTable.vue'
 import ReportTicketListDialog from '@/components/reports/ReportTicketListDialog.vue'
@@ -17,7 +17,10 @@ import solutionGroupService from '@/services/solutionGroupService'
 import userService from '@/services/userService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
-import { STATUS_LABELS, TIPO_LABELS } from '@/utils/incidentLabels'
+import {
+  statusOptions as statusOptionsFn,
+  tipoOptions as tipoOptionsFn,
+} from '@/utils/incidentLabels'
 import { baixarImagemGraficos, quebrarTitulo } from '@/utils/chartImage'
 import { downloadBlob } from '@/utils/download'
 import { paramsPeriodo, validarQuebra as validarQuebraPeriodo } from '@/utils/reportPeriod'
@@ -55,8 +58,8 @@ const CHART_TYPE_OPTIONS = [
 ]
 const CHART_TYPE_OPTIONS_QUEBRA = CHART_TYPE_OPTIONS.filter((o) => o.value !== 'pizza')
 
-const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
-const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value, title }))
+const statusOptions = computed(() => statusOptionsFn())
+const tipoOptions = computed(() => tipoOptionsFn())
 
 const PALETTE = ['#FF8C1A', '#7922B9', '#2563EB', '#166534', '#F59E0B', '#E53935', '#FFA64D', '#C371FF']
 
@@ -82,7 +85,7 @@ const grupoAnalistaId = ref(null)
 const responsavelId = ref(null)
 
 const agruparPorOptions = computed(() =>
-  AGRUPAR_POR_CONTAR[contar.value].map((value) => ({ value, title: AGRUPAMENTO_LABELS[value] })),
+  AGRUPAR_POR_CONTAR[contar.value].map((value) => ({ value, title: agrupamentoLabel(value) })),
 )
 
 // Trocar "o que contar" muda a lista de agrupamentos; se o escolhido deixou de
@@ -338,7 +341,7 @@ const chartJsData = computed(() => {
     labels,
     datasets: [
       {
-        label: AGRUPAMENTO_LABELS[resultado.value.agrupar_por] ?? resultado.value.agrupar_por,
+        label: agrupamentoLabel(resultado.value.agrupar_por),
         data: rows.map((row) => row.total),
         backgroundColor: rows.map((_, index) => PALETTE[index % PALETTE.length]),
         borderWidth: 0,
@@ -765,7 +768,7 @@ async function confirmDeleteSaved() {
                 <v-list-item
                   v-for="report in savedReports"
                   :key="report.id"
-                  :subtitle="AGRUPAMENTO_LABELS[report.agrupar_por] ?? report.agrupar_por"
+                  :subtitle="agrupamentoLabel(report.agrupar_por)"
                   @click="openSaved(report)"
                 >
                   <template #title>

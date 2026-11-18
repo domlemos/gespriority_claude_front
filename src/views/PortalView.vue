@@ -7,7 +7,11 @@ import PortalIncidentModal from '@/components/PortalIncidentModal.vue'
 import portalIncidentService from '@/services/portalIncidentService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
-import { STATUS_LABELS, STATUS_COLORS } from '@/utils/incidentLabels'
+import {
+  statusLabel,
+  statusOptions as statusOptionsFn,
+  STATUS_COLORS,
+} from '@/utils/incidentLabels'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -70,7 +74,7 @@ if (route.query.novo === '1') {
   router.replace({ query })
 }
 
-const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
+const statusOptions = computed(() => statusOptionsFn())
 const busca = ref('')
 const status = ref(null)
 // Só aplica a busca depois de uma pausa na digitação, pra não disparar uma
@@ -199,7 +203,7 @@ watch(incidentOpen, (open) => {
 
         <template #item.status="{ item }">
           <v-chip size="small" :color="STATUS_COLORS[item.status]" variant="tonal">
-            {{ STATUS_LABELS[item.status] ?? item.status }}
+            {{ statusLabel(item.status) }}
           </v-chip>
         </template>
 

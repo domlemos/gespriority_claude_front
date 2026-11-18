@@ -1,3 +1,5 @@
+import { t } from '@/plugins/i18n'
+
 // Espelho das regras de `AnexoController::store()` no backend (lista branca
 // de extensões + 10 MB) — checagem antecipada pra avisar o usuário antes do
 // upload. O backend continua sendo a fonte da verdade (inclusive checando o
@@ -13,11 +15,14 @@ export function attachmentError(file) {
   const extension = file.name.split('.').pop()?.toLowerCase()
 
   if (!ATTACHMENT_ALLOWED_EXTENSIONS.includes(extension)) {
-    return `"${file.name}": tipo de arquivo não permitido. Use ${ATTACHMENT_ALLOWED_EXTENSIONS.join(', ')}.`
+    return t('attachments.invalidType', {
+      name: file.name,
+      types: ATTACHMENT_ALLOWED_EXTENSIONS.join(', '),
+    })
   }
 
   if (file.size > ATTACHMENT_MAX_SIZE_BYTES) {
-    return `"${file.name}": excede o tamanho máximo de 10 MB.`
+    return t('attachments.tooLarge', { name: file.name })
   }
 
   return null

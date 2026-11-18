@@ -15,13 +15,13 @@ import userService from '@/services/userService'
 import { extractErrorMessage } from '@/utils/errors'
 import { compactFilters, loadSavedFilters, saveFilters } from '@/utils/savedIncidentFilters'
 import {
-  PRIORIDADE_LABELS,
+  prioridadeLabel,
   PRIORIDADE_COLORS,
-  STATUS_LABELS,
+  statusLabel,
   STATUS_COLORS,
-  TIPO_LABELS,
+  tipoLabel,
   TIPO_COLORS,
-  SLA_STATUS_LABELS,
+  slaStatusLabel,
   SLA_STATUS_COLORS,
   formatRemainingMinutes,
 } from '@/utils/incidentLabels'
@@ -311,19 +311,19 @@ loadFilterOptions()
         <!-- Chamado aberto pelo portal chega sem prioridade até o staff classificar. -->
         <v-chip v-if="!item.prioridade" size="small" variant="outlined">Não classificado</v-chip>
         <v-chip v-else size="small" :color="PRIORIDADE_COLORS[item.prioridade]" variant="tonal">
-          {{ PRIORIDADE_LABELS[item.prioridade] ?? item.prioridade }}
+          {{ prioridadeLabel(item.prioridade) }}
         </v-chip>
       </template>
 
       <template #item.tipo="{ item }">
         <v-chip size="small" :color="TIPO_COLORS[item.tipo]" variant="tonal">
-          {{ TIPO_LABELS[item.tipo] ?? item.tipo }}
+          {{ tipoLabel(item.tipo) }}
         </v-chip>
       </template>
 
       <template #item.status="{ item }">
         <v-chip size="small" :color="STATUS_COLORS[item.status]" variant="tonal">
-          {{ STATUS_LABELS[item.status] ?? item.status }}
+          {{ statusLabel(item.status) }}
         </v-chip>
       </template>
 
@@ -341,7 +341,7 @@ loadFilterOptions()
 
       <template #item.status_sla_resposta="{ item }">
         <v-chip size="small" :color="SLA_STATUS_COLORS[item.status_sla_resposta]" variant="tonal">
-          {{ SLA_STATUS_LABELS[item.status_sla_resposta] ?? item.status_sla_resposta }}
+          {{ slaStatusLabel(item.status_sla_resposta) }}
         </v-chip>
         <div v-if="item.status_sla_resposta !== 'sem_sla'" class="text-caption text-medium-emphasis mt-1">
           {{ formatRemainingMinutes(item.tempo_restante_resposta_minutos) }}
@@ -350,7 +350,7 @@ loadFilterOptions()
 
       <template #item.status_sla_resolucao="{ item }">
         <v-chip size="small" :color="SLA_STATUS_COLORS[item.status_sla_resolucao]" variant="tonal">
-          {{ SLA_STATUS_LABELS[item.status_sla_resolucao] ?? item.status_sla_resolucao }}
+          {{ slaStatusLabel(item.status_sla_resolucao) }}
         </v-chip>
         <div v-if="item.status_sla_resolucao !== 'sem_sla'" class="text-caption text-medium-emphasis mt-1">
           {{ formatRemainingMinutes(item.tempo_restante_resolucao_minutos) }}

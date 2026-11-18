@@ -1,6 +1,6 @@
 <script setup>
-import { ref, watch } from 'vue'
-import { PRIORIDADE_LABELS } from '@/utils/incidentLabels'
+import { computed, ref, watch } from 'vue'
+import { prioridadeOptions as prioridadeOptionsFn } from '@/utils/incidentLabels'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -10,7 +10,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'apply'])
 
-const priorityOptions = Object.entries(PRIORIDADE_LABELS).map(([value, title]) => ({ value, title }))
+const priorityOptions = computed(() => prioridadeOptionsFn())
 
 const boolOptions = [
   { title: 'Sim', value: true },

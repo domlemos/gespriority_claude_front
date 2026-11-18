@@ -7,13 +7,7 @@ import slaService from '@/services/slaService'
 import clientService from '@/services/clientService'
 import { extractErrorMessage } from '@/utils/errors'
 import { formatDurationMinutes } from '@/utils/duration'
-
-const PRIORIDADE_LABELS = {
-  baixa: 'Baixa',
-  media: 'Média',
-  alta: 'Alta',
-  urgente: 'Urgente',
-}
+import { prioridadeLabel } from '@/utils/incidentLabels'
 
 const PRIORIDADE_COLORS = {
   baixa: 'secondary',
@@ -184,7 +178,7 @@ loadClientNames()
   >
     <template #item.prioridade="{ item }">
       <v-chip size="small" :color="PRIORIDADE_COLORS[item.prioridade]" variant="tonal">
-        {{ PRIORIDADE_LABELS[item.prioridade] ?? item.prioridade }}
+        {{ prioridadeLabel(item.prioridade) }}
       </v-chip>
     </template>
 

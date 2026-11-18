@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import portalIncidentService from '@/services/portalIncidentService'
 import { extractErrorMessage } from '@/utils/errors'
-import { STATUS_LABELS, STATUS_COLORS } from '@/utils/incidentLabels'
+import { statusLabel, STATUS_COLORS } from '@/utils/incidentLabels'
 
 // Chamado do cliente: dados básicos, histórico (só a abertura, os próprios
 // comentários e a mensagem de encerramento — filtrado no backend) e
@@ -155,7 +155,7 @@ watch(
           <div class="d-flex align-center flex-wrap ga-2 mb-1">
             <span class="text-h6 font-weight-bold">{{ incident.titulo }}</span>
             <v-chip size="small" :color="STATUS_COLORS[incident.status]" variant="tonal">
-              {{ STATUS_LABELS[incident.status] ?? incident.status }}
+              {{ statusLabel(incident.status) }}
             </v-chip>
           </div>
           <div class="text-caption text-medium-emphasis mb-4">

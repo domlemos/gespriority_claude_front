@@ -12,7 +12,11 @@ import solutionGroupService from '@/services/solutionGroupService'
 import userService from '@/services/userService'
 import { extractErrorMessage } from '@/utils/errors'
 import { ATTACHMENT_ACCEPT, attachmentError } from '@/utils/attachmentRules'
-import { PRIORIDADE_LABELS, ORIGEM_LABELS, TIPO_LABELS } from '@/utils/incidentLabels'
+import {
+  prioridadeLabel,
+  origemOptions as origemOptionsFn,
+  tipoOptions as tipoOptionsFn,
+} from '@/utils/incidentLabels'
 
 // Abertura de chamado pelo staff. A edição continua na página do chamado
 // (`IncidentFormView`); depois de criar, a modal fecha e leva pra lá.
@@ -26,8 +30,8 @@ const emit = defineEmits(['update:modelValue'])
 
 const router = useRouter()
 
-const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value, title }))
-const originOptions = Object.entries(ORIGEM_LABELS).map(([value, title]) => ({ value, title }))
+const tipoOptions = computed(() => tipoOptionsFn())
+const originOptions = computed(() => origemOptionsFn())
 
 const loading = ref(false)
 const loadFailed = ref(false)
@@ -89,7 +93,7 @@ const filteredResponsavelOptions = computed(() =>
 // prévia do que vai ser aplicado, exibida assim que um item é selecionado.
 const prioridadeExibida = computed(() => {
   const valor = itemOptions.value.find((option) => option.id === itemId.value)?.prioridade_padrao
-  return valor ? PRIORIDADE_LABELS[valor] ?? valor : '—'
+  return valor ? prioridadeLabel(valor) : '—'
 })
 
 function customerLabel(customer) {

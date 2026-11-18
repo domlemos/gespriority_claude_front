@@ -37,5 +37,101 @@
     "brandTitle": "Gestão de chamados, sem enrolação.",
     "brandText": "Um único lugar para sua equipe atender, priorizar e resolver — e para seus clientes acompanharem cada chamado do início ao fim.",
     "mascotAlt": "Mascote raposa da Uplexis atendendo chamados com headset"
+  },
+  "labels": {
+    "prioridade": {
+      "baixa": "Baixa",
+      "media": "Média",
+      "alta": "Alta",
+      "urgente": "Urgente"
+    },
+    "status": {
+      "aberto": "Aberto",
+      "em_andamento": "Em andamento",
+      "pendente": "Pendente",
+      "aguardando_interno": "Aguardando Interno",
+      "aguardando_externo": "Aguardando Externo",
+      "resolvido": "Resolvido",
+      "fechado": "Fechado",
+      "cancelado": "Cancelado"
+    },
+    "origem": {
+      "portal": "Portal",
+      "email": "E-mail",
+      "telefone": "Telefone",
+      "chat": "Chat",
+      "presencial": "Presencial",
+      "monitoramento": "Monitoramento"
+    },
+    "tipo": {
+      "incidente": "Incidente",
+      "solicitacao": "Solicitação"
+    },
+    "slaStatus": {
+      "dentro_prazo": "Dentro do prazo",
+      "estourado": "Fora do Prazo",
+      "sem_sla": "Sem SLA"
+    },
+    "remaining": {
+      "late": "Atrasado {duration}",
+      "left": "{duration} restantes"
+    }
+  },
+  "duration": {
+    "days": "{n} dia | {n} dias",
+    "hours": "{n} hora | {n} horas",
+    "minutes": "{n} minuto | {n} minutos",
+    "list": "{rest} e {last}"
+  },
+  "reports": {
+    "quebra": {
+      "nenhuma": "Não",
+      "dia": "Dia",
+      "semana": "Semana",
+      "mes": "Mês",
+      "nomeDia": "dia",
+      "nomeSemana": "semana",
+      "nomeMes": "mês",
+      "informePeriodo": "Informe um período para quebrar por {nome}.",
+      "periodoLongo": "Período longo demais para quebra por {nome}: máximo de {limite} colunas."
+    },
+    "periodo": {
+      "este_mes": "Este mês",
+      "mes_passado": "Mês passado",
+      "ultimos_7_dias": "Últimos 7 dias",
+      "personalizado": "Personalizado"
+    },
+    "agrupamento": {
+      "analista": "Analista",
+      "grupo_analista": "Grupo do analista",
+      "grupo_chamado": "Grupo de Solução",
+      "categoria": "Categoria",
+      "subcategoria": "Subcategoria",
+      "item": "Item",
+      "cliente": "Cliente",
+      "tipo": "Tipo",
+      "status_sla": "Status de SLA",
+      "responsavel": "Responsável",
+      "aberto_por": "Quem abriu",
+      "quem_encaminhou": "Quem encaminhou",
+      "para_grupo": "Grupo de destino",
+      "para_responsavel": "Responsável de destino",
+      "concluido_por": "Concluído por (resolvido ou fechado)",
+      "resolvido_por": "Resolvido por",
+      "fechado_por": "Fechado por",
+      "encaminhado_por": "Encaminhado por",
+      "encaminhado_para_grupo": "Encaminhado para (grupo)",
+      "encaminhado_para_responsavel": "Encaminhado para (responsável)",
+      "grupo_solucao": "Grupo de Solução"
+    }
+  },
+  "attachments": {
+    "invalidType": "\"{name}\": tipo de arquivo não permitido. Use {types}.",
+    "tooLarge": "\"{name}\": excede o tamanho máximo de 10 MB."
+  },
+  "errors": {
+    "generic": "Algo deu errado. Tente novamente.",
+    "tooManyAttempts": "Muitas tentativas. Aguarde um minuto antes de tentar de novo.",
+    "mapImage": "Não foi possível gerar a imagem do mapa."
   }
 }

@@ -13,7 +13,12 @@ import solutionGroupService from '@/services/solutionGroupService'
 import userService from '@/services/userService'
 import { useAuthStore } from '@/stores/auth'
 import { extractErrorMessage } from '@/utils/errors'
-import { PRIORIDADE_LABELS, ORIGEM_LABELS, STATUS_LABELS, TIPO_LABELS } from '@/utils/incidentLabels'
+import {
+  prioridadeLabel,
+  origemOptions as origemOptionsFn,
+  statusOptions as statusOptionsFn,
+  tipoOptions as tipoOptionsFn,
+} from '@/utils/incidentLabels'
 
 // Só edição — a abertura de chamado é a modal `IncidentCreateModal`.
 const props = defineProps({
@@ -32,9 +37,9 @@ const restrictedFieldHint = computed(() =>
   canManage.value && !canEditRestrictedFields.value ? 'Não pode ser alterado após a abertura' : '',
 )
 
-const tipoOptions = Object.entries(TIPO_LABELS).map(([value, title]) => ({ value, title }))
-const originOptions = Object.entries(ORIGEM_LABELS).map(([value, title]) => ({ value, title }))
-const statusOptions = Object.entries(STATUS_LABELS).map(([value, title]) => ({ value, title }))
+const tipoOptions = computed(() => tipoOptionsFn())
+const originOptions = computed(() => origemOptionsFn())
+const statusOptions = computed(() => statusOptionsFn())
 
 const loading = ref(false)
 const loadFailed = ref(false)
@@ -109,7 +114,7 @@ const filteredItemOptions = computed(() =>
 const prioridadeExibida = computed(() => {
   const item = itemOptions.value.find((option) => option.id === itemId.value)
   const valor = item?.prioridade_padrao ?? prioridade.value
-  return valor ? PRIORIDADE_LABELS[valor] ?? valor : '—'
+  return valor ? prioridadeLabel(valor) : '—'
 })
 
 const filteredResponsavelOptions = computed(() =>

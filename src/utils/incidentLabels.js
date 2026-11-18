@@ -1,26 +1,50 @@
-export const PRIORIDADE_LABELS = {
-  baixa: 'Baixa',
-  media: 'Média',
-  alta: 'Alta',
-  urgente: 'Urgente',
+import { t } from '@/plugins/i18n'
+import { formatDurationMinutes } from '@/utils/duration'
+
+const GROUPS = {
+  prioridade: ['baixa', 'media', 'alta', 'urgente'],
+  status: [
+    'aberto',
+    'em_andamento',
+    'pendente',
+    'aguardando_interno',
+    'aguardando_externo',
+    'resolvido',
+    'fechado',
+    'cancelado',
+  ],
+  origem: ['portal', 'email', 'telefone', 'chat', 'presencial', 'monitoramento'],
+  tipo: ['incidente', 'solicitacao'],
 }
+
+// Tradução de `labels.<grupo>.<code>`; sem chave, devolve o próprio código.
+function labelOf(group, code) {
+  if (code === null || code === undefined) return code
+  const key = `labels.${group}.${code}`
+  const text = t(key)
+  return text === key ? code : text
+}
+
+function optionsOf(group) {
+  return GROUPS[group].map((value) => ({ value, title: labelOf(group, value) }))
+}
+
+export const prioridadeLabel = (code) => labelOf('prioridade', code)
+export const statusLabel = (code) => labelOf('status', code)
+export const origemLabel = (code) => labelOf('origem', code)
+export const tipoLabel = (code) => labelOf('tipo', code)
+export const slaStatusLabel = (code) => labelOf('slaStatus', code)
+
+export const prioridadeOptions = () => optionsOf('prioridade')
+export const statusOptions = () => optionsOf('status')
+export const origemOptions = () => optionsOf('origem')
+export const tipoOptions = () => optionsOf('tipo')
 
 export const PRIORIDADE_COLORS = {
   baixa: 'secondary',
   media: 'info',
   alta: 'warning',
   urgente: 'error',
-}
-
-export const STATUS_LABELS = {
-  aberto: 'Aberto',
-  em_andamento: 'Em andamento',
-  pendente: 'Pendente',
-  aguardando_interno: 'Aguardando Interno',
-  aguardando_externo: 'Aguardando Externo',
-  resolvido: 'Resolvido',
-  fechado: 'Fechado',
-  cancelado: 'Cancelado',
 }
 
 export const STATUS_COLORS = {
@@ -34,29 +58,9 @@ export const STATUS_COLORS = {
   cancelado: 'error',
 }
 
-export const ORIGEM_LABELS = {
-  portal: 'Portal',
-  email: 'E-mail',
-  telefone: 'Telefone',
-  chat: 'Chat',
-  presencial: 'Presencial',
-  monitoramento: 'Monitoramento',
-}
-
-export const TIPO_LABELS = {
-  incidente: 'Incidente',
-  solicitacao: 'Solicitação',
-}
-
 export const TIPO_COLORS = {
   incidente: 'default',
   solicitacao: 'info',
-}
-
-export const SLA_STATUS_LABELS = {
-  dentro_prazo: 'Dentro do prazo',
-  estourado: 'Fora do Prazo',
-  sem_sla: 'Sem SLA',
 }
 
 export const SLA_STATUS_COLORS = {
@@ -65,12 +69,12 @@ export const SLA_STATUS_COLORS = {
   sem_sla: 'default',
 }
 
-import { formatDurationMinutes } from '@/utils/duration'
-
 export function formatRemainingMinutes(minutes) {
   if (minutes === null || minutes === undefined) return null
 
   const duration = formatDurationMinutes(Math.abs(minutes))
 
-  return minutes < 0 ? `Atrasado ${duration}` : `${duration} restantes`
+  return minutes < 0
+    ? t('labels.remaining.late', { duration })
+    : t('labels.remaining.left', { duration })
 }

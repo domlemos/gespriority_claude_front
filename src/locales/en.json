@@ -37,5 +37,101 @@
     "brandTitle": "Ticket management, no runaround.",
     "brandText": "One place for your team to handle, prioritize and resolve, and for your customers to follow every ticket from start to finish.",
     "mascotAlt": "Uplexis fox mascot answering tickets with a headset"
+  },
+  "labels": {
+    "prioridade": {
+      "baixa": "Low",
+      "media": "Medium",
+      "alta": "High",
+      "urgente": "Urgent"
+    },
+    "status": {
+      "aberto": "Open",
+      "em_andamento": "In progress",
+      "pendente": "Pending",
+      "aguardando_interno": "Awaiting internal",
+      "aguardando_externo": "Awaiting external",
+      "resolvido": "Resolved",
+      "fechado": "Closed",
+      "cancelado": "Canceled"
+    },
+    "origem": {
+      "portal": "Portal",
+      "email": "Email",
+      "telefone": "Phone",
+      "chat": "Chat",
+      "presencial": "In person",
+      "monitoramento": "Monitoring"
+    },
+    "tipo": {
+      "incidente": "Incident",
+      "solicitacao": "Request"
+    },
+    "slaStatus": {
+      "dentro_prazo": "Within SLA",
+      "estourado": "SLA breached",
+      "sem_sla": "No SLA"
+    },
+    "remaining": {
+      "late": "Late {duration}",
+      "left": "{duration} left"
+    }
+  },
+  "duration": {
+    "days": "{n} day | {n} days",
+    "hours": "{n} hour | {n} hours",
+    "minutes": "{n} minute | {n} minutes",
+    "list": "{rest} and {last}"
+  },
+  "reports": {
+    "quebra": {
+      "nenhuma": "No",
+      "dia": "Day",
+      "semana": "Week",
+      "mes": "Month",
+      "nomeDia": "day",
+      "nomeSemana": "week",
+      "nomeMes": "month",
+      "informePeriodo": "Enter a period to break down by {nome}.",
+      "periodoLongo": "Period too long to break down by {nome}: maximum of {limite} columns."
+    },
+    "periodo": {
+      "este_mes": "This month",
+      "mes_passado": "Last month",
+      "ultimos_7_dias": "Last 7 days",
+      "personalizado": "Custom"
+    },
+    "agrupamento": {
+      "analista": "Analyst",
+      "grupo_analista": "Analyst group",
+      "grupo_chamado": "Solution group",
+      "categoria": "Category",
+      "subcategoria": "Subcategory",
+      "item": "Item",
+      "cliente": "Client",
+      "tipo": "Type",
+      "status_sla": "SLA status",
+      "responsavel": "Assignee",
+      "aberto_por": "Opened by",
+      "quem_encaminhou": "Forwarded by",
+      "para_grupo": "Destination group",
+      "para_responsavel": "Destination assignee",
+      "concluido_por": "Completed by (resolved or closed)",
+      "resolvido_por": "Resolved by",
+      "fechado_por": "Closed by",
+      "encaminhado_por": "Forwarded by",
+      "encaminhado_para_grupo": "Forwarded to (group)",
+      "encaminhado_para_responsavel": "Forwarded to (assignee)",
+      "grupo_solucao": "Solution group"
+    }
+  },
+  "attachments": {
+    "invalidType": "\"{name}\": file type not allowed. Use {types}.",
+    "tooLarge": "\"{name}\": exceeds the maximum size of 10 MB."
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "tooManyAttempts": "Too many attempts. Wait a minute before trying again.",
+    "mapImage": "Could not generate the map image."
   }
 }

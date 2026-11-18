@@ -1,21 +1,19 @@
+import { t } from '@/plugins/i18n'
+
 // Período e quebra dos relatórios (abas Indicadores e Avançado): opções dos
 // controles e a validação de limite de colunas, com as mesmas mensagens do backend.
 
-export const QUEBRA_OPTIONS = [
-  { value: 'nenhuma', title: 'Não' },
-  { value: 'dia', title: 'Dia' },
-  { value: 'semana', title: 'Semana' },
-  { value: 'mes', title: 'Mês' },
-]
-export const QUEBRA_NOMES = { dia: 'dia', semana: 'semana', mes: 'mês' }
 export const QUEBRA_LIMITES = { dia: 62, semana: 53, mes: 24 }
 
-export const PERIODO_OPTIONS = [
-  { value: 'este_mes', title: 'Este mês' },
-  { value: 'mes_passado', title: 'Mês passado' },
-  { value: 'ultimos_7_dias', title: 'Últimos 7 dias' },
-  { value: 'personalizado', title: 'Personalizado' },
-]
+const QUEBRA_VALUES = ['nenhuma', 'dia', 'semana', 'mes']
+const PERIODO_VALUES = ['este_mes', 'mes_passado', 'ultimos_7_dias', 'personalizado']
+const QUEBRA_NOME_KEYS = { dia: 'nomeDia', semana: 'nomeSemana', mes: 'nomeMes' }
+
+export const quebraOptions = () =>
+  QUEBRA_VALUES.map((value) => ({ value, title: t(`reports.quebra.${value}`) }))
+
+export const periodoOptions = () =>
+  PERIODO_VALUES.map((value) => ({ value, title: t(`reports.periodo.${value}`) }))
 
 export function parseDia(valor) {
   const [y, m, d] = valor.split('-').map(Number)
@@ -41,14 +39,14 @@ export function contarColunas(inicio, fim, tipoQuebra) {
 // Mesmas mensagens do backend, mostradas antes de enviar. '' = válido.
 export function validarQuebra({ quebra, periodoAtalho, dataInicio, dataFim }) {
   if (quebra === 'nenhuma') return ''
-  const nome = QUEBRA_NOMES[quebra]
+  const nome = t(`reports.quebra.${QUEBRA_NOME_KEYS[quebra]}`)
   const personalizado = periodoAtalho === 'personalizado'
   const temPeriodo = personalizado ? dataInicio && dataFim : periodoAtalho
-  if (!temPeriodo) return `Informe um período para quebrar por ${nome}.`
+  if (!temPeriodo) return t('reports.quebra.informePeriodo', { nome })
   if (personalizado && parseDia(dataFim) >= parseDia(dataInicio)) {
     const limite = QUEBRA_LIMITES[quebra]
     if (contarColunas(dataInicio, dataFim, quebra) > limite) {
-      return `Período longo demais para quebra por ${nome}: máximo de ${limite} colunas.`
+      return t('reports.quebra.periodoLongo', { nome, limite })
     }
   }
   return ''
