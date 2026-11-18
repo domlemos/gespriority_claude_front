@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import subcategoryService from '@/services/subcategoryService'
 import categoryService from '@/services/categoryService'
 import { extractErrorMessage } from '@/utils/errors'
@@ -10,6 +11,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'saved'])
+
+const { t } = useI18n()
 
 const nome = ref('')
 const ativo = ref(true)
@@ -37,7 +40,7 @@ watch(
     try {
       await loadCategories()
     } catch (error) {
-      errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as categorias.')
+      errorMessage.value = extractErrorMessage(error, t('admin.subcategories.loadCategoriesError'))
     }
   },
 )
@@ -65,7 +68,7 @@ async function onSubmit() {
     emit('saved')
     close()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar a subcategoria.')
+    errorMessage.value = extractErrorMessage(error, t('admin.subcategories.saveError'))
   } finally {
     loading.value = false
   }
@@ -80,7 +83,7 @@ async function onSubmit() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ subcategory ? 'Editar subcategoria' : 'Nova subcategoria' }}
+        {{ subcategory ? $t('admin.subcategories.edit') : $t('admin.subcategories.new') }}
       </v-card-title>
 
       <v-card-text>
@@ -89,26 +92,26 @@ async function onSubmit() {
             {{ errorMessage }}
           </v-alert>
 
-          <v-text-field v-model="nome" label="Nome" required autofocus class="mb-2" />
+          <v-text-field v-model="nome" :label="$t('admin.common.name')" required autofocus class="mb-2" />
 
           <v-select
             v-model="categoriaId"
             :items="categoryOptions"
             item-title="nome"
             item-value="id"
-            label="Categoria"
+            :label="$t('admin.common.category')"
             required
             class="mb-2"
           />
 
-          <v-checkbox v-model="ativo" label="Ativo" density="compact" hide-details />
+          <v-checkbox v-model="ativo" :label="$t('admin.common.active')" density="compact" hide-details />
         </v-form>
       </v-card-text>
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" :loading="loading" @click="onSubmit">Salvar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="loading" @click="onSubmit">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

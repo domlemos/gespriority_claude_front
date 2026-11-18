@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -10,10 +11,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'apply'])
 
-const ativoOptions = [
-  { value: true, title: 'Sim' },
-  { value: false, title: 'Não' },
-]
+const { t } = useI18n()
+
+const ativoOptions = computed(() => [
+  { value: true, title: t('admin.common.yes') },
+  { value: false, title: t('admin.common.no') },
+])
 
 const nome = ref(null)
 const categoriaId = ref(null)
@@ -77,12 +80,12 @@ function applyFilters() {
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card>
-      <v-card-title class="text-subtitle-1 font-weight-bold">Filtro Avançado</v-card-title>
+      <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('admin.common.advancedFilter') }}</v-card-title>
 
       <v-card-text>
         <v-row dense>
           <v-col cols="12">
-            <v-text-field v-model="nome" label="Nome" clearable density="compact" />
+            <v-text-field v-model="nome" :label="$t('admin.common.name')" clearable density="compact" />
           </v-col>
 
           <v-col cols="12">
@@ -91,7 +94,7 @@ function applyFilters() {
               :items="categoryOptions"
               item-title="nome"
               item-value="id"
-              label="Categoria"
+              :label="$t('admin.common.category')"
               clearable
               density="compact"
               @update:model-value="onCategoriaChange"
@@ -104,7 +107,7 @@ function applyFilters() {
               :items="filteredSubcategoryOptions"
               item-title="nome"
               item-value="id"
-              label="Subcategoria"
+              :label="$t('admin.common.subcategory')"
               clearable
               density="compact"
               :disabled="!categoriaId"
@@ -112,16 +115,16 @@ function applyFilters() {
           </v-col>
 
           <v-col cols="12">
-            <v-select v-model="ativo" :items="ativoOptions" label="Ativo" clearable density="compact" />
+            <v-select v-model="ativo" :items="ativoOptions" :label="$t('admin.common.active')" clearable density="compact" />
           </v-col>
         </v-row>
       </v-card-text>
 
       <v-card-actions>
-        <v-btn variant="text" @click="clearDraft">Limpar</v-btn>
+        <v-btn variant="text" @click="clearDraft">{{ $t('admin.common.clear') }}</v-btn>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" @click="applyFilters">Filtrar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" @click="applyFilters">{{ $t('admin.common.filter') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

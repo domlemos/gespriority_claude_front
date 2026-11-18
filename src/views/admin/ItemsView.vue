@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ItemFormModal from '@/components/admin/ItemFormModal.vue'
 import ItemAdvancedFilterModal from '@/components/admin/ItemAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
@@ -8,12 +9,14 @@ import categoryService from '@/services/categoryService'
 import subcategoryService from '@/services/subcategoryService'
 import { extractErrorMessage } from '@/utils/errors'
 
-const headers = [
-  { title: 'Nome', key: 'nome', sortable: false },
-  { title: 'Subcategoria', key: 'subcategoria', sortable: false },
-  { title: 'Ativo', key: 'ativo', sortable: false },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
-]
+const { t } = useI18n()
+
+const headers = computed(() => [
+  { title: t('admin.common.name'), key: 'nome', sortable: false },
+  { title: t('admin.common.subcategory'), key: 'subcategoria', sortable: false },
+  { title: t('admin.common.active'), key: 'ativo', sortable: false },
+  { title: t('common.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -67,7 +70,7 @@ async function loadFilterOptions() {
     categoryOptions.value = categories.data
     subcategoryOptions.value = subcategories.data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções de filtro.')
+    errorMessage.value = extractErrorMessage(error, t('admin.common.loadFilterOptionsError'))
   }
 }
 
@@ -84,7 +87,7 @@ async function loadItems() {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os itens.')
+    errorMessage.value = extractErrorMessage(error, t('admin.items.loadError'))
   } finally {
     loading.value = false
   }
@@ -126,7 +129,7 @@ async function confirmDelete() {
       await loadItems()
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o item.')
+    errorMessage.value = extractErrorMessage(error, t('admin.items.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -136,15 +139,15 @@ async function confirmDelete() {
 
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
-    <h1 class="text-h5 font-weight-bold">Itens</h1>
+    <h1 class="text-h5 font-weight-bold">{{ $t('admin.items.title') }}</h1>
     <div class="d-flex align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-        Limpar filtros
+        {{ $t('admin.common.clearFilters') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-        Filtro Avançado
+        {{ $t('admin.common.advancedFilter') }}
       </v-btn>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Novo item</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ $t('admin.items.new') }}</v-btn>
     </div>
   </div>
 
@@ -174,7 +177,7 @@ async function confirmDelete() {
 
     <template #item.ativo="{ item }">
       <v-chip size="small" :color="item.ativo ? 'success' : 'default'" variant="tonal">
-        {{ item.ativo ? 'Ativo' : 'Inativo' }}
+        {{ item.ativo ? $t('admin.common.active') : $t('admin.common.inactive') }}
       </v-chip>
     </template>
 
@@ -188,7 +191,7 @@ async function confirmDelete() {
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message='`Excluir o item "${itemToDelete?.nome}"? Essa ação não pode ser desfeita.`'
+    :message="$t('admin.items.deleteMessage', { name: itemToDelete?.nome })"
     :loading="deleting"
     @confirm="confirmDelete"
   />

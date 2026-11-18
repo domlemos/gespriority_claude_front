@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import SubcategoryFormModal from '@/components/admin/SubcategoryFormModal.vue'
 import SubcategoryAdvancedFilterModal from '@/components/admin/SubcategoryAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
@@ -7,12 +8,14 @@ import subcategoryService from '@/services/subcategoryService'
 import categoryService from '@/services/categoryService'
 import { extractErrorMessage } from '@/utils/errors'
 
-const headers = [
-  { title: 'Nome', key: 'nome', sortable: false },
-  { title: 'Categoria', key: 'categoria', sortable: false },
-  { title: 'Ativo', key: 'ativo', sortable: false },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
-]
+const { t } = useI18n()
+
+const headers = computed(() => [
+  { title: t('admin.common.name'), key: 'nome', sortable: false },
+  { title: t('admin.common.category'), key: 'categoria', sortable: false },
+  { title: t('admin.common.active'), key: 'ativo', sortable: false },
+  { title: t('common.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -61,7 +64,7 @@ async function loadFilterOptions() {
     const categories = await categoryService.list({ per_page: 200 })
     categoryOptions.value = categories.data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções de filtro.')
+    errorMessage.value = extractErrorMessage(error, t('admin.common.loadFilterOptionsError'))
   }
 }
 
@@ -78,7 +81,7 @@ async function loadSubcategories() {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as subcategorias.')
+    errorMessage.value = extractErrorMessage(error, t('admin.subcategories.loadError'))
   } finally {
     loading.value = false
   }
@@ -120,7 +123,7 @@ async function confirmDelete() {
       await loadSubcategories()
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir a subcategoria.')
+    errorMessage.value = extractErrorMessage(error, t('admin.subcategories.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -130,15 +133,15 @@ async function confirmDelete() {
 
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
-    <h1 class="text-h5 font-weight-bold">Subcategorias</h1>
+    <h1 class="text-h5 font-weight-bold">{{ $t('admin.subcategories.title') }}</h1>
     <div class="d-flex align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-        Limpar filtros
+        {{ $t('admin.common.clearFilters') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-        Filtro Avançado
+        {{ $t('admin.common.advancedFilter') }}
       </v-btn>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Nova subcategoria</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ $t('admin.subcategories.new') }}</v-btn>
     </div>
   </div>
 
@@ -167,7 +170,7 @@ async function confirmDelete() {
 
     <template #item.ativo="{ item }">
       <v-chip size="small" :color="item.ativo ? 'success' : 'default'" variant="tonal">
-        {{ item.ativo ? 'Ativo' : 'Inativo' }}
+        {{ item.ativo ? $t('admin.common.active') : $t('admin.common.inactive') }}
       </v-chip>
     </template>
 
@@ -181,7 +184,7 @@ async function confirmDelete() {
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message='`Excluir a subcategoria "${subcategoryToDelete?.nome}"? Essa ação não pode ser desfeita.`'
+    :message="$t('admin.subcategories.deleteMessage', { name: subcategoryToDelete?.nome })"
     :loading="deleting"
     @confirm="confirmDelete"
   />

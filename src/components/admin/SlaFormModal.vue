@@ -1,8 +1,10 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import slaService from '@/services/slaService'
 import clientService from '@/services/clientService'
 import { extractErrorMessage } from '@/utils/errors'
+import { prioridadeOptions } from '@/utils/incidentLabels'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -11,14 +13,9 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'saved'])
 
-const PRIORIDADES = [
-  { title: 'Baixa', value: 'baixa' },
-  { title: 'Média', value: 'media' },
-  { title: 'Alta', value: 'alta' },
-  { title: 'Urgente', value: 'urgente' },
-]
+const { t } = useI18n()
 
-const GLOBAL_CLIENT_OPTION = { name: 'Global (todos os clientes)', id: null }
+const prioridadeItems = computed(() => prioridadeOptions())
 
 function minutesToDhm(totalMinutes) {
   const abs = Math.max(0, Math.trunc(totalMinutes ?? 0))
@@ -44,13 +41,14 @@ const resolucaoMinutos = ref(0)
 const apenasHorasUteis = ref(false)
 const ativo = ref(true)
 const clientId = ref(null)
-const clientOptions = ref([])
+const clients = ref([])
+const clientOptions = computed(() => [{ name: t('admin.slas.globalAllClients'), id: null }, ...clients.value])
 const loading = ref(false)
 const errorMessage = ref('')
 
 async function loadClients() {
   const { data } = await clientService.list({ per_page: 200 })
-  clientOptions.value = [GLOBAL_CLIENT_OPTION, ...data]
+  clients.value = data
 }
 
 watch(
@@ -107,7 +105,7 @@ async function onSubmit() {
     emit('saved')
     close()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar a política de SLA.')
+    errorMessage.value = extractErrorMessage(error, t('admin.slas.saveError'))
   } finally {
     loading.value = false
   }
@@ -122,7 +120,7 @@ async function onSubmit() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ sla ? 'Editar política de SLA' : 'Nova política de SLA' }}
+        {{ sla ? $t('admin.slas.formEdit') : $t('admin.slas.formNew') }}
       </v-card-title>
 
       <v-card-text>
@@ -131,39 +129,39 @@ async function onSubmit() {
             {{ errorMessage }}
           </v-alert>
 
-          <v-text-field v-model="nome" label="Nome" required autofocus class="mb-2" />
+          <v-text-field v-model="nome" :label="$t('admin.common.name')" required autofocus class="mb-2" />
 
           <v-select
             v-model="prioridade"
-            :items="PRIORIDADES"
-            label="Prioridade"
+            :items="prioridadeItems"
+            :label="$t('admin.common.priority')"
             required
             class="mb-2"
           />
 
-          <div class="text-caption text-medium-emphasis mb-1">Tempo de resposta</div>
+          <div class="text-caption text-medium-emphasis mb-1">{{ $t('admin.slas.responseTime') }}</div>
           <v-row dense class="mb-2">
             <v-col cols="4">
-              <v-text-field v-model.number="respostaDias" label="Dias" type="number" min="0" />
+              <v-text-field v-model.number="respostaDias" :label="$t('admin.slas.days')" type="number" min="0" />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number="respostaHoras" label="Horas" type="number" min="0" />
+              <v-text-field v-model.number="respostaHoras" :label="$t('admin.slas.hours')" type="number" min="0" />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number="respostaMinutos" label="Minutos" type="number" min="0" />
+              <v-text-field v-model.number="respostaMinutos" :label="$t('admin.slas.minutes')" type="number" min="0" />
             </v-col>
           </v-row>
 
-          <div class="text-caption text-medium-emphasis mb-1">Tempo de resolução</div>
+          <div class="text-caption text-medium-emphasis mb-1">{{ $t('admin.slas.resolutionTime') }}</div>
           <v-row dense class="mb-2">
             <v-col cols="4">
-              <v-text-field v-model.number="resolucaoDias" label="Dias" type="number" min="0" />
+              <v-text-field v-model.number="resolucaoDias" :label="$t('admin.slas.days')" type="number" min="0" />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number="resolucaoHoras" label="Horas" type="number" min="0" />
+              <v-text-field v-model.number="resolucaoHoras" :label="$t('admin.slas.hours')" type="number" min="0" />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number="resolucaoMinutos" label="Minutos" type="number" min="0" />
+              <v-text-field v-model.number="resolucaoMinutos" :label="$t('admin.slas.minutes')" type="number" min="0" />
             </v-col>
           </v-row>
 
@@ -172,21 +170,21 @@ async function onSubmit() {
             :items="clientOptions"
             item-title="name"
             item-value="id"
-            label="Cliente"
-            hint="Deixe em Global para aplicar a todos os clientes sem política específica"
+            :label="$t('admin.common.client')"
+            :hint="$t('admin.slas.clientHint')"
             persistent-hint
             class="mb-4"
           />
 
-          <v-checkbox v-model="apenasHorasUteis" label="Contar apenas em horário útil" density="compact" hide-details class="mb-2" />
-          <v-checkbox v-model="ativo" label="Ativo" density="compact" hide-details />
+          <v-checkbox v-model="apenasHorasUteis" :label="$t('admin.slas.countBusinessHoursOnly')" density="compact" hide-details class="mb-2" />
+          <v-checkbox v-model="ativo" :label="$t('admin.common.active')" density="compact" hide-details />
         </v-form>
       </v-card-text>
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" :loading="loading" @click="onSubmit">Salvar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="loading" @click="onSubmit">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

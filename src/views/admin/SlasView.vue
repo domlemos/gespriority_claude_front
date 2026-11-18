@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import SlaFormModal from '@/components/admin/SlaFormModal.vue'
 import SlaAdvancedFilterModal from '@/components/admin/SlaAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
@@ -16,16 +17,18 @@ const PRIORIDADE_COLORS = {
   urgente: 'error',
 }
 
-const headers = [
-  { title: 'Nome', key: 'nome', sortable: false },
-  { title: 'Prioridade', key: 'prioridade', sortable: false },
-  { title: 'Cliente', key: 'client_id', sortable: false },
-  { title: 'Resposta', key: 'tempo_resposta_minutos', sortable: false },
-  { title: 'Resolução', key: 'tempo_resolucao_minutos', sortable: false },
-  { title: 'Horário útil', key: 'apenas_horas_uteis', sortable: false },
-  { title: 'Ativo', key: 'ativo', sortable: false },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
-]
+const { t } = useI18n()
+
+const headers = computed(() => [
+  { title: t('admin.common.name'), key: 'nome', sortable: false },
+  { title: t('admin.common.priority'), key: 'prioridade', sortable: false },
+  { title: t('admin.common.client'), key: 'client_id', sortable: false },
+  { title: t('admin.slas.response'), key: 'tempo_resposta_minutos', sortable: false },
+  { title: t('admin.slas.resolution'), key: 'tempo_resolucao_minutos', sortable: false },
+  { title: t('admin.slas.businessHours'), key: 'apenas_horas_uteis', sortable: false },
+  { title: t('admin.common.active'), key: 'ativo', sortable: false },
+  { title: t('common.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -51,7 +54,7 @@ const hasActiveFilters = computed(() =>
 )
 
 function clientName(clientId) {
-  return clientId === null ? 'Global' : (clientNames.value[clientId] ?? `#${clientId}`)
+  return clientId === null ? t('admin.slas.global') : (clientNames.value[clientId] ?? `#${clientId}`)
 }
 
 async function loadClientNames() {
@@ -93,7 +96,7 @@ async function loadSlas() {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as políticas de SLA.')
+    errorMessage.value = extractErrorMessage(error, t('admin.slas.loadError'))
   } finally {
     loading.value = false
   }
@@ -133,7 +136,7 @@ async function confirmDelete() {
       await loadSlas()
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir a política de SLA.')
+    errorMessage.value = extractErrorMessage(error, t('admin.slas.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -145,15 +148,15 @@ loadClientNames()
 
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
-    <h1 class="text-h5 font-weight-bold">Políticas de SLA</h1>
+    <h1 class="text-h5 font-weight-bold">{{ $t('admin.slas.title') }}</h1>
     <div class="d-flex align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-        Limpar filtros
+        {{ $t('admin.common.clearFilters') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-        Filtro Avançado
+        {{ $t('admin.common.advancedFilter') }}
       </v-btn>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Nova política</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ $t('admin.slas.new') }}</v-btn>
     </div>
   </div>
 
@@ -195,12 +198,12 @@ loadClientNames()
     </template>
 
     <template #item.apenas_horas_uteis="{ item }">
-      {{ item.apenas_horas_uteis ? 'Sim' : 'Não' }}
+      {{ item.apenas_horas_uteis ? $t('admin.common.yes') : $t('admin.common.no') }}
     </template>
 
     <template #item.ativo="{ item }">
       <v-chip size="small" :color="item.ativo ? 'success' : 'default'" variant="tonal">
-        {{ item.ativo ? 'Ativo' : 'Inativo' }}
+        {{ item.ativo ? $t('admin.common.active') : $t('admin.common.inactive') }}
       </v-chip>
     </template>
 
@@ -214,7 +217,7 @@ loadClientNames()
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message='`Excluir a política de SLA "${slaToDelete?.nome}"? Essa ação não pode ser desfeita.`'
+    :message="$t('admin.slas.deleteMessage', { name: slaToDelete?.nome })"
     :loading="deleting"
     @confirm="confirmDelete"
   />

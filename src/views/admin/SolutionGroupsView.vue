@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import SolutionGroupFormModal from '@/components/admin/SolutionGroupFormModal.vue'
 import SolutionGroupPermissionsModal from '@/components/admin/SolutionGroupPermissionsModal.vue'
 import SolutionGroupAdvancedFilterModal from '@/components/admin/SolutionGroupAdvancedFilterModal.vue'
@@ -7,11 +8,13 @@ import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import solutionGroupService from '@/services/solutionGroupService'
 import { extractErrorMessage } from '@/utils/errors'
 
-const headers = [
-  { title: 'Nome', key: 'nome', sortable: false },
-  { title: 'Ativo', key: 'ativo', sortable: false },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
-]
+const { t } = useI18n()
+
+const headers = computed(() => [
+  { title: t('admin.common.name'), key: 'nome', sortable: false },
+  { title: t('admin.common.active'), key: 'ativo', sortable: false },
+  { title: t('common.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -70,7 +73,7 @@ async function loadSolutionGroups() {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os grupos de solução.')
+    errorMessage.value = extractErrorMessage(error, t('admin.solutionGroups.loadError'))
   } finally {
     loading.value = false
   }
@@ -115,7 +118,7 @@ async function confirmDelete() {
       await loadSolutionGroups()
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o grupo de solução.')
+    errorMessage.value = extractErrorMessage(error, t('admin.solutionGroups.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -125,15 +128,15 @@ async function confirmDelete() {
 
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
-    <h1 class="text-h5 font-weight-bold">Grupos de Solução</h1>
+    <h1 class="text-h5 font-weight-bold">{{ $t('admin.solutionGroups.title') }}</h1>
     <div class="d-flex align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-        Limpar filtros
+        {{ $t('admin.common.clearFilters') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-        Filtro Avançado
+        {{ $t('admin.common.advancedFilter') }}
       </v-btn>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Novo grupo</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ $t('admin.solutionGroups.new') }}</v-btn>
     </div>
   </div>
 
@@ -153,7 +156,7 @@ async function confirmDelete() {
   >
     <template #item.ativo="{ item }">
       <v-chip size="small" :color="item.ativo ? 'success' : 'default'" variant="tonal">
-        {{ item.ativo ? 'Ativo' : 'Inativo' }}
+        {{ item.ativo ? $t('admin.common.active') : $t('admin.common.inactive') }}
       </v-chip>
     </template>
 
@@ -170,7 +173,7 @@ async function confirmDelete() {
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message='`Excluir o grupo de solução "${solutionGroupToDelete?.nome}"? Essa ação não pode ser desfeita.`'
+    :message="$t('admin.solutionGroups.deleteMessage', { name: solutionGroupToDelete?.nome })"
     :loading="deleting"
     @confirm="confirmDelete"
   />

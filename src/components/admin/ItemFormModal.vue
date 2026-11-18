@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import itemService from '@/services/itemService'
 import subcategoryService from '@/services/subcategoryService'
 import { extractErrorMessage } from '@/utils/errors'
@@ -11,6 +12,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'saved'])
+
+const { t } = useI18n()
 
 const nome = ref('')
 const ativo = ref(true)
@@ -47,7 +50,7 @@ watch(
     try {
       await loadSubcategories()
     } catch (error) {
-      errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as subcategorias.')
+      errorMessage.value = extractErrorMessage(error, t('admin.items.loadSubcategoriesError'))
     }
   },
 )
@@ -76,7 +79,7 @@ async function onSubmit() {
     emit('saved')
     close()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o item.')
+    errorMessage.value = extractErrorMessage(error, t('admin.items.saveError'))
   } finally {
     loading.value = false
   }
@@ -91,7 +94,7 @@ async function onSubmit() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ item ? 'Editar item' : 'Novo item' }}
+        {{ item ? $t('admin.items.edit') : $t('admin.items.new') }}
       </v-card-title>
 
       <v-card-text>
@@ -100,14 +103,14 @@ async function onSubmit() {
             {{ errorMessage }}
           </v-alert>
 
-          <v-text-field v-model="nome" label="Nome" required autofocus class="mb-2" />
+          <v-text-field v-model="nome" :label="$t('admin.common.name')" required autofocus class="mb-2" />
 
           <v-select
             v-model="subcategoriaId"
             :items="subcategoryOptions"
             :item-title="subcategoryLabel"
             item-value="id"
-            label="Subcategoria"
+            :label="$t('admin.common.subcategory')"
             required
             class="mb-2"
           />
@@ -117,21 +120,21 @@ async function onSubmit() {
             :items="prioridadePadraoOptions"
             item-title="title"
             item-value="value"
-            label="Prioridade padrão de SLA"
+            :label="$t('admin.items.defaultPriority')"
             required
-            hint="Prioridade aplicada automaticamente a todo incidente classificado neste item."
+            :hint="$t('admin.items.defaultPriorityHint')"
             persistent-hint
             class="mb-2"
           />
 
-          <v-checkbox v-model="ativo" label="Ativo" density="compact" hide-details />
+          <v-checkbox v-model="ativo" :label="$t('admin.common.active')" density="compact" hide-details />
         </v-form>
       </v-card-text>
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" :loading="loading" @click="onSubmit">Salvar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="loading" @click="onSubmit">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import solutionGroupService from '@/services/solutionGroupService'
 import { extractErrorMessage } from '@/utils/errors'
 
@@ -10,23 +11,20 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'saved'])
 
-const AREA_LABELS = {
-  tickets: 'Chamados',
-  users: 'Usuários',
-  roles: 'Papéis',
-  clients: 'Clientes',
-  customers: 'Usuários de Clientes',
-  slas: 'SLA',
-  categorias: 'Categorias',
-  grupos_solucao: 'Grupos de Solução',
-  relatorios: 'Relatórios',
-}
+const { t } = useI18n()
 
-const ESTADOS = [
-  { value: 'padrao', label: 'Padrão' },
-  { value: 'liberada', label: 'Liberada' },
-  { value: 'bloqueada', label: 'Bloqueada' },
-]
+const ESTADOS = computed(() => [
+  { value: 'padrao', label: t('admin.solutionGroups.permissions.estados.padrao') },
+  { value: 'liberada', label: t('admin.solutionGroups.permissions.estados.liberada') },
+  { value: 'bloqueada', label: t('admin.solutionGroups.permissions.estados.bloqueada') },
+])
+
+// Áreas conhecidas (mapa do front); qualquer outra cai no próprio slug.
+const AREAS = ['tickets', 'users', 'roles', 'clients', 'customers', 'slas', 'categorias', 'grupos_solucao', 'relatorios']
+
+function areaLabel(area) {
+  return AREAS.includes(area) ? t(`admin.solutionGroups.permissions.areas.${area}`) : area
+}
 
 const permissions = ref([])
 const loading = ref(false)
@@ -45,7 +43,7 @@ const groups = computed(() => {
   }
   return Array.from(byArea.entries()).map(([area, items]) => ({
     area,
-    label: AREA_LABELS[area] ?? area,
+    label: areaLabel(area),
     items,
   }))
 })
@@ -63,7 +61,7 @@ watch(
       const { data } = await solutionGroupService.getPermissions(props.solutionGroup.id)
       permissions.value = data
     } catch (error) {
-      errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as permissões do grupo.')
+      errorMessage.value = extractErrorMessage(error, t('admin.solutionGroups.permissions.loadError'))
     } finally {
       loading.value = false
     }
@@ -86,7 +84,7 @@ async function onSubmit() {
     emit('saved')
     close()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar as permissões do grupo.')
+    errorMessage.value = extractErrorMessage(error, t('admin.solutionGroups.permissions.saveError'))
   } finally {
     saving.value = false
   }
@@ -101,7 +99,7 @@ async function onSubmit() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        Acessos de "{{ solutionGroup?.nome }}"
+        {{ $t('admin.solutionGroups.permissions.title', { name: solutionGroup?.nome }) }}
       </v-card-title>
 
       <v-card-text>
@@ -115,8 +113,7 @@ async function onSubmit() {
 
         <template v-else>
           <p class="text-body-2 text-medium-emphasis mb-4">
-            Por padrão, cada permissão segue o papel do usuário. Use "Liberada" para conceder uma
-            permissão extra só a este grupo, ou "Bloqueada" para retirá-la mesmo que o papel a conceda.
+            {{ $t('admin.solutionGroups.permissions.description') }}
           </p>
 
           <div v-for="group in groups" :key="group.area" class="mb-4">
@@ -140,8 +137,8 @@ async function onSubmit() {
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" :loading="saving" :disabled="loading" @click="onSubmit">Salvar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="saving" :disabled="loading" @click="onSubmit">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

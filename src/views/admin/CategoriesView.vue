@@ -1,16 +1,19 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import CategoryFormModal from '@/components/admin/CategoryFormModal.vue'
 import CategoryAdvancedFilterModal from '@/components/admin/CategoryAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import categoryService from '@/services/categoryService'
 import { extractErrorMessage } from '@/utils/errors'
 
-const headers = [
-  { title: 'Nome', key: 'nome', sortable: false },
-  { title: 'Ativo', key: 'ativo', sortable: false },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
-]
+const { t } = useI18n()
+
+const headers = computed(() => [
+  { title: t('admin.common.name'), key: 'nome', sortable: false },
+  { title: t('admin.common.active'), key: 'ativo', sortable: false },
+  { title: t('common.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -66,7 +69,7 @@ async function loadCategories() {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as categorias.')
+    errorMessage.value = extractErrorMessage(error, t('admin.categories.loadError'))
   } finally {
     loading.value = false
   }
@@ -106,7 +109,7 @@ async function confirmDelete() {
       await loadCategories()
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir a categoria.')
+    errorMessage.value = extractErrorMessage(error, t('admin.categories.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -116,15 +119,15 @@ async function confirmDelete() {
 
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
-    <h1 class="text-h5 font-weight-bold">Categorias</h1>
+    <h1 class="text-h5 font-weight-bold">{{ $t('admin.categories.title') }}</h1>
     <div class="d-flex align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-        Limpar filtros
+        {{ $t('admin.common.clearFilters') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-        Filtro Avançado
+        {{ $t('admin.common.advancedFilter') }}
       </v-btn>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Nova categoria</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ $t('admin.categories.new') }}</v-btn>
     </div>
   </div>
 
@@ -148,7 +151,7 @@ async function confirmDelete() {
   >
     <template #item.ativo="{ item }">
       <v-chip size="small" :color="item.ativo ? 'success' : 'default'" variant="tonal">
-        {{ item.ativo ? 'Ativo' : 'Inativo' }}
+        {{ item.ativo ? $t('admin.common.active') : $t('admin.common.inactive') }}
       </v-chip>
     </template>
 
@@ -162,7 +165,7 @@ async function confirmDelete() {
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message='`Excluir a categoria "${categoryToDelete?.nome}"? Essa ação não pode ser desfeita.`'
+    :message="$t('admin.categories.deleteMessage', { name: categoryToDelete?.nome })"
     :loading="deleting"
     @confirm="confirmDelete"
   />
