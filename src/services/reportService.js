@@ -1,12 +1,10 @@
 import api from '@/services/api'
-import { t } from '@/plugins/i18n'
+import { labelOr } from '@/plugins/i18n'
 
 // Rótulos de agrupamento (capitalizados) dos dois caminhos: o novo (`contar`) e
 // os nomes legados, que ainda aparecem em relatórios salvos antes da Fase 2.
 export function agrupamentoLabel(code) {
-  const key = `reports.agrupamento.${code}`
-  const text = t(key)
-  return text === key ? code : text
+  return labelOr(`reports.agrupamento.${code}`, code)
 }
 
 // Com `responseType: 'blob'` o corpo do 422 também chega como Blob; converte

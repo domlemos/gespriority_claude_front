@@ -112,6 +112,12 @@ defineProps({
   background: rgb(var(--v-theme-background));
 }
 
+@media (max-width: 959px) {
+  .auth-layout__form {
+    padding-top: 64px;
+  }
+}
+
 .auth-layout__locale {
   position: absolute;
   top: 16px;

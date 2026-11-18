@@ -1,4 +1,4 @@
-import { t } from '@/plugins/i18n'
+import { labelOr, t } from '@/plugins/i18n'
 import { formatDurationMinutes } from '@/utils/duration'
 
 const GROUPS = {
@@ -19,10 +19,7 @@ const GROUPS = {
 
 // Tradução de `labels.<grupo>.<code>`; sem chave, devolve o próprio código.
 function labelOf(group, code) {
-  if (code === null || code === undefined) return code
-  const key = `labels.${group}.${code}`
-  const text = t(key)
-  return text === key ? code : text
+  return labelOr(`labels.${group}.${code}`, code)
 }
 
 function optionsOf(group) {

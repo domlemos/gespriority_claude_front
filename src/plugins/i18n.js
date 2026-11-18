@@ -53,6 +53,13 @@ export function currentLocale() {
   return i18n.global.locale.value
 }
 
+// Rótulo traduzido de `key`; sem a chave (em qualquer idioma), devolve o próprio `code`.
+// null/undefined passam direto. Usa `te` para não gerar aviso de chave ausente.
+export function labelOr(key, code) {
+  if (code === null || code === undefined) return code
+  return i18n.global.te(key, 'pt-BR') || i18n.global.te(key) ? i18n.global.t(key) : code
+}
+
 export function t(...args) {
   return i18n.global.t(...args)
 }

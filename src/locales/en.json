@@ -508,7 +508,7 @@
     "common": {
       "name": "Name",
       "email": "Email",
-      "advancedFilter": "Advanced filter",
+      "advancedFilter": "Advanced Filter",
       "clearFilters": "Clear filters",
       "clear": "Clear",
       "filter": "Filter",
@@ -538,7 +538,7 @@
       "deleteMessage": "Delete the client \"{name}\"? This action cannot be undone."
     },
     "customers": {
-      "title": "Client Users",
+      "title": "Customer Users",
       "new": "New client user",
       "edit": "Edit client user",
       "client": "Client",
@@ -593,7 +593,7 @@
           "users": "Users",
           "roles": "Roles",
           "clients": "Clients",
-          "customers": "Client Users",
+          "customers": "Customer Users",
           "slas": "SLA",
           "categorias": "Categories",
           "grupos_solucao": "Solution Groups",
@@ -679,7 +679,7 @@
       "action": "Action",
       "record": "Record",
       "appUsers": "Application users",
-      "customerUsers": "Client users",
+      "customerUsers": "Customer users",
       "actorCustomer": "Client user",
       "actorUser": "Application user",
       "system": "System",
