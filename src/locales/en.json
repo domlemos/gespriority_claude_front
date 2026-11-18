@@ -189,7 +189,7 @@
       "exportImage": "Export image",
       "downloadSheet": "Download spreadsheet",
       "pngFilename": "indicators-report.png",
-    "saveTitle": "Save report",
+      "saveTitle": "Save report",
       "reportName": "Report name",
       "savedOk": "Report saved successfully.",
       "confirmDelete": "Delete this saved report? This action cannot be undone.",
@@ -229,6 +229,97 @@
       "none": "No tickets.",
       "download": "Download list",
       "totalCount": "{n} total"
+    },
+    "advanced": {
+      "whatToCount": "What to count",
+      "count": {
+        "abertos": "Opened",
+        "concluidos": "Completed",
+        "resolvidos": "Resolved",
+        "fechados": "Closed",
+        "cancelados": "Canceled",
+        "encaminhamentos": "Forwards"
+      },
+      "chartTypes": {
+        "colunas": "Columns",
+        "barras": "Bars",
+        "pizza": "Pie"
+      },
+      "periodOpened": "Period — opening date",
+      "periodCanceled": "Period — cancellation date",
+      "periodForwarded": "Period — forwarding date",
+      "periodConcluded": "Period — completion date",
+      "groupBy": "Group by",
+      "status": "Status",
+      "type": "Type",
+      "client": "Client",
+      "customerUser": "Client user",
+      "classification": "Classification",
+      "category": "Category",
+      "subcategory": "Subcategory",
+      "item": "Item",
+      "solutionGroup": "Solution Group",
+      "analystGroup": "Analyst group",
+      "responsible": "Assignee",
+      "chartType": "Chart type",
+      "generate": "Generate Report",
+      "saveReport": "Save Report",
+      "savedReports": "Saved reports",
+      "legacyFormat": "legacy format",
+      "empty": "Set the filters and click \"Generate Report\"",
+      "exportImage": "Export image",
+      "downloadSheet": "Download spreadsheet",
+      "saveTitle": "Save report",
+      "reportName": "Report name",
+      "legacyTitle": "{nome} (legacy format)",
+      "pngFilename": "report-{name}.png",
+      "confirmDelete": "Delete this saved report? This action cannot be undone.",
+      "selectGrouping": "Select the report grouping.",
+      "selectGroupingBeforeSave": "Select the grouping before saving the report.",
+      "sheetOk": "Spreadsheet generated successfully.",
+      "savedOk": "Report saved successfully.",
+      "loadFilterError": "Could not load the filter options.",
+      "loadSavedError": "Could not load the saved reports.",
+      "generateError": "Could not generate the report.",
+      "downloadError": "Could not download the spreadsheet.",
+      "saveError": "Could not save the report.",
+      "runSavedError": "Could not run the saved report.",
+      "deleteSavedError": "Could not delete the saved report."
+    },
+    "fluxos": {
+      "solutionGroups": "Solution groups",
+      "allGroups": "All visible groups",
+      "generate": "Generate Report",
+      "empty": "Choose the groups and the period and click \"Generate Report\"",
+      "legend": "Legend",
+      "exportImage": "Export image",
+      "downloadSheet": "Download spreadsheet",
+      "pngFilename": "flow-map.png",
+      "informPeriod": "Enter a period.",
+      "loadGroupsError": "Could not load the solution groups.",
+      "generateError": "Could not generate the flow map.",
+      "downloadError": "Could not download the spreadsheet.",
+      "exportError": "Could not export the image.",
+      "mapAria": "Flow map",
+      "metric": {
+        "abertos": {
+          "label": "Opened by the group",
+          "short": "Opened"
+        },
+        "recebidos": {
+          "label": "Received",
+          "short": "Received"
+        },
+        "encaminhados": {
+          "label": "Forwarded",
+          "short": "Forwarded"
+        },
+        "resolvidos": {
+          "label": "Resolved",
+          "short": "Resolved"
+        }
+      },
+      "opened": "Opened"
     }
   },
   "attachments": {

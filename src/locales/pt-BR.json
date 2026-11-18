@@ -189,7 +189,7 @@
       "exportImage": "Exportar imagem",
       "downloadSheet": "Baixar planilha",
       "pngFilename": "relatorio-indicadores.png",
-    "saveTitle": "Salvar relatório",
+      "saveTitle": "Salvar relatório",
       "reportName": "Nome do relatório",
       "savedOk": "Relatório salvo com sucesso.",
       "confirmDelete": "Excluir este relatório salvo? Essa ação não pode ser desfeita.",
@@ -229,6 +229,97 @@
       "none": "Nenhum chamado.",
       "download": "Baixar lista",
       "totalCount": "{n} no total"
+    },
+    "advanced": {
+      "whatToCount": "O que contar",
+      "count": {
+        "abertos": "Abertos",
+        "concluidos": "Concluídos",
+        "resolvidos": "Resolvidos",
+        "fechados": "Fechados",
+        "cancelados": "Cancelados",
+        "encaminhamentos": "Encaminhamentos"
+      },
+      "chartTypes": {
+        "colunas": "Colunas",
+        "barras": "Barras",
+        "pizza": "Pizza"
+      },
+      "periodOpened": "Período — data da abertura",
+      "periodCanceled": "Período — data do cancelamento",
+      "periodForwarded": "Período — data do encaminhamento",
+      "periodConcluded": "Período — data da conclusão",
+      "groupBy": "Agrupar por",
+      "status": "Status",
+      "type": "Tipo",
+      "client": "Cliente",
+      "customerUser": "Usuário do cliente",
+      "classification": "Classificação",
+      "category": "Categoria",
+      "subcategory": "Subcategoria",
+      "item": "Item",
+      "solutionGroup": "Grupo de Solução",
+      "analystGroup": "Grupo do analista",
+      "responsible": "Responsável",
+      "chartType": "Tipo de gráfico",
+      "generate": "Gerar Relatório",
+      "saveReport": "Salvar Relatório",
+      "savedReports": "Relatórios salvos",
+      "legacyFormat": "formato antigo",
+      "empty": "Configure os filtros e clique em \"Gerar Relatório\"",
+      "exportImage": "Exportar imagem",
+      "downloadSheet": "Baixar planilha",
+      "saveTitle": "Salvar relatório",
+      "reportName": "Nome do relatório",
+      "legacyTitle": "{nome} (formato antigo)",
+      "pngFilename": "relatorio-{name}.png",
+      "confirmDelete": "Excluir este relatório salvo? Essa ação não pode ser desfeita.",
+      "selectGrouping": "Selecione o agrupamento do relatório.",
+      "selectGroupingBeforeSave": "Selecione o agrupamento antes de salvar o relatório.",
+      "sheetOk": "Planilha gerada com sucesso.",
+      "savedOk": "Relatório salvo com sucesso.",
+      "loadFilterError": "Não foi possível carregar as opções de filtro.",
+      "loadSavedError": "Não foi possível carregar os relatórios salvos.",
+      "generateError": "Não foi possível gerar o relatório.",
+      "downloadError": "Não foi possível baixar a planilha.",
+      "saveError": "Não foi possível salvar o relatório.",
+      "runSavedError": "Não foi possível executar o relatório salvo.",
+      "deleteSavedError": "Não foi possível excluir o relatório salvo."
+    },
+    "fluxos": {
+      "solutionGroups": "Grupos de solução",
+      "allGroups": "Todos os grupos visíveis",
+      "generate": "Gerar Relatório",
+      "empty": "Escolha os grupos e o período e clique em \"Gerar Relatório\"",
+      "legend": "Legenda",
+      "exportImage": "Exportar imagem",
+      "downloadSheet": "Baixar planilha",
+      "pngFilename": "mapa-de-fluxos.png",
+      "informPeriod": "Informe um período.",
+      "loadGroupsError": "Não foi possível carregar os grupos de solução.",
+      "generateError": "Não foi possível gerar o mapa de fluxos.",
+      "downloadError": "Não foi possível baixar a planilha.",
+      "exportError": "Não foi possível exportar a imagem.",
+      "mapAria": "Mapa de fluxos",
+      "metric": {
+        "abertos": {
+          "label": "Abertos pelo grupo",
+          "short": "Abertos"
+        },
+        "recebidos": {
+          "label": "Recebidos",
+          "short": "Recebidos"
+        },
+        "encaminhados": {
+          "label": "Encaminhados",
+          "short": "Encaminhados"
+        },
+        "resolvidos": {
+          "label": "Resolvidos",
+          "short": "Resolvidos"
+        }
+      },
+      "opened": "Abertos"
     }
   },
   "attachments": {

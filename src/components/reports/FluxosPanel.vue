@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import FluxosMapa from '@/components/reports/FluxosMapa.vue'
 import ReportPeriodControls from '@/components/reports/ReportPeriodControls.vue'
 import ReportTicketListDialog from '@/components/reports/ReportTicketListDialog.vue'
@@ -10,6 +11,8 @@ import { downloadBlob } from '@/utils/download'
 import { extractErrorMessage } from '@/utils/errors'
 import { paramsPeriodo } from '@/utils/reportPeriod'
 import { svgParaCanvas } from '@/utils/svgImagem'
+
+const { t } = useI18n()
 
 // --- filtros (período obrigatório, sem quebra) ---
 const grupos = ref([])
@@ -37,7 +40,7 @@ async function loadGrupos() {
     const { data } = await solutionGroupService.list({ per_page: 200 })
     solutionGroupOptions.value = data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os grupos de solução.')
+    errorMessage.value = extractErrorMessage(error, t('reports.fluxos.loadGroupsError'))
   } finally {
     loadingGrupos.value = false
   }
@@ -53,7 +56,7 @@ function buildParams() {
 // Mesma mensagem do backend, mostrada antes de enviar.
 function validar() {
   const temPeriodo = periodoAtalho.value === 'personalizado' ? dataInicio.value && dataFim.value : periodoAtalho.value
-  return temPeriodo ? '' : 'Informe um período.'
+  return temPeriodo ? '' : t('reports.fluxos.informPeriod')
 }
 
 async function onGenerate() {
@@ -72,7 +75,7 @@ async function onGenerate() {
     resultado.value = await reportService.fluxos({ ...params, formato: 'json' })
     resultadoParams.value = params
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível gerar o mapa de fluxos.')
+    errorMessage.value = extractErrorMessage(error, t('reports.fluxos.generateError'))
   } finally {
     generating.value = false
   }
@@ -105,7 +108,7 @@ async function downloadPlanilha() {
     // Mesmo nome que o backend usa no Content-Disposition.
     downloadBlob(blob, 'mapa-de-fluxos.xlsx')
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível baixar a planilha.')
+    errorMessage.value = extractErrorMessage(error, t('reports.fluxos.downloadError'))
   } finally {
     downloading.value = false
   }
@@ -122,12 +125,12 @@ async function exportImage() {
   exporting.value = true
   try {
     const canvas = await svgParaCanvas(svg)
-    baixarImagemGraficos([canvas], 'mapa-de-fluxos.png', {
+    baixarImagemGraficos([canvas], t('reports.fluxos.pngFilename'), {
       titulo: resultado.value.titulo,
       rodape: [...resultado.value.legenda, ...(resultado.value.aviso ? [resultado.value.aviso] : [])],
     })
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível exportar a imagem.')
+    errorMessage.value = extractErrorMessage(error, t('reports.fluxos.exportError'))
   } finally {
     exporting.value = false
   }
@@ -163,8 +166,8 @@ function abrirChamados(alvo) {
               :loading="loadingGrupos"
               item-title="nome"
               item-value="id"
-              label="Grupos de solução"
-              placeholder="Todos os grupos visíveis"
+              :label="$t('reports.fluxos.solutionGroups')"
+              :placeholder="$t('reports.fluxos.allGroups')"
               persistent-placeholder
               multiple
               chips
@@ -184,7 +187,7 @@ function abrirChamados(alvo) {
           </v-col>
         </v-row>
         <div class="d-flex justify-end">
-          <v-btn color="primary" :loading="generating" @click="onGenerate">Gerar Relatório</v-btn>
+          <v-btn color="primary" :loading="generating" @click="onGenerate">{{ $t('reports.fluxos.generate') }}</v-btn>
         </div>
       </v-card-text>
     </v-card>
@@ -193,7 +196,7 @@ function abrirChamados(alvo) {
       <template v-if="!resultado">
         <div class="d-flex flex-column align-center justify-center flex-grow-1 text-medium-emphasis">
           <v-icon icon="mdi-sitemap-outline" size="64" class="mb-2" />
-          <div>Escolha os grupos e o período e clique em "Gerar Relatório"</div>
+          <div>{{ $t('reports.fluxos.empty') }}</div>
         </div>
       </template>
 
@@ -208,7 +211,7 @@ function abrirChamados(alvo) {
           @abrir-chamados="abrirChamados"
         />
 
-        <div class="text-caption text-medium-emphasis mb-1">Legenda</div>
+        <div class="text-caption text-medium-emphasis mb-1">{{ $t('reports.fluxos.legend') }}</div>
         <ul class="legenda text-body-2 mb-4">
           <li v-for="(texto, i) in resultado.legenda" :key="i">{{ texto }}</li>
         </ul>
@@ -219,7 +222,7 @@ function abrirChamados(alvo) {
 
         <div class="d-flex justify-end" style="gap: 8px">
           <v-btn variant="tonal" size="small" prepend-icon="mdi-image" :loading="exporting" @click="exportImage">
-            Exportar imagem
+            {{ $t('reports.fluxos.exportImage') }}
           </v-btn>
           <v-btn
             variant="tonal"
@@ -228,7 +231,7 @@ function abrirChamados(alvo) {
             :loading="downloading"
             @click="downloadPlanilha"
           >
-            Baixar planilha
+            {{ $t('reports.fluxos.downloadSheet') }}
           </v-btn>
         </div>
       </template>

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Chart as ChartJS, registerables } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { Bar, Pie } from 'vue-chartjs'
@@ -27,17 +28,17 @@ import { paramsPeriodo, validarQuebra as validarQuebraPeriodo } from '@/utils/re
 
 ChartJS.register(...registerables, ChartDataLabels)
 
+const { t } = useI18n()
+
 const auth = useAuthStore()
 const canManage = computed(() => auth.hasPermission('relatorios.manage'))
 
-const CONTAR_OPTIONS = [
-  { value: 'abertos', title: 'Abertos' },
-  { value: 'concluidos', title: 'Concluídos' },
-  { value: 'resolvidos', title: 'Resolvidos' },
-  { value: 'fechados', title: 'Fechados' },
-  { value: 'cancelados', title: 'Cancelados' },
-  { value: 'encaminhamentos', title: 'Encaminhamentos' },
-]
+const CONTAR_OPTIONS = computed(() =>
+  ['abertos', 'concluidos', 'resolvidos', 'fechados', 'cancelados', 'encaminhamentos'].map((value) => ({
+    value,
+    title: t(`reports.advanced.count.${value}`),
+  })),
+)
 
 // Matriz contar -> agrupamentos válidos (espelha o backend).
 const AGRUPAR_POR_INCIDENTE = ['categoria', 'subcategoria', 'item', 'grupo_chamado', 'responsavel', 'aberto_por', 'cliente', 'tipo']
@@ -51,12 +52,10 @@ const AGRUPAR_POR_CONTAR = {
   encaminhamentos: ['quem_encaminhou', 'para_grupo', 'para_responsavel'],
 }
 
-const CHART_TYPE_OPTIONS = [
-  { value: 'colunas', title: 'Colunas' },
-  { value: 'barras', title: 'Barras' },
-  { value: 'pizza', title: 'Pizza' },
-]
-const CHART_TYPE_OPTIONS_QUEBRA = CHART_TYPE_OPTIONS.filter((o) => o.value !== 'pizza')
+const CHART_TYPE_OPTIONS = computed(() =>
+  ['colunas', 'barras', 'pizza'].map((value) => ({ value, title: t(`reports.advanced.chartTypes.${value}`) })),
+)
+const CHART_TYPE_OPTIONS_QUEBRA = computed(() => CHART_TYPE_OPTIONS.value.filter((o) => o.value !== 'pizza'))
 
 const statusOptions = computed(() => statusOptionsFn())
 const tipoOptions = computed(() => tipoOptionsFn())
@@ -98,19 +97,14 @@ function onContarChange() {
 
 // Rótulo do período: diz qual data o "o que contar" usa.
 const periodoLabel = computed(() => {
-  const data =
-    contar.value === 'abertos'
-      ? 'data da abertura'
-      : contar.value === 'cancelados'
-        ? 'data do cancelamento'
-        : contar.value === 'encaminhamentos'
-          ? 'data do encaminhamento'
-          : 'data da conclusão'
-  return `Período — ${data}`
+  if (contar.value === 'abertos') return t('reports.advanced.periodOpened')
+  if (contar.value === 'cancelados') return t('reports.advanced.periodCanceled')
+  if (contar.value === 'encaminhamentos') return t('reports.advanced.periodForwarded')
+  return t('reports.advanced.periodConcluded')
 })
 
 const comQuebra = computed(() => quebra.value !== 'nenhuma')
-const chartTypeOptions = computed(() => (comQuebra.value ? CHART_TYPE_OPTIONS_QUEBRA : CHART_TYPE_OPTIONS))
+const chartTypeOptions = computed(() => (comQuebra.value ? CHART_TYPE_OPTIONS_QUEBRA.value : CHART_TYPE_OPTIONS.value))
 
 // Pizza não faz sentido com colunas de período (uma fatia por linha esconderia a quebra).
 function onQuebraChange() {
@@ -192,7 +186,7 @@ async function loadFilterOptions() {
     solutionGroupOptions.value = groups.data
     userOptions.value = users.data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções de filtro.')
+    errorMessage.value = extractErrorMessage(error, t('reports.advanced.loadFilterError'))
   } finally {
     loading.value = false
   }
@@ -206,7 +200,7 @@ async function loadSavedReports() {
     // Os salvos de indicadores aparecem na aba Indicadores por grupo.
     savedReports.value = data.filter((r) => r.contar !== 'indicadores')
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os relatórios salvos.')
+    errorMessage.value = extractErrorMessage(error, t('reports.advanced.loadSavedError'))
   }
 }
 
@@ -236,7 +230,7 @@ function buildFiltros() {
 
 async function onGenerate() {
   if (!agruparPor.value) {
-    errorMessage.value = 'Selecione o agrupamento do relatório.'
+    errorMessage.value = t('reports.advanced.selectGrouping')
     return
   }
   const erroQuebra = validarQuebra()
@@ -255,7 +249,7 @@ async function onGenerate() {
     resultado.value = await reportService.gerar({ ...params, formato: 'json' })
     resultadoParams.value = params
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível gerar o relatório.')
+    errorMessage.value = extractErrorMessage(error, t('reports.advanced.generateError'))
   } finally {
     generating.value = false
   }
@@ -276,10 +270,10 @@ async function downloadPlanilha() {
       // Mesmo nome que o backend usa no Content-Disposition.
       downloadBlob(blob, `relatorio-${resultadoParams.value.contar}-${resultadoParams.value.agrupar_por}.xlsx`)
     }
-    successMessage.value = 'Planilha gerada com sucesso.'
+    successMessage.value = t('reports.advanced.sheetOk')
     successSnackbar.value = true
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível baixar a planilha.')
+    errorMessage.value = extractErrorMessage(error, t('reports.advanced.downloadError'))
   } finally {
     downloading.value = false
   }
@@ -421,7 +415,9 @@ function exportImage() {
   if (!chart) return
   baixarImagemGraficos(
     [chart.canvas],
-    `relatorio${resultado.value.contar ? `-${resultado.value.contar}` : ''}-${resultado.value.agrupar_por}.png`,
+    t('reports.advanced.pngFilename', {
+      name: `${resultado.value.contar ? `${resultado.value.contar}-` : ''}${resultado.value.agrupar_por}`,
+    }),
   )
 }
 
@@ -432,7 +428,7 @@ const saving = ref(false)
 
 function openSaveModal() {
   if (!agruparPor.value) {
-    errorMessage.value = 'Selecione o agrupamento antes de salvar o relatório.'
+    errorMessage.value = t('reports.advanced.selectGroupingBeforeSave')
     return
   }
   const erroQuebra = validarQuebra()
@@ -459,11 +455,11 @@ async function confirmSave() {
       filtros: buildFiltros(),
     })
     saveModalOpen.value = false
-    successMessage.value = 'Relatório salvo com sucesso.'
+    successMessage.value = t('reports.advanced.savedOk')
     successSnackbar.value = true
     await loadSavedReports()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o relatório.')
+    errorMessage.value = extractErrorMessage(error, t('reports.advanced.saveError'))
   } finally {
     saving.value = false
   }
@@ -519,11 +515,11 @@ function normalizarLegado(resposta, nome) {
     linha.percentual = totalGeral > 0 ? Math.round((linha.total / totalGeral) * 1000) / 10 : 0
   })
   return {
-    titulo: `${nome} (formato antigo)`,
+    titulo: t('reports.advanced.legacyTitle', { nome }),
     contar: null,
     agrupar_por: resposta.agrupado_por,
     quebra: 'nenhuma',
-    colunas: [{ chave: 'total', rotulo: 'Total' }],
+    colunas: [{ chave: 'total', rotulo: t('reports.total') }],
     linhas,
     totais: { celulas: { total: totalGeral }, total: totalGeral },
     chamados_distintos: totalGeral,
@@ -556,7 +552,7 @@ async function openSaved(report) {
       }
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível executar o relatório salvo.')
+    errorMessage.value = extractErrorMessage(error, t('reports.advanced.runSavedError'))
   } finally {
     generating.value = false
   }
@@ -579,7 +575,7 @@ async function confirmDeleteSaved() {
     deleteOpen.value = false
     await loadSavedReports()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o relatório salvo.')
+    errorMessage.value = extractErrorMessage(error, t('reports.advanced.deleteSavedError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -601,7 +597,7 @@ async function confirmDeleteSaved() {
       <v-col cols="12" md="4">
         <v-card variant="outlined" class="pa-2 bg-surface">
           <v-card-text>
-            <div class="text-caption text-medium-emphasis mb-1">O que contar</div>
+            <div class="text-caption text-medium-emphasis mb-1">{{ $t('reports.advanced.whatToCount') }}</div>
             <v-btn-toggle
               v-model="contar"
               mandatory
@@ -617,7 +613,7 @@ async function confirmDeleteSaved() {
             <v-select
               v-model="agruparPor"
               :items="agruparPorOptions"
-              label="Agrupar por"
+              :label="$t('reports.advanced.groupBy')"
               required
               class="mb-2"
             />
@@ -633,10 +629,10 @@ async function confirmDeleteSaved() {
 
             <v-row dense class="mb-2">
               <v-col cols="6">
-                <v-select v-model="status" :items="statusOptions" label="Status" clearable density="compact" />
+                <v-select v-model="status" :items="statusOptions" :label="$t('reports.advanced.status')" clearable density="compact" />
               </v-col>
               <v-col cols="6">
-                <v-select v-model="tipo" :items="tipoOptions" label="Tipo" clearable density="compact" />
+                <v-select v-model="tipo" :items="tipoOptions" :label="$t('reports.advanced.type')" clearable density="compact" />
               </v-col>
             </v-row>
 
@@ -647,7 +643,7 @@ async function confirmDeleteSaved() {
                   :items="clientOptions"
                   item-title="name"
                   item-value="id"
-                  label="Cliente"
+                  :label="$t('reports.advanced.client')"
                   clearable
                   density="compact"
                   @update:model-value="onClientChange"
@@ -659,14 +655,14 @@ async function confirmDeleteSaved() {
                   :items="filteredCustomerOptions"
                   item-title="name"
                   item-value="id"
-                  label="Usuário do cliente"
+                  :label="$t('reports.advanced.customerUser')"
                   clearable
                   density="compact"
                 />
               </v-col>
             </v-row>
 
-            <div class="text-caption text-medium-emphasis mb-1">Classificação</div>
+            <div class="text-caption text-medium-emphasis mb-1">{{ $t('reports.advanced.classification') }}</div>
             <v-row dense class="mb-2">
               <v-col cols="4">
                 <v-select
@@ -674,7 +670,7 @@ async function confirmDeleteSaved() {
                   :items="categoryOptions"
                   item-title="nome"
                   item-value="id"
-                  label="Categoria"
+                  :label="$t('reports.advanced.category')"
                   clearable
                   density="compact"
                   @update:model-value="onCategoriaChange"
@@ -686,7 +682,7 @@ async function confirmDeleteSaved() {
                   :items="filteredSubcategoryOptions"
                   item-title="nome"
                   item-value="id"
-                  label="Subcategoria"
+                  :label="$t('reports.advanced.subcategory')"
                   clearable
                   density="compact"
                   :disabled="!categoriaId"
@@ -699,7 +695,7 @@ async function confirmDeleteSaved() {
                   :items="filteredItemOptions"
                   item-title="nome"
                   item-value="id"
-                  label="Item"
+                  :label="$t('reports.advanced.item')"
                   clearable
                   density="compact"
                   :disabled="!subcategoriaId"
@@ -714,7 +710,7 @@ async function confirmDeleteSaved() {
                   :items="solutionGroupOptions"
                   item-title="nome"
                   item-value="id"
-                  label="Grupo de Solução"
+                  :label="$t('reports.advanced.solutionGroup')"
                   clearable
                   density="compact"
                 />
@@ -725,7 +721,7 @@ async function confirmDeleteSaved() {
                   :items="solutionGroupOptions"
                   item-title="nome"
                   item-value="id"
-                  label="Grupo do analista"
+                  :label="$t('reports.advanced.analystGroup')"
                   clearable
                   density="compact"
                 />
@@ -736,7 +732,7 @@ async function confirmDeleteSaved() {
                   :items="userOptions"
                   item-title="name"
                   item-value="id"
-                  label="Responsável"
+                  :label="$t('reports.advanced.responsible')"
                   clearable
                   density="compact"
                 />
@@ -748,22 +744,22 @@ async function confirmDeleteSaved() {
             <v-select
               v-model="chartType"
               :items="chartTypeOptions"
-              label="Tipo de gráfico"
+              :label="$t('reports.advanced.chartType')"
               class="mb-2"
             />
 
             <div class="d-flex flex-column mt-2" style="gap: 8px">
               <v-btn color="primary" block :loading="generating" @click="onGenerate">
-                Gerar Relatório
+                {{ $t('reports.advanced.generate') }}
               </v-btn>
               <v-btn v-if="canManage" color="primary" variant="tonal" block @click="openSaveModal">
-                Salvar Relatório
+                {{ $t('reports.advanced.saveReport') }}
               </v-btn>
             </div>
 
             <template v-if="savedReports.length">
               <v-divider class="my-3" />
-              <div class="text-caption text-medium-emphasis mb-1">Relatórios salvos</div>
+              <div class="text-caption text-medium-emphasis mb-1">{{ $t('reports.advanced.savedReports') }}</div>
               <v-list density="compact" class="pa-0">
                 <v-list-item
                   v-for="report in savedReports"
@@ -773,7 +769,7 @@ async function confirmDeleteSaved() {
                 >
                   <template #title>
                     {{ report.nome }}
-                    <v-chip v-if="report.formato_antigo" size="x-small" variant="tonal" class="ml-1">formato antigo</v-chip>
+                    <v-chip v-if="report.formato_antigo" size="x-small" variant="tonal" class="ml-1">{{ $t('reports.advanced.legacyFormat') }}</v-chip>
                   </template>
                   <template v-if="canManage" #append>
                     <v-btn
@@ -796,14 +792,14 @@ async function confirmDeleteSaved() {
           <template v-if="!resultado">
             <div class="d-flex flex-column align-center justify-center flex-grow-1 text-medium-emphasis">
               <v-icon icon="mdi-chart-bar" size="64" class="mb-2" />
-              <div>Configure os filtros e clique em "Gerar Relatório"</div>
+              <div>{{ $t('reports.advanced.empty') }}</div>
             </div>
           </template>
 
           <template v-else>
             <div class="d-flex justify-end mb-3" style="gap: 8px">
               <v-btn variant="tonal" size="small" prepend-icon="mdi-image" @click="exportImage">
-                Exportar imagem
+                {{ $t('reports.advanced.exportImage') }}
               </v-btn>
               <v-btn
                 variant="tonal"
@@ -812,7 +808,7 @@ async function confirmDeleteSaved() {
                 :loading="downloading"
                 @click="downloadPlanilha"
               >
-                Baixar planilha
+                {{ $t('reports.advanced.downloadSheet') }}
               </v-btn>
             </div>
 
@@ -833,11 +829,11 @@ async function confirmDeleteSaved() {
 
     <v-dialog v-model="saveModalOpen" max-width="480">
       <v-card>
-        <v-card-title class="text-subtitle-1 font-weight-bold">Salvar relatório</v-card-title>
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('reports.advanced.saveTitle') }}</v-card-title>
         <v-card-text>
           <v-text-field
             v-model="saveName"
-            label="Nome do relatório"
+            :label="$t('reports.advanced.reportName')"
             autofocus
             hide-details
             @keyup.enter="confirmSave"
@@ -845,9 +841,9 @@ async function confirmDeleteSaved() {
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="saveModalOpen = false">Cancelar</v-btn>
+          <v-btn variant="text" @click="saveModalOpen = false">{{ $t('common.cancel') }}</v-btn>
           <v-btn color="primary" :loading="saving" :disabled="!saveName.trim()" @click="confirmSave">
-            Salvar
+            {{ $t('common.save') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -863,7 +859,7 @@ async function confirmDeleteSaved() {
 
     <ConfirmDeleteDialog
       v-model="deleteOpen"
-      message="Excluir este relatório salvo? Essa ação não pode ser desfeita."
+      :message="$t('reports.advanced.confirmDelete')"
       :loading="deleting"
       @confirm="confirmDeleteSaved"
     />

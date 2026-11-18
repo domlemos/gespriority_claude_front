@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, useId } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { layoutFluxos, MEDIDAS, temMetricas } from '@/utils/fluxosLayout'
 
 // Mapa de fluxos em SVG: Cliente (círculo), grupos (caixa com os quatro
@@ -11,12 +12,15 @@ const props = defineProps({
 })
 const emit = defineEmits(['abrir-chamados'])
 
-const METRICAS = [
-  { chave: 'abertos', rotulo: 'Abertos pelo grupo', curto: 'Abertos' },
-  { chave: 'recebidos', rotulo: 'Recebidos', curto: 'Recebidos' },
-  { chave: 'encaminhados', rotulo: 'Encaminhados', curto: 'Encaminhados' },
-  { chave: 'resolvidos', rotulo: 'Resolvidos', curto: 'Resolvidos' },
-]
+const { t } = useI18n()
+
+const METRICAS = computed(() =>
+  ['abertos', 'recebidos', 'encaminhados', 'resolvidos'].map((chave) => ({
+    chave,
+    rotulo: t(`reports.fluxos.metric.${chave}.label`),
+    curto: t(`reports.fluxos.metric.${chave}.short`),
+  })),
+)
 
 const svg = ref(null)
 defineExpose({ svg })
@@ -62,7 +66,7 @@ const caixas = computed(() =>
       :height="layout.altura"
       :viewBox="`0 0 ${layout.largura} ${layout.altura}`"
       role="img"
-      aria-label="Mapa de fluxos"
+      :aria-label="$t('reports.fluxos.mapAria')"
       font-family="Roboto, sans-serif"
     >
       <defs>
@@ -120,7 +124,7 @@ const caixas = computed(() =>
             text-anchor="middle"
             dominant-baseline="central"
           >
-            Abertos
+            {{ $t('reports.fluxos.opened') }}
           </text>
           <text
             :x="pos.x + pos.largura / 2"
