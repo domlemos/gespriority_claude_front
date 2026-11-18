@@ -374,7 +374,7 @@ const chartRefs = []
 function exportImage() {
   const canvases = chartRefs.slice(0, graficos.value.length).map((c) => c?.chart?.canvas).filter(Boolean)
   if (!canvases.length) return
-  baixarImagemGraficos(canvases, 'relatorio-indicadores.png', {
+  baixarImagemGraficos(canvases, t('reports.indicadores.pngFilename'), {
     titulo: resultado.value.titulo,
     rodape: [...resultado.value.legenda, ...(resultado.value.aviso ? [resultado.value.aviso] : [])],
   })
