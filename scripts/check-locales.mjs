@@ -18,6 +18,26 @@ function flatten(obj, prefix = '', out = {}) {
   return out
 }
 
+// Chaves estáticas usadas em t('…') / $t('…') / i18n.global.t('…') precisam existir nos dois idiomas.
+// Chaves dinâmicas (template literal, concatenação) são ignoradas.
+function checkUsedKeys(flat) {
+  const USE = /(?:^|[^\w$])\$?t\(\s*(['"])([\w.-]+)\1\s*[,)]/g
+  let problems = 0
+  for (const file of walk(path.join(root, 'src'))) {
+    const src = fs.readFileSync(file, 'utf8')
+    for (const m of src.matchAll(USE)) {
+      const key = m[2]
+      if (key.endsWith('.')) continue
+      const miss = ['pt-BR', 'en'].filter((l) => !(key in flat[l]))
+      if (miss.length) {
+        console.log(`chave inexistente: ${key} (${path.relative(root, file)}:${lineOf(src, m.index + 1)})`)
+        problems++
+      }
+    }
+  }
+  return problems
+}
+
 function checkLocales() {
   const locales = ['pt-BR', 'en']
   const flat = {}
@@ -52,6 +72,7 @@ function checkLocales() {
       })
     }
   }
+  problems += checkUsedKeys(flat)
   if (problems) return 1
   console.log(`locales OK (${Object.keys(flat['pt-BR']).length} chaves)`)
   return 0

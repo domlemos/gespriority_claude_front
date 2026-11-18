@@ -24,9 +24,9 @@ const router = useRouter()
 const ITEMS_PER_PAGE = 15
 
 const headers = computed(() => [
-  { title: t('incidents.headers.numero'), key: 'id', sortable: false },
-  { title: t('incidents.headers.titulo'), key: 'titulo', sortable: false },
-  { title: t('incidents.headers.status'), key: 'status', sortable: false },
+  { title: t('incidents.dashboard.headers.numero'), key: 'id', sortable: false },
+  { title: t('incidents.dashboard.headers.titulo'), key: 'titulo', sortable: false },
+  { title: t('incidents.dashboard.headers.status'), key: 'status', sortable: false },
   { title: t('portal.openedAt'), key: 'created_at', sortable: false },
   { title: t('portal.updatedAt'), key: 'updated_at', sortable: false },
 ])
