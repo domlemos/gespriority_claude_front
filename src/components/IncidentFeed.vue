@@ -1,15 +1,18 @@
 <script setup>
 import { nextTick, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import incidentDescriptionService from '@/services/incidentDescriptionService'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import { initials } from '@/utils/text'
 import { extractErrorMessage } from '@/utils/errors'
+import { formatDateTime as formatDateTimeLocale } from '@/utils/format'
 
 const props = defineProps({
   incidentId: { type: [String, Number], required: true },
 })
 
+const { t } = useI18n()
 const auth = useAuthStore()
 
 const entries = ref([])
@@ -27,13 +30,13 @@ const deleting = ref(false)
 const entryToDelete = ref(null)
 
 function formatDateTime(iso) {
-  return new Date(iso).toLocaleString('pt-BR')
+  return formatDateTimeLocale(iso)
 }
 
 // Autor é staff (`user`) ou, na descrição de abertura feita pelo portal, o
 // próprio cliente (`customer`) — exatamente um dos dois vem preenchido.
 function authorName(entry) {
-  return entry.user?.name ?? (entry.customer ? `${entry.customer.name} (cliente)` : '')
+  return entry.user?.name ?? (entry.customer ? t('incidents.feed.customerSuffix', { name: entry.customer.name }) : '')
 }
 
 function isOwnComment(entry) {
@@ -52,7 +55,7 @@ function isSystemLog(entry) {
 function systemLogIcon(entry) {
   if (entry.tipo === 'alteracao') return 'mdi-pencil-outline'
   if (entry.descricao.startsWith('Encaminhado')) return 'mdi-account-group'
-  if (entry.descricao.startsWith('Atribuído')) return 'mdi-account-check'
+  if (entry.descricao.startsWith('Atribuído')) return 'mdi-account-check' // i18n-ignore: casa com texto vindo do backend
   return 'mdi-information-outline'
 }
 
@@ -73,7 +76,7 @@ async function loadFeed() {
     await nextTick()
     scrollToBottom()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar o feed do incidente.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.feed.loadError'))
   } finally {
     loading.value = false
   }
@@ -122,7 +125,7 @@ async function submitCommentModal() {
   } catch (error) {
     errorMessage.value = extractErrorMessage(
       error,
-      commentModalEntry.value ? 'Não foi possível editar o comentário.' : 'Não foi possível adicionar o comentário.',
+      commentModalEntry.value ? t('incidents.feed.editError') : t('incidents.feed.addError'),
     )
   } finally {
     commentModalSaving.value = false
@@ -143,7 +146,7 @@ async function confirmDelete() {
     entries.value = entries.value.filter((item) => item.id !== entryToDelete.value.id)
     deleteOpen.value = false
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o comentário.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.feed.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -171,7 +174,7 @@ defineExpose({ reload: loadFeed })
       </div>
 
       <div v-else-if="!entries.length" class="text-body-2 text-medium-emphasis text-center py-8">
-        Nenhuma entrada no feed ainda.
+        {{ $t('incidents.feed.empty') }}
       </div>
 
       <template v-for="entry in entries" :key="entry.id">
@@ -205,7 +208,7 @@ defineExpose({ reload: loadFeed })
                 prepend-icon="mdi-eye-outline"
                 class="ml-2"
               >
-                Encerramento · visível ao cliente
+                {{ $t('incidents.feed.closingVisible') }}
               </v-chip>
 
               <v-spacer />
@@ -224,7 +227,7 @@ defineExpose({ reload: loadFeed })
 
     <div v-if="auth.hasPermission('tickets.manage')" class="pa-4 pt-0 flex-shrink-0">
       <v-btn color="primary" block prepend-icon="mdi-comment-plus-outline" @click="openCreateModal">
-        Adicionar Comentário
+        {{ $t('incidents.feed.addComment') }}
       </v-btn>
     </div>
   </div>
@@ -232,7 +235,7 @@ defineExpose({ reload: loadFeed })
   <v-dialog v-model="commentModalOpen" max-width="640">
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ commentModalEntry ? 'Editar comentário' : 'Adicionar comentário' }}
+        {{ commentModalEntry ? $t('incidents.feed.editCommentTitle') : $t('incidents.feed.addCommentTitle') }}
       </v-card-title>
 
       <v-card-text>
@@ -243,20 +246,20 @@ defineExpose({ reload: loadFeed })
           density="comfortable"
           hide-details
           autofocus
-          placeholder="Escreva seu comentário..."
+          :placeholder="$t('incidents.feed.commentPlaceholder')"
         />
       </v-card-text>
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="closeCommentModal">Cancelar</v-btn>
+        <v-btn variant="text" @click="closeCommentModal">{{ $t('common.cancel') }}</v-btn>
         <v-btn
           color="primary"
           :loading="commentModalSaving"
           :disabled="!commentModalText.trim()"
           @click="submitCommentModal"
         >
-          {{ commentModalEntry ? 'Salvar' : 'Comentar' }}
+          {{ commentModalEntry ? $t('common.save') : $t('incidents.feed.comment') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -264,7 +267,7 @@ defineExpose({ reload: loadFeed })
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    message="Excluir este comentário? Essa ação não pode ser desfeita."
+    :message="$t('incidents.feed.confirmDelete')"
     :loading="deleting"
     @confirm="confirmDelete"
   />

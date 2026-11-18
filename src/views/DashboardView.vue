@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import IncidentAdvancedFilterModal from '@/components/IncidentAdvancedFilterModal.vue'
@@ -13,6 +14,7 @@ import itemService from '@/services/itemService'
 import solutionGroupService from '@/services/solutionGroupService'
 import userService from '@/services/userService'
 import { extractErrorMessage } from '@/utils/errors'
+import { formatDateTime as formatDateTimeLocale } from '@/utils/format'
 import { compactFilters, loadSavedFilters, saveFilters } from '@/utils/savedIncidentFilters'
 import {
   prioridadeLabel,
@@ -26,6 +28,7 @@ import {
   formatRemainingMinutes,
 } from '@/utils/incidentLabels'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -39,20 +42,20 @@ if (route.query.novo) {
   router.replace({ query })
 }
 
-const headers = [
-  { title: 'Número', key: 'numero', sortable: true },
-  { title: 'Tipo', key: 'tipo', sortable: false },
-  { title: 'Título', key: 'titulo', sortable: true },
-  { title: 'Cliente', key: 'cliente', sortable: true },
-  { title: 'Classificação', key: 'classificacao', sortable: false },
-  { title: 'Prioridade', key: 'prioridade', sortable: true },
-  { title: 'Status', key: 'status', sortable: true },
-  { title: 'Grupo', key: 'grupo_solucao', sortable: true },
-  { title: 'Responsável', key: 'responsavel', sortable: true },
-  { title: 'Abertura', key: 'data_abertura', sortable: true },
-  { title: 'SLA Resposta', key: 'status_sla_resposta', sortable: true },
-  { title: 'SLA Resolução', key: 'status_sla_resolucao', sortable: true },
-]
+const headers = computed(() => [
+  { title: t('incidents.dashboard.headers.numero'), key: 'numero', sortable: true },
+  { title: t('incidents.dashboard.headers.tipo'), key: 'tipo', sortable: false },
+  { title: t('incidents.dashboard.headers.titulo'), key: 'titulo', sortable: true },
+  { title: t('incidents.dashboard.headers.cliente'), key: 'cliente', sortable: true },
+  { title: t('incidents.dashboard.headers.classificacao'), key: 'classificacao', sortable: false },
+  { title: t('incidents.dashboard.headers.prioridade'), key: 'prioridade', sortable: true },
+  { title: t('incidents.dashboard.headers.status'), key: 'status', sortable: true },
+  { title: t('incidents.dashboard.headers.grupo'), key: 'grupo_solucao', sortable: true },
+  { title: t('incidents.dashboard.headers.responsavel'), key: 'responsavel', sortable: true },
+  { title: t('incidents.dashboard.headers.abertura'), key: 'data_abertura', sortable: true },
+  { title: t('incidents.dashboard.headers.slaResposta'), key: 'status_sla_resposta', sortable: true },
+  { title: t('incidents.dashboard.headers.slaResolucao'), key: 'status_sla_resolucao', sortable: true },
+])
 
 // Ordenação client-side, só sobre a página já carregada: os status de SLA
 // são calculados por requisição contra `now()`, não são coluna de banco —
@@ -66,7 +69,7 @@ const LOCAL_SORT_FIELDS = {
 }
 
 function formatDateTime(iso) {
-  return new Date(iso).toLocaleString('pt-BR')
+  return formatDateTimeLocale(iso)
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 15
@@ -127,8 +130,8 @@ function applyFilters(filters) {
 function saveAndApplyFilters(filters) {
   saveFilters(savedFiltersOwner.value, filters)
   filtersSavedMessage.value = Object.keys(compactFilters(filters)).length
-    ? 'Filtro salvo. Ele será aplicado automaticamente no próximo acesso.'
-    : 'Filtro salvo removido.'
+    ? t('incidents.dashboard.filterSaved')
+    : t('incidents.dashboard.filterRemoved')
   filtersSavedSnackbar.value = true
   applyFilters(filters)
 }
@@ -162,7 +165,7 @@ async function loadFilterOptions() {
     solutionGroupOptions.value = groups.data
     userOptions.value = users.data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções de filtro.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.dashboard.filterOptionsError'))
   }
 }
 
@@ -211,7 +214,7 @@ async function loadIncidents() {
     totalItems.value = meta.total
     applyLocalSort()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os incidentes.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.dashboard.loadError'))
   } finally {
     loading.value = false
   }
@@ -250,16 +253,16 @@ loadFilterOptions()
 <template>
   <AppLayout fluid>
     <div class="d-flex align-center justify-space-between mb-4">
-      <h1 class="text-h5 font-weight-bold">Incidentes</h1>
+      <h1 class="text-h5 font-weight-bold">{{ $t('incidents.dashboard.title') }}</h1>
       <div class="d-flex align-center ga-2">
         <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-          Limpar filtros
+          {{ $t('incidents.dashboard.clearFilters') }}
         </v-btn>
         <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-          Filtro Avançado
+          {{ $t('incidents.dashboard.advancedFilter') }}
         </v-btn>
         <v-btn v-if="auth.hasPermission('tickets.manage')" color="primary" prepend-icon="mdi-plus" @click="openCreate">
-          Novo Chamado
+          {{ $t('incidents.dashboard.newTicket') }}
         </v-btn>
       </div>
     </div>
@@ -309,7 +312,7 @@ loadFilterOptions()
 
       <template #item.prioridade="{ item }">
         <!-- Chamado aberto pelo portal chega sem prioridade até o staff classificar. -->
-        <v-chip v-if="!item.prioridade" size="small" variant="outlined">Não classificado</v-chip>
+        <v-chip v-if="!item.prioridade" size="small" variant="outlined">{{ $t('incidents.dashboard.unclassified') }}</v-chip>
         <v-chip v-else size="small" :color="PRIORIDADE_COLORS[item.prioridade]" variant="tonal">
           {{ prioridadeLabel(item.prioridade) }}
         </v-chip>

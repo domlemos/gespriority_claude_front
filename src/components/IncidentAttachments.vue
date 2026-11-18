@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import attachmentService from '@/services/attachmentService'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
@@ -10,6 +11,7 @@ const props = defineProps({
   incidentId: { type: [String, Number], required: true },
 })
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const canManage = computed(() => auth.hasPermission('tickets.manage'))
 
@@ -68,7 +70,7 @@ async function loadAttachments() {
     const { data } = await attachmentService.list(props.incidentId, { per_page: 100 })
     attachments.value = data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os anexos.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.attachments.loadError'))
   } finally {
     loading.value = false
   }
@@ -101,7 +103,7 @@ async function onFileSelected(event) {
       const created = await attachmentService.upload(props.incidentId, file)
       attachments.value.unshift(created)
     } catch (error) {
-      erros.push(`"${file.name}": ${extractErrorMessage(error, 'não foi possível enviar o anexo.')}`)
+      erros.push(`"${file.name}": ${extractErrorMessage(error, t('incidents.attachments.uploadError'))}`)
     }
   }
 
@@ -124,7 +126,7 @@ async function openPreview(attachment) {
     const blob = await attachmentService.download(props.incidentId, attachment.id)
     previewUrl.value = URL.createObjectURL(blob)
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível abrir o anexo.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.attachments.openError'))
     previewOpen.value = false
   } finally {
     previewLoading.value = false
@@ -164,7 +166,7 @@ async function confirmDelete() {
     attachments.value = attachments.value.filter((item) => item.id !== attachmentToDelete.value.id)
     deleteOpen.value = false
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o anexo.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.attachments.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -189,7 +191,7 @@ watch(() => props.incidentId, () => {
         :loading="uploading"
         @click="openFilePicker"
       >
-        Anexar arquivos
+        {{ $t('incidents.attachments.attach') }}
       </v-btn>
 
       <input
@@ -212,7 +214,7 @@ watch(() => props.incidentId, () => {
       </div>
 
       <div v-else-if="!attachments.length" class="text-body-2 text-medium-emphasis text-center py-6">
-        Nenhum anexo ainda.
+        {{ $t('incidents.attachments.empty') }}
       </div>
 
       <v-row v-else dense>
@@ -292,14 +294,14 @@ watch(() => props.incidentId, () => {
 
           <div v-else class="text-center py-8">
             <v-icon icon="mdi-file-outline" size="64" color="primary" class="mb-4" />
-            <div class="text-body-2 mb-4">Pré-visualização não disponível para este tipo de arquivo.</div>
+            <div class="text-body-2 mb-4">{{ $t('incidents.attachments.noPreview') }}</div>
             <v-btn
               color="primary"
               prepend-icon="mdi-download"
               :href="previewUrl"
               :download="previewAttachment?.nome_original"
             >
-              Baixar arquivo
+              {{ $t('incidents.attachments.download') }}
             </v-btn>
           </div>
         </template>
@@ -309,7 +311,7 @@ watch(() => props.incidentId, () => {
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    message="Excluir este anexo? Essa ação não pode ser desfeita."
+    :message="$t('incidents.attachments.confirmDelete')"
     :loading="deleting"
     @confirm="confirmDelete"
   />

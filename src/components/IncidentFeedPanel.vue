@@ -17,10 +17,10 @@ defineExpose({ reload: () => feedRef.value?.reload() })
   <v-card variant="outlined" class="d-flex flex-column bg-surface" style="height: 500px">
     <v-tabs v-model="activeTab" color="primary" class="flex-shrink-0">
       <v-tab value="feed" class="text-none" @click="($event) => $event.currentTarget.blur()">
-        Feed do incidente
+        {{ $t('incidents.feed.tab') }}
       </v-tab>
       <v-tab value="anexos" class="text-none" @click="($event) => $event.currentTarget.blur()">
-        Anexos
+        {{ $t('incidents.feed.attachmentsTab') }}
       </v-tab>
     </v-tabs>
 

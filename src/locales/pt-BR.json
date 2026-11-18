@@ -168,5 +168,97 @@
   "notFound": {
     "message": "Página não encontrada.",
     "back": "Voltar"
+  },
+  "incidents": {
+    "dashboard": {
+      "title": "Incidentes",
+      "clearFilters": "Limpar filtros",
+      "advancedFilter": "Filtro Avançado",
+      "newTicket": "Novo Chamado",
+      "unclassified": "Não classificado",
+      "headers": {
+        "numero": "Número",
+        "tipo": "Tipo",
+        "titulo": "Título",
+        "cliente": "Cliente",
+        "classificacao": "Classificação",
+        "prioridade": "Prioridade",
+        "status": "Status",
+        "grupo": "Grupo",
+        "responsavel": "Responsável",
+        "abertura": "Abertura",
+        "slaResposta": "SLA Resposta",
+        "slaResolucao": "SLA Resolução"
+      },
+      "filterSaved": "Filtro salvo. Ele será aplicado automaticamente no próximo acesso.",
+      "filterRemoved": "Filtro salvo removido.",
+      "filterOptionsError": "Não foi possível carregar as opções de filtro.",
+      "loadError": "Não foi possível carregar os incidentes."
+    },
+    "filters": {
+      "title": "Filtro Avançado",
+      "numero": "Número",
+      "status": "Status",
+      "prioridade": "Prioridade",
+      "origem": "Origem",
+      "tipo": "Tipo",
+      "semClassificacao": "Sem classificação (triagem)",
+      "cliente": "Cliente",
+      "noCustomer": "Nenhum cliente encontrado",
+      "categoria": "Categoria",
+      "subcategoria": "Subcategoria",
+      "item": "Item",
+      "grupoSolucao": "Grupo de Solução",
+      "responsavel": "Responsável",
+      "clear": "Limpar",
+      "showAll": "Mostrar todos os registros",
+      "filter": "Filtrar",
+      "saveTooltip": "Filtra e mantém este filtro nos próximos acessos. Salvar em branco remove o filtro salvo."
+    },
+    "view": {
+      "title": "Chamado #{id}",
+      "priority": "Prioridade {label}",
+      "cliente": "Cliente",
+      "item": "Item",
+      "origem": "Origem",
+      "grupoSolucao": "Grupo de Solução",
+      "responsavel": "Responsável",
+      "abertoEm": "Aberto em",
+      "prazoResposta": "Prazo de resposta",
+      "prazoResolucao": "Prazo de resolução",
+      "concluidoEm": "Concluído em",
+      "openPage": "Abrir página do chamado",
+      "notFound": "Chamado não encontrado.",
+      "forbidden": "Você não tem acesso a este chamado.",
+      "loadError": "Não foi possível carregar o chamado."
+    },
+    "feed": {
+      "tab": "Feed do incidente",
+      "attachmentsTab": "Anexos",
+      "empty": "Nenhuma entrada no feed ainda.",
+      "customerSuffix": "{name} (cliente)",
+      "closingVisible": "Encerramento · visível ao cliente",
+      "addComment": "Adicionar Comentário",
+      "editCommentTitle": "Editar comentário",
+      "addCommentTitle": "Adicionar comentário",
+      "commentPlaceholder": "Escreva seu comentário...",
+      "comment": "Comentar",
+      "confirmDelete": "Excluir este comentário? Essa ação não pode ser desfeita.",
+      "loadError": "Não foi possível carregar o feed do incidente.",
+      "editError": "Não foi possível editar o comentário.",
+      "addError": "Não foi possível adicionar o comentário.",
+      "deleteError": "Não foi possível excluir o comentário."
+    },
+    "attachments": {
+      "attach": "Anexar arquivos",
+      "empty": "Nenhum anexo ainda.",
+      "noPreview": "Pré-visualização não disponível para este tipo de arquivo.",
+      "download": "Baixar arquivo",
+      "confirmDelete": "Excluir este anexo? Essa ação não pode ser desfeita.",
+      "loadError": "Não foi possível carregar os anexos.",
+      "uploadError": "não foi possível enviar o anexo.",
+      "openError": "Não foi possível abrir o anexo.",
+      "deleteError": "Não foi possível excluir o anexo."
+    }
   }
 }

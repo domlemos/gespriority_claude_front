@@ -1,9 +1,11 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import IncidentFeedPanel from '@/components/IncidentFeedPanel.vue'
 import incidentService from '@/services/incidentService'
 import { extractErrorMessage } from '@/utils/errors'
+import { formatDateTime as formatDateTimeLocale } from '@/utils/format'
 import {
   prioridadeLabel,
   PRIORIDADE_COLORS,
@@ -23,13 +25,14 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
+const { t } = useI18n()
 const router = useRouter()
 const incident = ref(null)
 const loading = ref(false)
 const errorMessage = ref('')
 
 function formatDateTime(iso) {
-  return iso ? new Date(iso).toLocaleString('pt-BR') : '—'
+  return iso ? formatDateTimeLocale(iso) : '—'
 }
 
 function close() {
@@ -51,10 +54,10 @@ async function load() {
   } catch (error) {
     errorMessage.value =
       error?.response?.status === 404
-        ? 'Chamado não encontrado.'
+        ? t('incidents.view.notFound')
         : error?.response?.status === 403
-          ? 'Você não tem acesso a este chamado.'
-          : extractErrorMessage(error, 'Não foi possível carregar o chamado.')
+          ? t('incidents.view.forbidden')
+          : extractErrorMessage(error, t('incidents.view.loadError'))
   } finally {
     loading.value = false
   }
@@ -73,9 +76,9 @@ watch(
   <v-dialog :model-value="modelValue" max-width="960" scrollable @update:model-value="emit('update:modelValue', $event)">
     <v-card>
       <v-card-title class="d-flex align-center text-subtitle-1 font-weight-bold">
-        <span>Chamado #{{ incidentId }}</span>
+        <span>{{ $t('incidents.view.title', { id: incidentId }) }}</span>
         <v-spacer />
-        <v-btn icon="mdi-close" variant="text" size="small" aria-label="Fechar" @click="close" />
+        <v-btn icon="mdi-close" variant="text" size="small" :aria-label="$t('common.close')" @click="close" />
       </v-card-title>
 
       <v-card-text>
@@ -97,45 +100,45 @@ watch(
               {{ tipoLabel(incident.tipo) }}
             </v-chip>
             <v-chip v-if="incident.prioridade" size="small" variant="tonal" :color="PRIORIDADE_COLORS[incident.prioridade]">
-              Prioridade {{ prioridadeLabel(incident.prioridade) }}
+              {{ $t('incidents.view.priority', { label: prioridadeLabel(incident.prioridade) }) }}
             </v-chip>
           </div>
 
           <v-row dense class="mb-2">
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Cliente</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.cliente') }}</div>
               <div>{{ incident.customer?.name ?? '—' }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Item</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.item') }}</div>
               <div>{{ incident.item?.nome ?? '—' }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Origem</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.origem') }}</div>
               <div>{{ origemLabel(incident.origem) ?? '—' }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Grupo de Solução</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.grupoSolucao') }}</div>
               <div>{{ incident.grupo_solucao?.nome ?? '—' }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Responsável</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.responsavel') }}</div>
               <div>{{ incident.responsavel?.name ?? '—' }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Aberto em</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.abertoEm') }}</div>
               <div>{{ formatDateTime(incident.created_at) }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Prazo de resposta</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.prazoResposta') }}</div>
               <div>{{ formatDateTime(incident.prazo_resposta) }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Prazo de resolução</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.prazoResolucao') }}</div>
               <div>{{ formatDateTime(incident.prazo_resolucao) }}</div>
             </v-col>
             <v-col cols="12" sm="6" md="4">
-              <div class="text-caption text-medium-emphasis">Concluído em</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('incidents.view.concluidoEm') }}</div>
               <div>{{ formatDateTime(incident.concluido_em) }}</div>
             </v-col>
           </v-row>
@@ -147,9 +150,9 @@ watch(
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="close">Fechar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.close') }}</v-btn>
         <v-btn color="primary" variant="tonal" prepend-icon="mdi-open-in-app" :disabled="!incident" @click="abrirPagina">
-          Abrir página do chamado
+          {{ $t('incidents.view.openPage') }}
         </v-btn>
       </v-card-actions>
     </v-card>

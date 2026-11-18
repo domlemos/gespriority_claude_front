@@ -148,34 +148,34 @@ function showAll() {
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card>
-      <v-card-title class="text-subtitle-1 font-weight-bold">Filtro Avançado</v-card-title>
+      <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('incidents.filters.title') }}</v-card-title>
 
       <v-card-text>
         <v-row dense>
           <v-col cols="12" sm="6">
-            <v-text-field v-model.number="numero" label="Número" type="number" clearable density="compact" />
+            <v-text-field v-model.number="numero" :label="$t('incidents.filters.numero')" type="number" clearable density="compact" />
           </v-col>
 
           <v-col cols="12" sm="6">
-            <v-select v-model="status" :items="statusOptions" label="Status" clearable density="compact" />
+            <v-select v-model="status" :items="statusOptions" :label="$t('incidents.filters.status')" clearable density="compact" />
           </v-col>
 
           <v-col cols="12" sm="6">
-            <v-select v-model="prioridade" :items="priorityOptions" label="Prioridade" clearable density="compact" />
+            <v-select v-model="prioridade" :items="priorityOptions" :label="$t('incidents.filters.prioridade')" clearable density="compact" />
           </v-col>
 
           <v-col cols="12" sm="6">
-            <v-select v-model="origem" :items="originOptions" label="Origem" clearable density="compact" />
+            <v-select v-model="origem" :items="originOptions" :label="$t('incidents.filters.origem')" clearable density="compact" />
           </v-col>
 
           <v-col cols="12" sm="6">
-            <v-select v-model="tipo" :items="tipoOptions" label="Tipo" clearable density="compact" />
+            <v-select v-model="tipo" :items="tipoOptions" :label="$t('incidents.filters.tipo')" clearable density="compact" />
           </v-col>
 
           <v-col cols="12" sm="6">
             <v-checkbox
               v-model="semClassificacao"
-              label="Sem classificação (triagem)"
+              :label="$t('incidents.filters.semClassificacao')"
               density="compact"
               hide-details
             />
@@ -187,8 +187,8 @@ function showAll() {
               :items="customerOptions"
               :item-title="customerLabel"
               item-value="id"
-              label="Cliente"
-              no-data-text="Nenhum cliente encontrado"
+              :label="$t('incidents.filters.cliente')"
+              :no-data-text="$t('incidents.filters.noCustomer')"
               clearable
               density="compact"
             />
@@ -200,7 +200,7 @@ function showAll() {
               :items="categoryOptions"
               item-title="nome"
               item-value="id"
-              label="Categoria"
+              :label="$t('incidents.filters.categoria')"
               clearable
               density="compact"
               @update:model-value="onCategoriaChange"
@@ -213,7 +213,7 @@ function showAll() {
               :items="filteredSubcategoryOptions"
               item-title="nome"
               item-value="id"
-              label="Subcategoria"
+              :label="$t('incidents.filters.subcategoria')"
               clearable
               density="compact"
               :disabled="!categoriaId"
@@ -227,7 +227,7 @@ function showAll() {
               :items="filteredItemOptions"
               item-title="nome"
               item-value="id"
-              label="Item"
+              :label="$t('incidents.filters.item')"
               clearable
               density="compact"
               :disabled="!subcategoriaId"
@@ -240,7 +240,7 @@ function showAll() {
               :items="solutionGroupOptions"
               item-title="nome"
               item-value="id"
-              label="Grupo de Solução"
+              :label="$t('incidents.filters.grupoSolucao')"
               clearable
               density="compact"
             />
@@ -252,7 +252,7 @@ function showAll() {
               :items="userOptions"
               item-title="name"
               item-value="id"
-              label="Responsável"
+              :label="$t('incidents.filters.responsavel')"
               clearable
               density="compact"
             />
@@ -261,20 +261,20 @@ function showAll() {
       </v-card-text>
 
       <v-card-actions class="flex-wrap ga-1">
-        <v-btn variant="text" @click="clearDraft">Limpar</v-btn>
+        <v-btn variant="text" @click="clearDraft">{{ $t('incidents.filters.clear') }}</v-btn>
         <v-spacer />
         <v-btn variant="text" prepend-icon="mdi-format-list-bulleted" @click="showAll">
-          Mostrar todos os registros
+          {{ $t('incidents.filters.showAll') }}
         </v-btn>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
         <v-btn variant="outlined" color="primary" prepend-icon="mdi-content-save" @click="saveFilters">
-          Salvar
+          {{ $t('common.save') }}
           <v-tooltip activator="parent" location="top">
-            Filtra e mantém este filtro nos próximos acessos. Salvar em branco remove o filtro salvo.
+            {{ $t('incidents.filters.saveTooltip') }}
           </v-tooltip>
         </v-btn>
-        <v-btn color="primary" @click="applyFilters">Filtrar</v-btn>
+        <v-btn color="primary" @click="applyFilters">{{ $t('incidents.filters.filter') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

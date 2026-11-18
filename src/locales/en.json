@@ -168,5 +168,97 @@
   "notFound": {
     "message": "Page not found.",
     "back": "Back"
+  },
+  "incidents": {
+    "dashboard": {
+      "title": "Incidents",
+      "clearFilters": "Clear filters",
+      "advancedFilter": "Advanced Filter",
+      "newTicket": "New Ticket",
+      "unclassified": "Unclassified",
+      "headers": {
+        "numero": "Number",
+        "tipo": "Type",
+        "titulo": "Title",
+        "cliente": "Customer",
+        "classificacao": "Classification",
+        "prioridade": "Priority",
+        "status": "Status",
+        "grupo": "Group",
+        "responsavel": "Assignee",
+        "abertura": "Opened",
+        "slaResposta": "Response SLA",
+        "slaResolucao": "Resolution SLA"
+      },
+      "filterSaved": "Filter saved. It will be applied automatically next time.",
+      "filterRemoved": "Saved filter removed.",
+      "filterOptionsError": "Could not load the filter options.",
+      "loadError": "Could not load the incidents."
+    },
+    "filters": {
+      "title": "Advanced Filter",
+      "numero": "Number",
+      "status": "Status",
+      "prioridade": "Priority",
+      "origem": "Source",
+      "tipo": "Type",
+      "semClassificacao": "Unclassified (triage)",
+      "cliente": "Customer",
+      "noCustomer": "No customers found",
+      "categoria": "Category",
+      "subcategoria": "Subcategory",
+      "item": "Item",
+      "grupoSolucao": "Solution Group",
+      "responsavel": "Assignee",
+      "clear": "Clear",
+      "showAll": "Show all records",
+      "filter": "Filter",
+      "saveTooltip": "Filters and keeps this filter for future visits. Saving a blank filter removes the saved one."
+    },
+    "view": {
+      "title": "Ticket #{id}",
+      "priority": "{label} priority",
+      "cliente": "Customer",
+      "item": "Item",
+      "origem": "Source",
+      "grupoSolucao": "Solution Group",
+      "responsavel": "Assignee",
+      "abertoEm": "Opened at",
+      "prazoResposta": "Response due",
+      "prazoResolucao": "Resolution due",
+      "concluidoEm": "Completed at",
+      "openPage": "Open ticket page",
+      "notFound": "Ticket not found.",
+      "forbidden": "You do not have access to this ticket.",
+      "loadError": "Could not load the ticket."
+    },
+    "feed": {
+      "tab": "Incident feed",
+      "attachmentsTab": "Attachments",
+      "empty": "No feed entries yet.",
+      "customerSuffix": "{name} (customer)",
+      "closingVisible": "Closing · visible to customer",
+      "addComment": "Add Comment",
+      "editCommentTitle": "Edit comment",
+      "addCommentTitle": "Add comment",
+      "commentPlaceholder": "Write your comment...",
+      "comment": "Comment",
+      "confirmDelete": "Delete this comment? This action cannot be undone.",
+      "loadError": "Could not load the incident feed.",
+      "editError": "Could not edit the comment.",
+      "addError": "Could not add the comment.",
+      "deleteError": "Could not delete the comment."
+    },
+    "attachments": {
+      "attach": "Attach files",
+      "empty": "No attachments yet.",
+      "noPreview": "Preview is not available for this file type.",
+      "download": "Download file",
+      "confirmDelete": "Delete this attachment? This action cannot be undone.",
+      "loadError": "Could not load the attachments.",
+      "uploadError": "could not upload the attachment.",
+      "openError": "Could not open the attachment.",
+      "deleteError": "Could not delete the attachment."
+    }
   }
 }
