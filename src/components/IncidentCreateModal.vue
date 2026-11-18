@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import incidentService from '@/services/incidentService'
 import attachmentService from '@/services/attachmentService'
@@ -29,6 +30,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const router = useRouter()
+const { t } = useI18n()
 
 const tipoOptions = computed(() => tipoOptionsFn())
 const originOptions = computed(() => origemOptionsFn())
@@ -225,7 +227,7 @@ async function init() {
     applyInitial()
   } catch (error) {
     loadFailed.value = true
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os dados do chamado.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.form.loadError'))
   } finally {
     loading.value = false
   }
@@ -238,7 +240,7 @@ async function uploadPendingAttachments(incidentId) {
     try {
       await attachmentService.upload(incidentId, file)
     } catch (error) {
-      falhas.push(`"${file.name}" (${extractErrorMessage(error, 'erro no envio')})`)
+      falhas.push(`"${file.name}" (${extractErrorMessage(error, t('incidents.form.uploadFallback'))})`)
     }
   }
 
@@ -272,7 +274,7 @@ async function onSubmit() {
     emit('update:modelValue', false)
     router.push({ name: 'incident-edit', params: { id: created.id }, state: { anexosComFalha } })
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o chamado.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.form.saveError'))
   } finally {
     saving.value = false
   }
@@ -297,7 +299,7 @@ watch(
   >
     <v-card>
       <v-card-title class="d-flex align-center text-subtitle-1 font-weight-bold">
-        {{ initial ? 'Novo Chamado (clone)' : 'Novo Chamado' }}
+        {{ initial ? $t('incidents.form.newTicketClone') : $t('incidents.form.newTicket') }}
         <v-spacer />
         <v-btn icon="mdi-close" variant="text" density="comfortable" :disabled="saving" @click="close" />
       </v-card-title>
@@ -312,9 +314,9 @@ watch(
         </div>
 
         <v-form v-else-if="!loadFailed" @submit.prevent="onSubmit">
-          <v-text-field v-model="titulo" label="Título" required class="mb-2" />
+          <v-text-field v-model="titulo" :label="$t('incidents.form.titulo')" required class="mb-2" />
 
-          <v-select v-model="tipo" :items="tipoOptions" label="Tipo" required class="mb-2" />
+          <v-select v-model="tipo" :items="tipoOptions" :label="$t('incidents.form.tipo')" required class="mb-2" />
 
           <v-row dense class="mb-2">
             <v-col cols="12" md="6">
@@ -323,8 +325,8 @@ watch(
                 :items="clientOptions"
                 item-title="name"
                 item-value="id"
-                label="Empresa"
-                no-data-text="Nenhuma empresa encontrada"
+                :label="$t('incidents.form.empresa')"
+                :no-data-text="$t('incidents.form.noCompany')"
                 clearable
                 required
                 @update:model-value="onClientChange"
@@ -336,8 +338,8 @@ watch(
                 :items="filteredCustomerOptions"
                 :item-title="customerLabel"
                 item-value="id"
-                label="Solicitante"
-                :no-data-text="clientId ? 'Nenhum solicitante nesta empresa' : 'Selecione a empresa primeiro'"
+                :label="$t('incidents.form.solicitante')"
+                :no-data-text="clientId ? $t('incidents.form.noCustomerInCompany') : $t('incidents.form.selectCompanyFirst')"
                 clearable
                 required
                 :disabled="!clientId"
@@ -347,20 +349,20 @@ watch(
 
           <v-row dense class="mb-2">
             <v-col cols="6">
-              <v-select v-model="origem" :items="originOptions" label="Origem" required />
+              <v-select v-model="origem" :items="originOptions" :label="$t('incidents.form.origem')" required />
             </v-col>
             <v-col v-if="itemId" cols="6">
               <v-text-field
                 :model-value="prioridadeExibida"
-                label="Prioridade"
+                :label="$t('incidents.form.prioridade')"
                 readonly
-                hint="Calculada automaticamente pelo item"
+                :hint="$t('incidents.form.priorityHint')"
                 persistent-hint
               />
             </v-col>
           </v-row>
 
-          <div class="text-caption text-medium-emphasis mb-1">Classificação</div>
+          <div class="text-caption text-medium-emphasis mb-1">{{ $t('incidents.form.classificacao') }}</div>
           <v-row dense class="mb-2">
             <v-col cols="12" md="4">
               <v-select
@@ -368,7 +370,7 @@ watch(
                 :items="categoryOptions"
                 item-title="nome"
                 item-value="id"
-                label="Categoria"
+                :label="$t('incidents.form.categoria')"
                 clearable
                 @update:model-value="onCategoriaChange"
               />
@@ -379,7 +381,7 @@ watch(
                 :items="filteredSubcategoryOptions"
                 item-title="nome"
                 item-value="id"
-                label="Subcategoria"
+                :label="$t('incidents.form.subcategoria')"
                 clearable
                 :disabled="!categoriaId"
                 @update:model-value="onSubcategoriaChange"
@@ -391,7 +393,7 @@ watch(
                 :items="filteredItemOptions"
                 item-title="nome"
                 item-value="id"
-                label="Item"
+                :label="$t('incidents.form.item')"
                 required
                 :disabled="!subcategoriaId"
               />
@@ -405,7 +407,7 @@ watch(
                 :items="solutionGroupOptions"
                 item-title="nome"
                 item-value="id"
-                label="Grupo de Solução"
+                :label="$t('incidents.form.grupoSolucao')"
                 clearable
                 @update:model-value="onGrupoSolucaoChange"
               />
@@ -416,23 +418,23 @@ watch(
                 :items="filteredResponsavelOptions"
                 item-title="name"
                 item-value="id"
-                label="Responsável"
+                :label="$t('incidents.form.responsavel')"
                 clearable
                 :disabled="!grupoSolucaoId"
-                :hint="!grupoSolucaoId ? 'Selecione um grupo de solução primeiro' : ''"
+                :hint="!grupoSolucaoId ? $t('incidents.form.selectGroupFirst') : ''"
                 persistent-hint
               />
             </v-col>
           </v-row>
 
-          <v-textarea v-model="descricao" label="Descrição" required rows="4" class="mb-2" />
+          <v-textarea v-model="descricao" :label="$t('incidents.form.descricao')" required rows="4" class="mb-2" />
 
           <div class="d-flex align-center ga-2 flex-wrap">
             <v-btn variant="tonal" color="primary" prepend-icon="mdi-paperclip" @click="openAnexosPicker">
-              Anexar arquivos
+              {{ $t('incidents.attachments.attach') }}
             </v-btn>
             <span class="text-caption text-medium-emphasis">
-              Opcional. PDF, Word, Excel, CSV, JPG ou PNG, até 10 MB cada.
+              {{ $t('incidents.form.attachHint') }}
             </span>
           </div>
 
@@ -462,9 +464,9 @@ watch(
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" :disabled="saving" @click="close">Cancelar</v-btn>
+        <v-btn variant="text" :disabled="saving" @click="close">{{ $t('common.cancel') }}</v-btn>
         <v-btn color="primary" :loading="saving" :disabled="loading || loadFailed" @click="onSubmit">
-          Salvar
+          {{ $t('common.save') }}
         </v-btn>
       </v-card-actions>
     </v-card>

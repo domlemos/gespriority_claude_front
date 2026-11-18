@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppLayout from '@/layouts/AppLayout.vue'
 import IncidentFeedPanel from '@/components/IncidentFeedPanel.vue'
 import IncidentCreateModal from '@/components/IncidentCreateModal.vue'
@@ -25,6 +26,7 @@ const props = defineProps({
   id: { type: [String, Number], required: true },
 })
 
+const { t } = useI18n()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.hasPermission('tickets.manage'))
@@ -34,7 +36,7 @@ const canManage = computed(() => auth.hasPermission('tickets.manage'))
 // `IncidenteController::garantirPermissaoParaCamposRestritos()`).
 const canEditRestrictedFields = computed(() => canManage.value && auth.hasPermission('tickets.edit_all'))
 const restrictedFieldHint = computed(() =>
-  canManage.value && !canEditRestrictedFields.value ? 'Não pode ser alterado após a abertura' : '',
+  canManage.value && !canEditRestrictedFields.value ? t('incidents.form.restrictedHint') : '',
 )
 
 const tipoOptions = computed(() => tipoOptionsFn())
@@ -280,7 +282,7 @@ async function init() {
     syncClientFromCustomer()
   } catch (error) {
     loadFailed.value = true
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os dados do chamado.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.form.loadError'))
   } finally {
     loading.value = false
   }
@@ -294,7 +296,7 @@ function showAttachmentFailuresFromCreation() {
   const falhas = window.history.state?.anexosComFalha
   if (!Array.isArray(falhas) || !falhas.length) return
 
-  errorMessage.value = `Chamado criado, mas não foi possível anexar: ${falhas.join('; ')}. Anexe novamente pela aba de anexos.`
+  errorMessage.value = t('incidents.form.attachmentsFailed', { files: falhas.join('; ') })
   window.history.replaceState({ ...window.history.state, anexosComFalha: undefined }, '')
 }
 
@@ -340,11 +342,11 @@ async function salvar(mensagem = null) {
     status.value = atualizado.status
     statusGravado.value = atualizado.status
     grupoGravado.value = grupoSolucaoId.value
-    successMessage.value = 'Chamado atualizado com sucesso.'
+    successMessage.value = t('incidents.form.updated')
     successSnackbar.value = true
     feedRef.value?.reload()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o chamado.')
+    errorMessage.value = extractErrorMessage(error, t('incidents.form.saveError'))
   } finally {
     saving.value = false
   }
@@ -373,19 +375,19 @@ init()
       <div class="d-flex align-center">
         <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'dashboard' }" />
         <h1 class="text-h5 font-weight-bold ma-0">
-          Chamado #{{ id }}
+          {{ $t('incidents.form.title', { id }) }}
         </h1>
       </div>
 
       <div class="d-flex align-center ga-2">
         <v-btn v-if="canManage" variant="outlined" @click="openCreate">
-          Novo Chamado
+          {{ $t('incidents.form.newTicket') }}
         </v-btn>
         <v-btn v-if="canManage" variant="outlined" @click="cloneAsNew">
-          Clonar Chamado
+          {{ $t('incidents.form.clone') }}
         </v-btn>
         <v-btn v-if="canManage" color="primary" :loading="saving" @click="onSubmit">
-          Salvar
+          {{ $t('common.save') }}
         </v-btn>
       </div>
     </div>
@@ -394,15 +396,14 @@ init()
 
     <v-dialog v-model="encerramentoOpen" max-width="640">
       <v-card>
-        <v-card-title class="text-subtitle-1 font-weight-bold">Fechar chamado</v-card-title>
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('incidents.form.closeTicket') }}</v-card-title>
         <v-card-text>
           <p class="text-body-2 mb-3">
-            Escreva a mensagem de encerramento. Ela fica visível para o cliente no portal — os demais
-            comentários continuam internos.
+            {{ $t('incidents.form.closeIntro') }}
           </p>
           <v-textarea
             v-model="mensagemEncerramento"
-            label="Mensagem de encerramento"
+            :label="$t('incidents.form.closeMessage')"
             rows="5"
             auto-grow
             autofocus
@@ -412,9 +413,9 @@ init()
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="encerramentoOpen = false">Cancelar</v-btn>
+          <v-btn variant="text" @click="encerramentoOpen = false">{{ $t('common.cancel') }}</v-btn>
           <v-btn color="primary" :disabled="!mensagemEncerramento.trim()" @click="confirmarEncerramento">
-            Fechar chamado
+            {{ $t('incidents.form.closeTicket') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -439,7 +440,7 @@ init()
             <v-form @submit.prevent="onSubmit">
               <v-text-field
                 v-model="titulo"
-                label="Título"
+                :label="$t('incidents.form.titulo')"
                 required
                 :disabled="!canEditRestrictedFields"
                 :hint="restrictedFieldHint"
@@ -450,7 +451,7 @@ init()
               <v-select
                 v-model="tipo"
                 :items="tipoOptions"
-                label="Tipo"
+                :label="$t('incidents.form.tipo')"
                 required
                 :disabled="!canEditRestrictedFields"
                 :hint="restrictedFieldHint"
@@ -463,8 +464,8 @@ init()
                 :items="clientOptions"
                 item-title="name"
                 item-value="id"
-                label="Empresa"
-                no-data-text="Nenhuma empresa encontrada"
+                :label="$t('incidents.form.empresa')"
+                :no-data-text="$t('incidents.form.noCompany')"
                 clearable
                 required
                 :disabled="!canEditRestrictedFields"
@@ -479,8 +480,8 @@ init()
                 :items="filteredCustomerOptions"
                 :item-title="customerLabel"
                 item-value="id"
-                label="Solicitante"
-                :no-data-text="clientId ? 'Nenhum solicitante nesta empresa' : 'Selecione a empresa primeiro'"
+                :label="$t('incidents.form.solicitante')"
+                :no-data-text="clientId ? $t('incidents.form.noCustomerInCompany') : $t('incidents.form.selectCompanyFirst')"
                 clearable
                 required
                 :disabled="!canEditRestrictedFields || !clientId"
@@ -493,9 +494,9 @@ init()
                 <v-col cols="4">
                   <v-text-field
                     :model-value="prioridadeExibida"
-                    label="Prioridade"
+                    :label="$t('incidents.form.prioridade')"
                     readonly
-                    hint="Calculada automaticamente pelo item"
+                    :hint="$t('incidents.form.priorityHint')"
                     persistent-hint
                   />
                 </v-col>
@@ -504,7 +505,7 @@ init()
                   <v-select
                     v-model="origem"
                     :items="originOptions"
-                    label="Origem"
+                    :label="$t('incidents.form.origem')"
                     required
                     :disabled="!canEditRestrictedFields"
                     :hint="restrictedFieldHint"
@@ -516,14 +517,14 @@ init()
                   <v-select
                     v-model="status"
                     :items="statusOptions"
-                    label="Status"
+                    :label="$t('incidents.form.status')"
                     required
                     :disabled="!canManage"
                   />
                 </v-col>
               </v-row>
 
-              <div class="text-caption text-medium-emphasis mb-1">Classificação</div>
+              <div class="text-caption text-medium-emphasis mb-1">{{ $t('incidents.form.classificacao') }}</div>
               <v-row dense class="mb-2">
                 <v-col cols="4">
                   <v-select
@@ -531,7 +532,7 @@ init()
                     :items="categoryOptions"
                     item-title="nome"
                     item-value="id"
-                    label="Categoria"
+                    :label="$t('incidents.form.categoria')"
                     clearable
                     :disabled="!canManage"
                     @update:model-value="watchCategoriaChange"
@@ -543,7 +544,7 @@ init()
                     :items="filteredSubcategoryOptions"
                     item-title="nome"
                     item-value="id"
-                    label="Subcategoria"
+                    :label="$t('incidents.form.subcategoria')"
                     clearable
                     :disabled="!canManage || !categoriaId"
                     @update:model-value="watchSubcategoriaChange"
@@ -555,7 +556,7 @@ init()
                     :items="filteredItemOptions"
                     item-title="nome"
                     item-value="id"
-                    label="Item"
+                    :label="$t('incidents.form.item')"
                     required
                     :disabled="!canManage || !subcategoriaId"
                   />
@@ -569,10 +570,10 @@ init()
                     :items="solutionGroupOptions"
                     item-title="nome"
                     item-value="id"
-                    label="Grupo de Solução"
+                    :label="$t('incidents.form.grupoSolucao')"
                     clearable
                     :disabled="!canManage"
-                    :hint="trocaGrupoReabre ? 'Ao salvar, o status volta para Aberto.' : ''"
+                    :hint="trocaGrupoReabre ? $t('incidents.form.groupChangeReopens') : ''"
                     persistent-hint
                     @update:model-value="watchGrupoSolucaoChange"
                   />
@@ -584,10 +585,10 @@ init()
                     :items="filteredResponsavelOptions"
                     item-title="name"
                     item-value="id"
-                    label="Responsável"
+                    :label="$t('incidents.form.responsavel')"
                     clearable
                     :disabled="!canManage || !grupoSolucaoId"
-                    :hint="!grupoSolucaoId ? 'Selecione um grupo de solução primeiro' : ''"
+                    :hint="!grupoSolucaoId ? $t('incidents.form.selectGroupFirst') : ''"
                     persistent-hint
                   />
                 </v-col>
