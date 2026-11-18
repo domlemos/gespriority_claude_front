@@ -1,0 +1,41 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "actions": "Actions"
+  },
+  "locale": {
+    "label": "Language",
+    "ptBR": "Português (BR)",
+    "en": "English"
+  },
+  "nav": {
+    "customerPortal": "Customer Portal",
+    "incidents": "Incidents",
+    "reports": "Reports",
+    "admin": "Administration",
+    "logout": "Sign out",
+    "logoutAll": "Sign out of all devices",
+    "groupRegisters": "Records",
+    "groupPolicies": "Policies",
+    "groupCategories": "Categories",
+    "groupAudit": "Audit",
+    "clients": "Clients",
+    "appUsers": "Application Users",
+    "customerUsers": "Customer Users",
+    "slaPolicies": "SLA Policies",
+    "solutionGroups": "Solution Groups",
+    "categories": "Categories",
+    "subcategories": "Subcategories",
+    "items": "Items",
+    "auditLogs": "Action logs"
+  },
+  "auth": {
+    "brandTitle": "Ticket management, no runaround.",
+    "brandText": "One place for your team to handle, prioritize and resolve, and for your customers to follow every ticket from start to finish.",
+    "mascotAlt": "Uplexis fox mascot answering tickets with a headset"
+  }
+}

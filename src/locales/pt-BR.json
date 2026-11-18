@@ -1,0 +1,41 @@
+{
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "actions": "Ações"
+  },
+  "locale": {
+    "label": "Idioma",
+    "ptBR": "Português (BR)",
+    "en": "English"
+  },
+  "nav": {
+    "customerPortal": "Portal do Cliente",
+    "incidents": "Incidentes",
+    "reports": "Relatórios",
+    "admin": "Administração",
+    "logout": "Sair",
+    "logoutAll": "Sair de todos os dispositivos",
+    "groupRegisters": "Cadastros",
+    "groupPolicies": "Políticas",
+    "groupCategories": "Categorias",
+    "groupAudit": "Auditoria",
+    "clients": "Clientes",
+    "appUsers": "Usuários da Aplicação",
+    "customerUsers": "Usuários de Clientes",
+    "slaPolicies": "Políticas de SLA",
+    "solutionGroups": "Grupos de Solução",
+    "categories": "Categorias",
+    "subcategories": "Subcategorias",
+    "items": "Itens",
+    "auditLogs": "Logs de ações"
+  },
+  "auth": {
+    "brandTitle": "Gestão de chamados, sem enrolação.",
+    "brandText": "Um único lugar para sua equipe atender, priorizar e resolver — e para seus clientes acompanharem cada chamado do início ao fim.",
+    "mascotAlt": "Mascote raposa da Uplexis atendendo chamados com headset"
+  }
+}

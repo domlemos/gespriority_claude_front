@@ -1,37 +1,41 @@
 <script setup>
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppLayout from '@/layouts/AppLayout.vue'
 
-const menuGroups = [
+const { t } = useI18n()
+
+const menuGroups = computed(() => [
   {
-    title: 'Cadastros',
+    title: t('nav.groupRegisters'),
     items: [
-      { title: 'Clientes', icon: 'mdi-domain', to: { name: 'admin-clients' } },
-      { title: 'Usuários da Aplicação', icon: 'mdi-account-cog', to: { name: 'admin-users' } },
-      { title: 'Usuários de Clientes', icon: 'mdi-account-group', to: { name: 'admin-customers' } },
+      { title: t('nav.clients'), icon: 'mdi-domain', to: { name: 'admin-clients' } },
+      { title: t('nav.appUsers'), icon: 'mdi-account-cog', to: { name: 'admin-users' } },
+      { title: t('nav.customerUsers'), icon: 'mdi-account-group', to: { name: 'admin-customers' } },
     ],
   },
   {
-    title: 'Políticas',
+    title: t('nav.groupPolicies'),
     items: [
-      { title: 'Políticas de SLA', icon: 'mdi-timer-alert-outline', to: { name: 'admin-slas' } },
-      { title: 'Grupos de Solução', icon: 'mdi-account-multiple-outline', to: { name: 'admin-solution-groups' } },
+      { title: t('nav.slaPolicies'), icon: 'mdi-timer-alert-outline', to: { name: 'admin-slas' } },
+      { title: t('nav.solutionGroups'), icon: 'mdi-account-multiple-outline', to: { name: 'admin-solution-groups' } },
     ],
   },
   {
-    title: 'Categorias',
+    title: t('nav.groupCategories'),
     items: [
-      { title: 'Categorias', icon: 'mdi-shape-outline', to: { name: 'admin-categories' } },
-      { title: 'Subcategorias', icon: 'mdi-shape-plus-outline', to: { name: 'admin-subcategories' } },
-      { title: 'Itens', icon: 'mdi-tag-outline', to: { name: 'admin-items' } },
+      { title: t('nav.categories'), icon: 'mdi-shape-outline', to: { name: 'admin-categories' } },
+      { title: t('nav.subcategories'), icon: 'mdi-shape-plus-outline', to: { name: 'admin-subcategories' } },
+      { title: t('nav.items'), icon: 'mdi-tag-outline', to: { name: 'admin-items' } },
     ],
   },
   {
-    title: 'Auditoria',
+    title: t('nav.groupAudit'),
     items: [
-      { title: 'Logs de ações', icon: 'mdi-history', to: { name: 'admin-audit-logs' } },
+      { title: t('nav.auditLogs'), icon: 'mdi-history', to: { name: 'admin-audit-logs' } },
     ],
   },
-]
+])
 </script>
 
 <template>

@@ -1,13 +1,16 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { initials } from '@/utils/text'
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 
 defineProps({
   fluid: { type: Boolean, default: false },
 })
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const router = useRouter()
 const loggingOut = ref(false)
@@ -31,7 +34,7 @@ async function handleLogout(all = false) {
       <v-icon icon="mdi-shield-check" color="primary" class="mr-2" />
       <span class="font-weight-bold">upITSM</span>
       <v-chip v-if="auth.isCustomer" size="small" class="ml-3" color="secondary" variant="tonal">
-        Portal do Cliente
+        {{ t('nav.customerPortal') }}
       </v-chip>
     </div>
 
@@ -44,19 +47,21 @@ async function handleLogout(all = false) {
       class="ml-6"
     >
       <v-tab v-if="auth.hasPermission('tickets.view')" class="text-none" :to="{ name: 'dashboard' }">
-        Incidentes
+        {{ t('nav.incidents') }}
       </v-tab>
 
       <v-tab v-if="auth.hasPermission('relatorios.view')" class="text-none" :to="{ name: 'reports' }">
-        Relatórios
+        {{ t('nav.reports') }}
       </v-tab>
 
       <v-tab v-if="auth.roles.includes('admin')" class="text-none" :to="{ name: 'admin' }">
-        Administração
+        {{ t('nav.admin') }}
       </v-tab>
     </v-tabs>
 
     <v-spacer />
+
+    <LocaleSwitcher class="mr-1" />
 
     <v-menu>
       <template #activator="{ props }">
@@ -75,19 +80,19 @@ async function handleLogout(all = false) {
         <v-list-item
           v-if="auth.roles.includes('admin')"
           prepend-icon="mdi-shield-account"
-          title="Administração"
+          :title="t('nav.admin')"
           :to="{ name: 'admin' }"
         />
         <v-divider v-if="auth.roles.includes('admin')" class="my-1" />
         <v-list-item
           prepend-icon="mdi-logout"
-          title="Sair"
+          :title="t('nav.logout')"
           :disabled="loggingOut"
           @click="handleLogout(false)"
         />
         <v-list-item
           prepend-icon="mdi-logout-variant"
-          title="Sair de todos os dispositivos"
+          :title="t('nav.logoutAll')"
           :disabled="loggingOut"
           @click="handleLogout(true)"
         />

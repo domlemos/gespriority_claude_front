@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 import foxy from '@/assets/foxy.webp'
+
+const { t } = useI18n()
 
 defineProps({
   title: { type: String, required: true },
@@ -16,17 +20,18 @@ defineProps({
           <span>upITSM</span>
         </div>
         <h1 class="text-h4 font-weight-bold mt-8 mb-4">
-          Gestão de chamados, sem enrolação.
+          {{ t('auth.brandTitle') }}
         </h1>
         <p class="text-body-1 opacity-90">
-          Um único lugar para sua equipe atender, priorizar e resolver — e para seus
-          clientes acompanharem cada chamado do início ao fim.
+          {{ t('auth.brandText') }}
         </p>
-        <img :src="foxy" alt="Mascote raposa da Uplexis atendendo chamados com headset" class="auth-layout__mascote" />
+        <img :src="foxy" :alt="t('auth.mascotAlt')" class="auth-layout__mascote" />
       </div>
     </div>
 
     <div class="auth-layout__form">
+      <LocaleSwitcher class="auth-layout__locale" />
+
       <v-card
         class="auth-layout__card pa-4 pa-sm-8"
         max-width="440"
@@ -98,12 +103,19 @@ defineProps({
 }
 
 .auth-layout__form {
+  position: relative;
   flex: 1 1 55%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   background: rgb(var(--v-theme-background));
+}
+
+.auth-layout__locale {
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 
 .auth-layout__card {
