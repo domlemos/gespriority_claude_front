@@ -44,21 +44,21 @@ function applyFilters() {
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card>
-      <v-card-title class="text-subtitle-1 font-weight-bold">Filtro Avançado</v-card-title>
+      <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('admin.common.advancedFilter') }}</v-card-title>
 
       <v-card-text>
         <v-row dense>
           <v-col cols="12">
-            <v-text-field v-model="name" label="Nome" clearable density="compact" />
+            <v-text-field v-model="name" :label="$t('admin.common.name')" clearable density="compact" />
           </v-col>
         </v-row>
       </v-card-text>
 
       <v-card-actions>
-        <v-btn variant="text" @click="clearDraft">Limpar</v-btn>
+        <v-btn variant="text" @click="clearDraft">{{ $t('admin.common.clear') }}</v-btn>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" @click="applyFilters">Filtrar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" @click="applyFilters">{{ $t('admin.common.filter') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

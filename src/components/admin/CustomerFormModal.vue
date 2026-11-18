@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import customerService from '@/services/customerService'
 import clientService from '@/services/clientService'
 import { extractErrorMessage } from '@/utils/errors'
@@ -10,6 +11,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'saved'])
+
+const { t } = useI18n()
 
 const createdCustomerId = ref(null)
 const targetCustomerId = computed(() => props.customer?.id ?? createdCustomerId.value)
@@ -58,7 +61,7 @@ async function onSubmit() {
   errorMessage.value = ''
 
   if (!isEditing.value && !password.value) {
-    errorMessage.value = 'Informe uma senha ou use o botão "Enviar convite".'
+    errorMessage.value = t('admin.customers.passwordRequired')
     return
   }
 
@@ -80,7 +83,7 @@ async function onSubmit() {
     emit('saved')
     close()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o usuário do cliente.')
+    errorMessage.value = extractErrorMessage(error, t('admin.customers.saveError'))
   } finally {
     loading.value = false
   }
@@ -103,9 +106,9 @@ async function onSendInvite() {
     }
 
     await customerService.sendInvite(targetCustomerId.value)
-    inviteMessage.value = 'Convite enviado por e-mail.'
+    inviteMessage.value = t('admin.common.inviteSent')
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível enviar o convite.')
+    errorMessage.value = extractErrorMessage(error, t('admin.common.sendInviteError'))
   } finally {
     invitingLoading.value = false
   }
@@ -120,7 +123,7 @@ async function onSendInvite() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ isEditing ? 'Editar usuário de cliente' : 'Novo usuário de cliente' }}
+        {{ isEditing ? $t('admin.customers.edit') : $t('admin.customers.new') }}
       </v-card-title>
 
       <v-card-text>
@@ -133,24 +136,24 @@ async function onSendInvite() {
             {{ inviteMessage }}
           </v-alert>
 
-          <v-text-field v-model="name" label="Nome" required autofocus class="mb-2" />
-          <v-text-field v-model="email" label="E-mail" type="email" required class="mb-2" />
+          <v-text-field v-model="name" :label="$t('admin.common.name')" required autofocus class="mb-2" />
+          <v-text-field v-model="email" :label="$t('admin.common.email')" type="email" required class="mb-2" />
           <v-text-field
             v-model="password"
-            :label="isEditing ? 'Nova senha (opcional)' : 'Senha'"
+            :label="isEditing ? $t('admin.common.newPasswordOptional') : $t('admin.common.password')"
             type="password"
             :required="!isEditing"
             class="mb-1"
           />
           <div v-if="!isEditing" class="text-caption text-medium-emphasis mb-2">
-            Ou deixe em branco e clique em "Enviar convite" abaixo.
+            {{ $t('admin.customers.passwordHint') }}
           </div>
           <v-select
             v-model="clientId"
             :items="clientOptions"
             item-title="name"
             item-value="id"
-            label="Cliente (empresa)"
+            :label="$t('admin.customers.clientCompany')"
             required
           />
         </v-form>
@@ -164,11 +167,11 @@ async function onSendInvite() {
           :disabled="!name || !email"
           @click="onSendInvite"
         >
-          {{ isEditing ? 'Reenviar convite' : 'Enviar convite' }}
+          {{ isEditing ? $t('admin.common.resendInvite') : $t('admin.customers.sendInvite') }}
         </v-btn>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" :loading="loading" @click="onSubmit">Salvar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="loading" @click="onSubmit">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

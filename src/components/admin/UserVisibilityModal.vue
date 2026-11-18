@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import userService from '@/services/userService'
 import solutionGroupService from '@/services/solutionGroupService'
 import { extractErrorMessage } from '@/utils/errors'
@@ -10,6 +11,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'saved'])
+
+const { t } = useI18n()
 
 const ownGroupId = ref(null)
 const ownGroupName = ref('')
@@ -44,7 +47,7 @@ watch(
       selectedIds.value = visibility.grupos_extra.map((group) => group.id)
       groupOptions.value = allGroups
     } catch (error) {
-      errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar a visibilidade do usuário.')
+      errorMessage.value = extractErrorMessage(error, t('admin.users.visibility.loadError'))
     } finally {
       loading.value = false
     }
@@ -64,7 +67,7 @@ async function onSubmit() {
     emit('saved')
     close()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar a visibilidade do usuário.')
+    errorMessage.value = extractErrorMessage(error, t('admin.users.visibility.saveError'))
   } finally {
     saving.value = false
   }
@@ -79,7 +82,7 @@ async function onSubmit() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        Visibilidade de "{{ user?.name }}"
+        {{ $t('admin.users.visibility.title', { name: user?.name }) }}
       </v-card-title>
 
       <v-card-text>
@@ -92,18 +95,21 @@ async function onSubmit() {
         </div>
 
         <template v-else>
-          <p class="text-body-2 text-medium-emphasis mb-4">
-            Por padrão, {{ user?.name }} só enxerga incidentes do próprio grupo
-            (<strong>{{ ownGroupName }}</strong>). Selecione abaixo grupos extras que ele também deve
-            enxergar.
-          </p>
+          <i18n-t
+            keypath="admin.users.visibility.description"
+            tag="p"
+            class="text-body-2 text-medium-emphasis mb-4"
+          >
+            <template #name>{{ user?.name }}</template>
+            <template #group><strong>{{ ownGroupName }}</strong></template>
+          </i18n-t>
 
           <v-select
             v-model="selectedIds"
             :items="availableOptions"
             item-title="nome"
             item-value="id"
-            label="Grupos com visibilidade extra"
+            :label="$t('admin.users.visibility.extraGroups')"
             multiple
             chips
             closable-chips
@@ -113,8 +119,8 @@ async function onSubmit() {
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" :loading="saving" :disabled="loading" @click="onSubmit">Salvar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="saving" :disabled="loading" @click="onSubmit">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

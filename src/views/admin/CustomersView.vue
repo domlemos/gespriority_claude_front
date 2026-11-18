@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import CustomerFormModal from '@/components/admin/CustomerFormModal.vue'
 import CustomerAdvancedFilterModal from '@/components/admin/CustomerAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
@@ -7,12 +8,14 @@ import customerService from '@/services/customerService'
 import clientService from '@/services/clientService'
 import { extractErrorMessage } from '@/utils/errors'
 
-const headers = [
-  { title: 'Nome', key: 'name', sortable: false },
-  { title: 'E-mail', key: 'email', sortable: false },
-  { title: 'Cliente', key: 'client.name', sortable: false },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
-]
+const { t } = useI18n()
+
+const headers = computed(() => [
+  { title: t('admin.common.name'), key: 'name', sortable: false },
+  { title: t('admin.common.email'), key: 'email', sortable: false },
+  { title: t('admin.customers.client'), key: 'client.name', sortable: false },
+  { title: t('common.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -53,7 +56,7 @@ async function loadFilterOptions() {
     const { data } = await clientService.list({ per_page: 200 })
     clientOptions.value = data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções de filtro.')
+    errorMessage.value = extractErrorMessage(error, t('admin.common.loadFilterOptionsError'))
   }
 }
 
@@ -78,7 +81,7 @@ async function loadCustomers() {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os usuários de clientes.')
+    errorMessage.value = extractErrorMessage(error, t('admin.customers.loadError'))
   } finally {
     loading.value = false
   }
@@ -118,7 +121,7 @@ async function confirmDelete() {
       await loadCustomers()
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o usuário do cliente.')
+    errorMessage.value = extractErrorMessage(error, t('admin.customers.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -130,15 +133,15 @@ loadFilterOptions()
 
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
-    <h1 class="text-h5 font-weight-bold">Usuários de Clientes</h1>
+    <h1 class="text-h5 font-weight-bold">{{ $t('admin.customers.title') }}</h1>
     <div class="d-flex align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-        Limpar filtros
+        {{ $t('admin.common.clearFilters') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-        Filtro Avançado
+        {{ $t('admin.common.advancedFilter') }}
       </v-btn>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Novo usuário de cliente</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ $t('admin.customers.new') }}</v-btn>
     </div>
   </div>
 
@@ -171,7 +174,7 @@ loadFilterOptions()
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message='`Excluir o usuário "${customerToDelete?.name}"? Essa ação não pode ser desfeita.`'
+    :message="$t('admin.customers.deleteMessage', { name: customerToDelete?.name })"
     :loading="deleting"
     @confirm="confirmDelete"
   />

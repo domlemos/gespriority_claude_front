@@ -1,15 +1,18 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ClientFormModal from '@/components/admin/ClientFormModal.vue'
 import ClientAdvancedFilterModal from '@/components/admin/ClientAdvancedFilterModal.vue'
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import clientService from '@/services/clientService'
 import { extractErrorMessage } from '@/utils/errors'
 
-const headers = [
-  { title: 'Nome', key: 'name', sortable: false },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
-]
+const { t } = useI18n()
+
+const headers = computed(() => [
+  { title: t('admin.common.name'), key: 'name', sortable: false },
+  { title: t('common.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -65,7 +68,7 @@ async function loadClients() {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os clientes.')
+    errorMessage.value = extractErrorMessage(error, t('admin.clients.loadError'))
   } finally {
     loading.value = false
   }
@@ -105,7 +108,7 @@ async function confirmDelete() {
       await loadClients()
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o cliente.')
+    errorMessage.value = extractErrorMessage(error, t('admin.clients.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -115,15 +118,15 @@ async function confirmDelete() {
 
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
-    <h1 class="text-h5 font-weight-bold">Clientes</h1>
+    <h1 class="text-h5 font-weight-bold">{{ $t('admin.clients.title') }}</h1>
     <div class="d-flex align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-        Limpar filtros
+        {{ $t('admin.common.clearFilters') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-        Filtro Avançado
+        {{ $t('admin.common.advancedFilter') }}
       </v-btn>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Novo cliente</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ $t('admin.clients.new') }}</v-btn>
     </div>
   </div>
 
@@ -151,7 +154,7 @@ async function confirmDelete() {
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message='`Excluir o cliente "${clientToDelete?.name}"? Essa ação não pode ser desfeita.`'
+    :message="$t('admin.clients.deleteMessage', { name: clientToDelete?.name })"
     :loading="deleting"
     @confirm="confirmDelete"
   />

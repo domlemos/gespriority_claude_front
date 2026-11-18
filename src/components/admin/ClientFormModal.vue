@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import clientService from '@/services/clientService'
 import { extractErrorMessage } from '@/utils/errors'
 
@@ -9,6 +10,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'saved'])
+
+const { t } = useI18n()
 
 const name = ref('')
 const loading = ref(false)
@@ -40,7 +43,7 @@ async function onSubmit() {
     emit('saved')
     close()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o cliente.')
+    errorMessage.value = extractErrorMessage(error, t('admin.clients.saveError'))
   } finally {
     loading.value = false
   }
@@ -55,7 +58,7 @@ async function onSubmit() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ client ? 'Editar cliente' : 'Novo cliente' }}
+        {{ client ? $t('admin.clients.edit') : $t('admin.clients.new') }}
       </v-card-title>
 
       <v-card-text>
@@ -64,14 +67,14 @@ async function onSubmit() {
             {{ errorMessage }}
           </v-alert>
 
-          <v-text-field v-model="name" label="Nome" required autofocus />
+          <v-text-field v-model="name" :label="$t('admin.common.name')" required autofocus />
         </v-form>
       </v-card-text>
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" :loading="loading" @click="onSubmit">Salvar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="loading" @click="onSubmit">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

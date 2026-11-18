@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import UserFormModal from '@/components/admin/UserFormModal.vue'
 import UserVisibilityModal from '@/components/admin/UserVisibilityModal.vue'
 import UserAdvancedFilterModal from '@/components/admin/UserAdvancedFilterModal.vue'
@@ -9,13 +10,15 @@ import roleService from '@/services/roleService'
 import solutionGroupService from '@/services/solutionGroupService'
 import { extractErrorMessage } from '@/utils/errors'
 
-const headers = [
-  { title: 'Nome', key: 'name', sortable: false },
-  { title: 'E-mail', key: 'email', sortable: false },
-  { title: 'Papéis', key: 'roles', sortable: false },
-  { title: 'Grupo de Solução', key: 'grupo_solucao', sortable: false },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'end' },
-]
+const { t } = useI18n()
+
+const headers = computed(() => [
+  { title: t('admin.common.name'), key: 'name', sortable: false },
+  { title: t('admin.common.email'), key: 'email', sortable: false },
+  { title: t('admin.users.roles'), key: 'roles', sortable: false },
+  { title: t('admin.users.solutionGroup'), key: 'grupo_solucao', sortable: false },
+  { title: t('common.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
 const items = ref([])
 const totalItems = ref(0)
@@ -64,7 +67,7 @@ async function loadFilterOptions() {
     roleOptions.value = roles.data
     solutionGroupOptions.value = groups.data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções de filtro.')
+    errorMessage.value = extractErrorMessage(error, t('admin.common.loadFilterOptionsError'))
   }
 }
 
@@ -89,7 +92,7 @@ async function loadUsers() {
     items.value = data
     totalItems.value = meta.total
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os usuários.')
+    errorMessage.value = extractErrorMessage(error, t('admin.users.loadError'))
   } finally {
     loading.value = false
   }
@@ -134,7 +137,7 @@ async function confirmDelete() {
       await loadUsers()
     }
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o usuário.')
+    errorMessage.value = extractErrorMessage(error, t('admin.users.deleteError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -146,15 +149,15 @@ loadFilterOptions()
 
 <template>
   <div class="d-flex align-center justify-space-between mb-4">
-    <h1 class="text-h5 font-weight-bold">Usuários da Aplicação</h1>
+    <h1 class="text-h5 font-weight-bold">{{ $t('admin.users.title') }}</h1>
     <div class="d-flex align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
-        Limpar filtros
+        {{ $t('admin.common.clearFilters') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-filter-variant" @click="filterModalOpen = true">
-        Filtro Avançado
+        {{ $t('admin.common.advancedFilter') }}
       </v-btn>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Novo usuário</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">{{ $t('admin.users.new') }}</v-btn>
     </div>
   </div>
 
@@ -208,7 +211,7 @@ loadFilterOptions()
 
   <ConfirmDeleteDialog
     v-model="deleteOpen"
-    :message='`Excluir o usuário "${userToDelete?.name}"? Essa ação não pode ser desfeita.`'
+    :message="$t('admin.users.deleteMessage', { name: userToDelete?.name })"
     :loading="deleting"
     @confirm="confirmDelete"
   />

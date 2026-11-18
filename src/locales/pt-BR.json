@@ -503,5 +503,68 @@
       "descriptionHint": "Conte o que aconteceu, desde quando e o que você já tentou.",
       "error": "Não foi possível abrir o incidente."
     }
+  },
+  "admin": {
+    "common": {
+      "name": "Nome",
+      "email": "E-mail",
+      "advancedFilter": "Filtro Avançado",
+      "clearFilters": "Limpar filtros",
+      "clear": "Limpar",
+      "filter": "Filtrar",
+      "loadFilterOptionsError": "Não foi possível carregar as opções de filtro.",
+      "deleteTitle": "Excluir registro",
+      "password": "Senha",
+      "newPasswordOptional": "Nova senha (opcional)",
+      "resendInvite": "Reenviar convite",
+      "inviteSent": "Convite enviado por e-mail.",
+      "sendInviteError": "Não foi possível enviar o convite."
+    },
+    "clients": {
+      "title": "Clientes",
+      "new": "Novo cliente",
+      "edit": "Editar cliente",
+      "loadError": "Não foi possível carregar os clientes.",
+      "deleteError": "Não foi possível excluir o cliente.",
+      "saveError": "Não foi possível salvar o cliente.",
+      "deleteMessage": "Excluir o cliente \"{name}\"? Essa ação não pode ser desfeita."
+    },
+    "customers": {
+      "title": "Usuários de Clientes",
+      "new": "Novo usuário de cliente",
+      "edit": "Editar usuário de cliente",
+      "client": "Cliente",
+      "clientCompany": "Cliente (empresa)",
+      "sendInvite": "Enviar convite",
+      "loadError": "Não foi possível carregar os usuários de clientes.",
+      "deleteError": "Não foi possível excluir o usuário do cliente.",
+      "saveError": "Não foi possível salvar o usuário do cliente.",
+      "deleteMessage": "Excluir o usuário \"{name}\"? Essa ação não pode ser desfeita.",
+      "passwordRequired": "Informe uma senha ou use o botão \"Enviar convite\".",
+      "passwordHint": "Ou deixe em branco e clique em \"Enviar convite\" abaixo."
+    },
+    "users": {
+      "title": "Usuários da Aplicação",
+      "new": "Novo usuário",
+      "edit": "Editar usuário",
+      "roles": "Papéis",
+      "role": "Papel",
+      "solutionGroup": "Grupo de Solução",
+      "loadError": "Não foi possível carregar os usuários.",
+      "deleteError": "Não foi possível excluir o usuário.",
+      "saveError": "Não foi possível salvar o usuário.",
+      "formOptionsError": "Não foi possível carregar as opções do formulário.",
+      "deleteMessage": "Excluir o usuário \"{name}\"? Essa ação não pode ser desfeita.",
+      "passwordRequired": "Informe uma senha ou marque \"Enviar convite de acesso\".",
+      "sendInviteOnCreate": "Enviar convite de acesso por e-mail",
+      "inviteFailedAfterCreate": "Usuário criado, mas não foi possível enviar o convite. Use \"Reenviar convite\" na edição.",
+      "visibility": {
+        "title": "Visibilidade de \"{name}\"",
+        "description": "Por padrão, {name} só enxerga incidentes do próprio grupo ({group}). Selecione abaixo grupos extras que ele também deve enxergar.",
+        "extraGroups": "Grupos com visibilidade extra",
+        "loadError": "Não foi possível carregar a visibilidade do usuário.",
+        "saveError": "Não foi possível salvar a visibilidade do usuário."
+      }
+    }
   }
 }

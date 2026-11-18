@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import userService from '@/services/userService'
 import roleService from '@/services/roleService'
 import solutionGroupService from '@/services/solutionGroupService'
@@ -11,6 +12,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'saved'])
+
+const { t } = useI18n()
 
 const createdUserId = ref(null)
 const targetUserId = computed(() => props.user?.id ?? createdUserId.value)
@@ -62,7 +65,7 @@ watch(
     try {
       await Promise.all([loadRoles(), loadSolutionGroups()])
     } catch (error) {
-      errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar as opções do formulário.')
+      errorMessage.value = extractErrorMessage(error, t('admin.users.formOptionsError'))
       return
     }
 
@@ -84,7 +87,7 @@ async function onSubmit() {
   const creating = !isEditing.value
 
   if (creating && !password.value && !sendInviteOnCreate.value) {
-    errorMessage.value = 'Informe uma senha ou marque "Enviar convite de acesso".'
+    errorMessage.value = t('admin.users.passwordRequired')
     return
   }
 
@@ -114,7 +117,7 @@ async function onSubmit() {
       } catch (inviteError) {
         errorMessage.value = extractErrorMessage(
           inviteError,
-          'Usuário criado, mas não foi possível enviar o convite. Use "Reenviar convite" na edição.',
+          t('admin.users.inviteFailedAfterCreate'),
         )
         return
       }
@@ -122,7 +125,7 @@ async function onSubmit() {
 
     close()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o usuário.')
+    errorMessage.value = extractErrorMessage(error, t('admin.users.saveError'))
   } finally {
     loading.value = false
   }
@@ -135,9 +138,9 @@ async function onSendInvite() {
 
   try {
     await userService.sendInvite(targetUserId.value)
-    inviteMessage.value = 'Convite enviado por e-mail.'
+    inviteMessage.value = t('admin.common.inviteSent')
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível enviar o convite.')
+    errorMessage.value = extractErrorMessage(error, t('admin.common.sendInviteError'))
   } finally {
     invitingLoading.value = false
   }
@@ -152,7 +155,7 @@ async function onSendInvite() {
   >
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ isEditing ? 'Editar usuário' : 'Novo usuário' }}
+        {{ isEditing ? $t('admin.users.edit') : $t('admin.users.new') }}
       </v-card-title>
 
       <v-card-text>
@@ -165,11 +168,11 @@ async function onSendInvite() {
             {{ inviteMessage }}
           </v-alert>
 
-          <v-text-field v-model="name" label="Nome" required autofocus class="mb-2" />
-          <v-text-field v-model="email" label="E-mail" type="email" required class="mb-2" />
+          <v-text-field v-model="name" :label="$t('admin.common.name')" required autofocus class="mb-2" />
+          <v-text-field v-model="email" :label="$t('admin.common.email')" type="email" required class="mb-2" />
           <v-text-field
             v-model="password"
-            :label="isEditing ? 'Nova senha (opcional)' : 'Senha'"
+            :label="isEditing ? $t('admin.common.newPasswordOptional') : $t('admin.common.password')"
             type="password"
             :required="passwordRequired"
             class="mb-1"
@@ -177,7 +180,7 @@ async function onSendInvite() {
           <v-checkbox
             v-if="!isEditing"
             v-model="sendInviteOnCreate"
-            label="Enviar convite de acesso por e-mail"
+            :label="$t('admin.users.sendInviteOnCreate')"
             density="compact"
             hide-details
             class="mb-2"
@@ -187,7 +190,7 @@ async function onSendInvite() {
             :items="roleOptions"
             item-title="name"
             item-value="id"
-            label="Papéis"
+            :label="$t('admin.users.roles')"
             multiple
             chips
             class="mb-2"
@@ -197,7 +200,7 @@ async function onSendInvite() {
             :items="solutionGroupOptions"
             item-title="nome"
             item-value="id"
-            label="Grupo de Solução"
+            :label="$t('admin.users.solutionGroup')"
             required
           />
         </v-form>
@@ -212,11 +215,11 @@ async function onSendInvite() {
           :disabled="!name || !email"
           @click="onSendInvite"
         >
-          Reenviar convite
+          {{ $t('admin.common.resendInvite') }}
         </v-btn>
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" :loading="loading" @click="onSubmit">Salvar</v-btn>
+        <v-btn variant="text" @click="close">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" :loading="loading" @click="onSubmit">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

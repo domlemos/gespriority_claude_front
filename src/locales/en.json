@@ -503,5 +503,68 @@
       "descriptionHint": "Tell us what happened, since when, and what you already tried.",
       "error": "Could not open the ticket."
     }
+  },
+  "admin": {
+    "common": {
+      "name": "Name",
+      "email": "Email",
+      "advancedFilter": "Advanced filter",
+      "clearFilters": "Clear filters",
+      "clear": "Clear",
+      "filter": "Filter",
+      "loadFilterOptionsError": "Could not load the filter options.",
+      "deleteTitle": "Delete record",
+      "password": "Password",
+      "newPasswordOptional": "New password (optional)",
+      "resendInvite": "Resend invite",
+      "inviteSent": "Invite sent by email.",
+      "sendInviteError": "Could not send the invite."
+    },
+    "clients": {
+      "title": "Clients",
+      "new": "New client",
+      "edit": "Edit client",
+      "loadError": "Could not load the clients.",
+      "deleteError": "Could not delete the client.",
+      "saveError": "Could not save the client.",
+      "deleteMessage": "Delete the client \"{name}\"? This action cannot be undone."
+    },
+    "customers": {
+      "title": "Client Users",
+      "new": "New client user",
+      "edit": "Edit client user",
+      "client": "Client",
+      "clientCompany": "Client (company)",
+      "sendInvite": "Send invite",
+      "loadError": "Could not load the client users.",
+      "deleteError": "Could not delete the client user.",
+      "saveError": "Could not save the client user.",
+      "deleteMessage": "Delete the user \"{name}\"? This action cannot be undone.",
+      "passwordRequired": "Enter a password or use the \"Send invite\" button.",
+      "passwordHint": "Or leave it blank and click \"Send invite\" below."
+    },
+    "users": {
+      "title": "Application Users",
+      "new": "New user",
+      "edit": "Edit user",
+      "roles": "Roles",
+      "role": "Role",
+      "solutionGroup": "Solution Group",
+      "loadError": "Could not load the users.",
+      "deleteError": "Could not delete the user.",
+      "saveError": "Could not save the user.",
+      "formOptionsError": "Could not load the form options.",
+      "deleteMessage": "Delete the user \"{name}\"? This action cannot be undone.",
+      "passwordRequired": "Enter a password or check \"Send access invite\".",
+      "sendInviteOnCreate": "Send access invite by email",
+      "inviteFailedAfterCreate": "User created, but the invite could not be sent. Use \"Resend invite\" when editing.",
+      "visibility": {
+        "title": "Visibility of \"{name}\"",
+        "description": "By default, {name} only sees tickets from their own group ({group}). Select below any extra groups they should also see.",
+        "extraGroups": "Groups with extra visibility",
+        "loadError": "Could not load the user visibility.",
+        "saveError": "Could not save the user visibility."
+      }
+    }
   }
 }
