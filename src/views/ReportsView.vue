@@ -11,13 +11,13 @@ const aba = ref('indicadores')
 <template>
   <AppLayout fluid>
     <div class="d-flex align-center justify-space-between mb-4">
-      <h1 class="text-h5 font-weight-bold ma-0">Relatórios</h1>
+      <h1 class="text-h5 font-weight-bold ma-0">{{ $t('reports.title') }}</h1>
     </div>
 
     <v-tabs v-model="aba" color="primary" class="mb-4">
-      <v-tab value="indicadores">Indicadores por grupo</v-tab>
-      <v-tab value="fluxos">Mapa de fluxos</v-tab>
-      <v-tab value="avancado">Avançado</v-tab>
+      <v-tab value="indicadores">{{ $t('reports.tabs.indicadores') }}</v-tab>
+      <v-tab value="fluxos">{{ $t('reports.tabs.fluxos') }}</v-tab>
+      <v-tab value="avancado">{{ $t('reports.tabs.avancado') }}</v-tab>
     </v-tabs>
 
     <!-- v-show (e não v-if/v-window): as abas ficam montadas, então trocar

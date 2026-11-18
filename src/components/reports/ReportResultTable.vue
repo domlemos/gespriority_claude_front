@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { agrupamentoLabel } from '@/services/reportService'
+import { formatNumber } from '@/utils/format'
 
 const props = defineProps({
   resultado: { type: Object, required: true },
@@ -21,7 +22,7 @@ const mostrarDistintos = computed(
 )
 
 function formatPercentual(valor) {
-  return `${Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
+  return `${formatNumber(valor, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
 }
 
 function abrir(linha, coluna) {
@@ -36,7 +37,7 @@ function abrir(linha, coluna) {
       <tr>
         <th>{{ cabecalho }}</th>
         <th v-for="col in colunas" :key="col.chave" class="text-right">{{ col.rotulo }}</th>
-        <th class="text-right">Total</th>
+        <th class="text-right">{{ $t('reports.total') }}</th>
         <th class="text-right">%</th>
       </tr>
     </thead>
@@ -74,7 +75,7 @@ function abrir(linha, coluna) {
     </tbody>
     <tfoot>
       <tr class="font-weight-bold">
-        <td>Total</td>
+        <td>{{ $t('reports.total') }}</td>
         <td v-for="col in colunas" :key="col.chave" class="text-right">
           {{ resultado.totais.celulas[col.chave] ?? 0 }}
         </td>
@@ -83,7 +84,7 @@ function abrir(linha, coluna) {
       </tr>
       <tr v-if="mostrarDistintos">
         <td :colspan="colunas.length + 3" class="text-caption text-medium-emphasis">
-          Chamados distintos no resultado: {{ resultado.chamados_distintos }}
+          {{ $t('reports.result.distinctInResult', { n: resultado.chamados_distintos }) }}
         </td>
       </tr>
     </tfoot>

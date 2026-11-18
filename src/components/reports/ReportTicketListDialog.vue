@@ -1,9 +1,13 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import IncidentViewModal from '@/components/IncidentViewModal.vue'
 import reportService from '@/services/reportService'
 import { extractErrorMessage } from '@/utils/errors'
+import { formatDateTime } from '@/utils/format'
 import { statusLabel } from '@/utils/incidentLabels'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -50,7 +54,7 @@ const subtitulo = computed(() => {
   const d = dados.value
   if (!d) return ''
   if (props.fonte === 'fluxos') return d.filtro?.rotulo ?? ''
-  return [`Linha: ${d.linha?.rotulo}`, d.indicador?.rotulo, d.coluna?.rotulo].filter(Boolean).join(' · ')
+  return [t('reports.ticketList.row', { rotulo: d.linha?.rotulo }), d.indicador?.rotulo, d.coluna?.rotulo].filter(Boolean).join(' · ')
 })
 
 const pronto = computed(() => (props.fonte === 'fluxos' ? !!props.alvo : props.chave !== null))
@@ -64,7 +68,7 @@ function buscarChamados(consulta) {
 }
 
 // Encaminhamentos mostram também o destino; a coluna de pessoa é quem encaminhou.
-const autorLabel = computed(() => (comDestino.value ? 'Quem encaminhou' : 'Analista'))
+const autorLabel = computed(() => (comDestino.value ? t('reports.ticketList.whoForwarded') : t('reports.ticketList.analyst')))
 
 // Mesmo parâmetros do relatório + a linha/célula clicada. `chave` vai sempre
 // como string: `__vazio__` e ids numéricos são comparados como texto no backend.
@@ -90,7 +94,7 @@ async function carregar() {
       montarParams({ page: page.value, per_page: PER_PAGE, formato: 'json' }),
     )
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar a lista de chamados.')
+    errorMessage.value = extractErrorMessage(error, t('reports.ticketList.loadError'))
   } finally {
     loading.value = false
   }
@@ -130,7 +134,7 @@ async function baixarLista() {
     link.remove()
     URL.revokeObjectURL(url)
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível baixar a lista.')
+    errorMessage.value = extractErrorMessage(error, t('reports.ticketList.downloadError'))
   } finally {
     downloading.value = false
   }
@@ -138,7 +142,7 @@ async function baixarLista() {
 
 function formatData(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('pt-BR', {
+  return formatDateTime(iso, {
     timeZone: 'America/Sao_Paulo',
     dateStyle: 'short',
     timeStyle: 'short',
@@ -164,12 +168,12 @@ function verChamado(id) {
     <v-card>
       <v-card-title class="d-flex align-start justify-space-between" style="white-space: normal">
         <div>
-          <div class="text-subtitle-1 font-weight-bold">{{ dados?.titulo ?? 'Chamados' }}</div>
+          <div class="text-subtitle-1 font-weight-bold">{{ dados?.titulo ?? $t('reports.ticketList.title') }}</div>
           <div v-if="dados" class="text-body-2 text-medium-emphasis">
             {{ subtitulo }}
           </div>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="small" aria-label="Fechar" @click="fechar" />
+        <v-btn icon="mdi-close" variant="text" size="small" :aria-label="$t('common.close')" @click="fechar" />
       </v-card-title>
 
       <v-card-text>
@@ -181,23 +185,23 @@ function verChamado(id) {
 
         <div v-if="listaMenorQueNumero" class="text-body-2 text-medium-emphasis mb-2">
           <template v-if="fonte === 'indicadores'">
-            {{ meta.total }} chamados — o total soma {{ numeroClicado }} porque um chamado conta em cada período em que o evento ocorreu, mas aparece uma vez nesta lista.
+            {{ $t('reports.ticketList.smallerIndicadores', { total: meta.total, n: numeroClicado }) }}
           </template>
           <template v-else>
-            {{ meta.total }} chamados distintos — a linha soma {{ numeroClicado }} porque um chamado conta em cada período em que foi concluído.
+            {{ $t('reports.ticketList.smallerOther', { total: meta.total, n: numeroClicado }) }}
           </template>
         </div>
 
         <v-table v-if="dados" density="compact">
           <thead>
             <tr>
-              <th>Nº</th>
-              <th>Título</th>
-              <th>Status</th>
-              <th>Data</th>
+              <th>{{ $t('reports.ticketList.number') }}</th>
+              <th>{{ $t('reports.ticketList.ticketTitle') }}</th>
+              <th>{{ $t('reports.ticketList.status') }}</th>
+              <th>{{ $t('reports.ticketList.date') }}</th>
               <th>{{ autorLabel }}</th>
-              <th>Grupo de Solução</th>
-              <th v-if="comDestino">Destino</th>
+              <th>{{ $t('reports.ticketList.solutionGroup') }}</th>
+              <th v-if="comDestino">{{ $t('reports.ticketList.destination') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -206,14 +210,14 @@ function verChamado(id) {
                 <a
                   v-if="item.acessivel"
                   href="#"
-                  :aria-label="`Ver chamado #${item.incidente_id}`"
+                  :aria-label="$t('reports.ticketList.viewTicket', { id: item.incidente_id })"
                   @click.prevent="verChamado(item.incidente_id)"
                 >
                   #{{ item.incidente_id }}
                 </a>
                 <template v-else>
                   #{{ item.incidente_id }}
-                  <v-chip size="x-small" variant="tonal" class="ml-1">fora dos seus grupos</v-chip>
+                  <v-chip size="x-small" variant="tonal" class="ml-1">{{ $t('reports.ticketList.outsideGroups') }}</v-chip>
                 </template>
               </td>
               <td>{{ item.titulo }}</td>
@@ -224,7 +228,7 @@ function verChamado(id) {
               <td v-if="comDestino">{{ item.destino ?? '—' }}</td>
             </tr>
             <tr v-if="!itens.length && !loading">
-              <td :colspan="comDestino ? 7 : 6" class="text-center text-medium-emphasis">Nenhum chamado.</td>
+              <td :colspan="comDestino ? 7 : 6" class="text-center text-medium-emphasis">{{ $t('reports.ticketList.none') }}</td>
             </tr>
           </tbody>
         </v-table>
@@ -238,12 +242,12 @@ function verChamado(id) {
           :disabled="!dados"
           @click="baixarLista"
         >
-          Baixar lista
+          {{ $t('reports.ticketList.download') }}
         </v-btn>
         <v-spacer />
-        <span v-if="dados" class="text-caption text-medium-emphasis mr-2">{{ meta.total }} no total</span>
+        <span v-if="dados" class="text-caption text-medium-emphasis mr-2">{{ $t('reports.ticketList.totalCount', { n: meta.total }) }}</span>
         <v-pagination v-if="meta.last_page > 1" v-model="page" :length="meta.last_page" :total-visible="5" density="comfortable" />
-        <v-btn variant="text" @click="fechar">Fechar</v-btn>
+        <v-btn variant="text" @click="fechar">{{ $t('common.close') }}</v-btn>
       </v-card-actions>
     </v-card>
     <IncidentViewModal v-model="chamadoAberto" :incident-id="chamadoId" />

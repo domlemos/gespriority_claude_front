@@ -1,5 +1,8 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   // Resposta de `GET /relatorios/indicadores`.
@@ -12,7 +15,7 @@ const emit = defineEmits(['abrir-chamados'])
 const comQuebra = computed(() => props.resultado.quebra !== 'nenhuma')
 // Sem quebra a única coluna de período é o próprio Total; só o Total aparece.
 const periodos = computed(() => (comQuebra.value ? props.resultado.colunas : []))
-const cabecalhoLinha = computed(() => (props.resultado.por_integrante ? 'Integrante' : 'Grupo'))
+const cabecalhoLinha = computed(() => (props.resultado.por_integrante ? t('reports.indicadores.rowHeaderMember') : t('reports.indicadores.rowHeaderGroup')))
 
 function abrir(linha, indicador, coluna) {
   emit('abrir-chamados', { chave: linha.chave, indicador: indicador.chave, coluna, rotulo: linha.rotulo })
@@ -43,7 +46,7 @@ function abrir(linha, indicador, coluna) {
           >
             {{ col.rotulo }}
           </th>
-          <th class="text-right" :class="{ bloco: !periodos.length }">Total</th>
+          <th class="text-right" :class="{ bloco: !periodos.length }">{{ $t('reports.total') }}</th>
         </template>
       </tr>
     </thead>
@@ -79,7 +82,7 @@ function abrir(linha, indicador, coluna) {
     </tbody>
     <tfoot>
       <tr class="font-weight-bold">
-        <td>Total</td>
+        <td>{{ $t('reports.total') }}</td>
         <template v-for="ind in resultado.indicadores" :key="ind.chave">
           <td
             v-for="(col, i) in periodos"
@@ -93,7 +96,7 @@ function abrir(linha, indicador, coluna) {
         </template>
       </tr>
       <tr class="text-medium-emphasis">
-        <td>Chamados distintos</td>
+        <td>{{ $t('reports.indicadores.distinct') }}</td>
         <template v-for="ind in resultado.indicadores" :key="ind.chave">
           <td v-for="(col, i) in periodos" :key="col.chave" :class="{ bloco: i === 0 }" />
           <td class="text-right" :class="{ bloco: !periodos.length }">{{ resultado.distintos[ind.chave] }}</td>

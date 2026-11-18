@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Chart as ChartJS, registerables } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { Bar } from 'vue-chartjs'
@@ -17,6 +18,7 @@ import { paramsPeriodo, validarQuebra } from '@/utils/reportPeriod'
 
 ChartJS.register(...registerables, ChartDataLabels)
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const canManage = computed(() => auth.hasPermission('relatorios.manage'))
 
@@ -62,7 +64,7 @@ async function loadGrupos() {
     const { data } = await solutionGroupService.list({ per_page: 200 })
     solutionGroupOptions.value = data
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os grupos de solução.')
+    errorMessage.value = extractErrorMessage(error, t('reports.indicadores.loadGroupsError'))
   } finally {
     loadingGrupos.value = false
   }
@@ -82,9 +84,9 @@ function validar() {
   const periodo = { periodoAtalho: periodoAtalho.value, dataInicio: dataInicio.value, dataFim: dataFim.value }
   const erroQuebra = validarQuebra({ quebra: quebra.value, ...periodo })
   if (erroQuebra) return erroQuebra
-  if (porIntegrante.value && grupos.value.length !== 1) return 'Selecione o grupo de solução para ver por analista.'
+  if (porIntegrante.value && grupos.value.length !== 1) return t('reports.indicadores.selectGroupForAnalyst')
   const temPeriodo = periodoAtalho.value === 'personalizado' ? dataInicio.value && dataFim.value : periodoAtalho.value
-  return temPeriodo ? '' : 'Informe um período.'
+  return temPeriodo ? '' : t('reports.indicadores.informPeriod')
 }
 
 async function onGenerate() {
@@ -103,7 +105,7 @@ async function onGenerate() {
     resultado.value = await reportService.indicadores({ ...params, formato: 'json' })
     resultadoParams.value = params
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível gerar o relatório.')
+    errorMessage.value = extractErrorMessage(error, t('reports.indicadores.generateError'))
   } finally {
     generating.value = false
   }
@@ -120,7 +122,7 @@ async function downloadPlanilha() {
     // Mesmo nome que o backend usa no Content-Disposition.
     downloadBlob(blob, 'relatorio-indicadores.xlsx')
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível baixar a planilha.')
+    errorMessage.value = extractErrorMessage(error, t('reports.indicadores.downloadError'))
   } finally {
     downloading.value = false
   }
@@ -250,7 +252,10 @@ function abrirChamados({ chave, indicador, coluna }) {
 }
 
 // --- relatórios salvos ---
-const AGRUPAR_POR_LABELS = { grupo: 'Por grupo', integrante: 'Por analista' }
+const agruparPorLabels = computed(() => ({
+  grupo: t('reports.indicadores.savedByGroup'),
+  integrante: t('reports.indicadores.savedByAnalyst'),
+}))
 const savedReports = ref([])
 const successSnackbar = ref(false)
 
@@ -260,7 +265,7 @@ async function loadSavedReports() {
     // Os salvos de indicadores moram nesta aba; a aba Avançado mostra o resto.
     savedReports.value = data.filter((r) => r.contar === 'indicadores')
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível carregar os relatórios salvos.')
+    errorMessage.value = extractErrorMessage(error, t('reports.indicadores.loadSavedError'))
   }
 }
 
@@ -302,7 +307,7 @@ async function confirmSave() {
     successSnackbar.value = true
     await loadSavedReports()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o relatório.')
+    errorMessage.value = extractErrorMessage(error, t('reports.indicadores.saveError'))
   } finally {
     saving.value = false
   }
@@ -333,7 +338,7 @@ async function openSaved(report) {
     // Parâmetros equivalentes ao que o servidor executou, para planilha e lista.
     resultadoParams.value = buildParams()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível executar o relatório salvo.')
+    errorMessage.value = extractErrorMessage(error, t('reports.indicadores.runSavedError'))
   } finally {
     generating.value = false
   }
@@ -355,7 +360,7 @@ async function confirmDeleteSaved() {
     deleteOpen.value = false
     await loadSavedReports()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível excluir o relatório salvo.')
+    errorMessage.value = extractErrorMessage(error, t('reports.indicadores.deleteSavedError'))
     deleteOpen.value = false
   } finally {
     deleting.value = false
@@ -383,14 +388,14 @@ function exportImage() {
     </v-alert>
 
     <v-snackbar v-model="successSnackbar" :timeout="3000" color="success" transition="fade-transition">
-      Relatório salvo com sucesso.
+      {{ $t('reports.indicadores.savedOk') }}
     </v-snackbar>
 
     <v-card variant="outlined" class="pa-2 bg-surface mb-4">
       <v-card-text>
         <v-row>
           <v-col cols="12" md="5">
-            <div class="text-caption text-medium-emphasis mb-1">Ver por</div>
+            <div class="text-caption text-medium-emphasis mb-1">{{ $t('reports.indicadores.viewBy') }}</div>
             <v-btn-toggle
               v-model="porIntegrante"
               mandatory
@@ -400,8 +405,8 @@ function exportImage() {
               divided
               class="mb-3"
             >
-              <v-btn :value="false" prepend-icon="mdi-account-group">Grupo</v-btn>
-              <v-btn :value="true" prepend-icon="mdi-account">Analista</v-btn>
+              <v-btn :value="false" prepend-icon="mdi-account-group">{{ $t('reports.indicadores.group') }}</v-btn>
+              <v-btn :value="true" prepend-icon="mdi-account">{{ $t('reports.indicadores.analyst') }}</v-btn>
             </v-btn-toggle>
             <v-autocomplete
               v-if="porIntegrante"
@@ -410,10 +415,10 @@ function exportImage() {
               :loading="loadingGrupos"
               item-title="nome"
               item-value="id"
-              label="Grupo de solução"
-              placeholder="Escolha o grupo dos analistas"
+              :label="$t('reports.indicadores.solutionGroup')"
+              :placeholder="$t('reports.indicadores.solutionGroupPlaceholder')"
               persistent-placeholder
-              hint="Um bloco de colunas por analista do grupo, com os quatro indicadores."
+              :hint="$t('reports.indicadores.analystHint')"
               persistent-hint
               density="compact"
             />
@@ -424,8 +429,8 @@ function exportImage() {
               :loading="loadingGrupos"
               item-title="nome"
               item-value="id"
-              label="Grupos de solução"
-              placeholder="Todos os grupos visíveis"
+              :label="$t('reports.indicadores.solutionGroups')"
+              :placeholder="$t('reports.indicadores.allGroups')"
               persistent-placeholder
               multiple
               chips
@@ -445,19 +450,19 @@ function exportImage() {
           </v-col>
         </v-row>
         <div class="d-flex justify-end" style="gap: 8px">
-          <v-btn v-if="canManage" color="primary" variant="tonal" @click="openSaveModal">Salvar Relatório</v-btn>
-          <v-btn color="primary" :loading="generating" @click="onGenerate">Gerar Relatório</v-btn>
+          <v-btn v-if="canManage" color="primary" variant="tonal" @click="openSaveModal">{{ $t('reports.indicadores.saveReport') }}</v-btn>
+          <v-btn color="primary" :loading="generating" @click="onGenerate">{{ $t('reports.indicadores.generate') }}</v-btn>
         </div>
 
         <template v-if="savedReports.length">
           <v-divider class="my-3" />
-          <div class="text-caption text-medium-emphasis mb-1">Relatórios salvos</div>
+          <div class="text-caption text-medium-emphasis mb-1">{{ $t('reports.indicadores.savedReports') }}</div>
           <v-list density="compact" class="pa-0">
             <v-list-item
               v-for="report in savedReports"
               :key="report.id"
               :title="report.nome"
-              :subtitle="AGRUPAR_POR_LABELS[report.agrupar_por] ?? report.agrupar_por"
+              :subtitle="agruparPorLabels[report.agrupar_por] ?? report.agrupar_por"
               @click="openSaved(report)"
             >
               <template v-if="canManage" #append>
@@ -466,7 +471,7 @@ function exportImage() {
                   variant="text"
                   size="x-small"
                   color="error"
-                  aria-label="Excluir relatório salvo"
+                  :aria-label="$t('reports.indicadores.deleteSavedAria')"
                   @click.stop="askDeleteSaved(report)"
                 />
               </template>
@@ -480,7 +485,7 @@ function exportImage() {
       <template v-if="!resultado">
         <div class="d-flex flex-column align-center justify-center flex-grow-1 text-medium-emphasis">
           <v-icon icon="mdi-chart-bar" size="64" class="mb-2" />
-          <div>Escolha os grupos e o período e clique em "Gerar Relatório"</div>
+          <div>{{ $t('reports.indicadores.empty') }}</div>
         </div>
       </template>
 
@@ -498,7 +503,7 @@ function exportImage() {
 
         <IndicadoresTable :resultado="resultado" class="mb-4" @abrir-chamados="abrirChamados" />
 
-        <div class="text-caption text-medium-emphasis mb-1">Legenda</div>
+        <div class="text-caption text-medium-emphasis mb-1">{{ $t('reports.indicadores.legend') }}</div>
         <ul class="legenda text-body-2 mb-4">
           <li v-for="(texto, i) in resultado.legenda" :key="i">{{ texto }}</li>
         </ul>
@@ -509,7 +514,7 @@ function exportImage() {
 
         <div class="d-flex justify-end" style="gap: 8px">
           <v-btn variant="tonal" size="small" prepend-icon="mdi-image" @click="exportImage">
-            Exportar imagem
+            {{ $t('reports.indicadores.exportImage') }}
           </v-btn>
           <v-btn
             variant="tonal"
@@ -518,7 +523,7 @@ function exportImage() {
             :loading="downloading"
             @click="downloadPlanilha"
           >
-            Baixar planilha
+            {{ $t('reports.indicadores.downloadSheet') }}
           </v-btn>
         </div>
       </template>
@@ -526,14 +531,14 @@ function exportImage() {
 
     <v-dialog v-model="saveModalOpen" max-width="480">
       <v-card>
-        <v-card-title class="text-subtitle-1 font-weight-bold">Salvar relatório</v-card-title>
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('reports.indicadores.saveTitle') }}</v-card-title>
         <v-card-text>
-          <v-text-field v-model="saveName" label="Nome do relatório" autofocus hide-details @keyup.enter="confirmSave" />
+          <v-text-field v-model="saveName" :label="$t('reports.indicadores.reportName')" autofocus hide-details @keyup.enter="confirmSave" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="saveModalOpen = false">Cancelar</v-btn>
-          <v-btn color="primary" :loading="saving" :disabled="!saveName.trim()" @click="confirmSave">Salvar</v-btn>
+          <v-btn variant="text" @click="saveModalOpen = false">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="primary" :loading="saving" :disabled="!saveName.trim()" @click="confirmSave">{{ $t('common.save') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -550,7 +555,7 @@ function exportImage() {
 
     <ConfirmDeleteDialog
       v-model="deleteOpen"
-      message="Excluir este relatório salvo? Essa ação não pode ser desfeita."
+      :message="$t('reports.indicadores.confirmDelete')"
       :loading="deleting"
       @confirm="confirmDeleteSaved"
     />

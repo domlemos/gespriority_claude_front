@@ -7,7 +7,7 @@ const periodoItens = computed(() => periodoOptions())
 
 // Controles de quebra (opcional) e período (atalhos + personalizado) dos relatórios.
 defineProps({
-  periodoLabel: { type: String, default: 'Período' },
+  periodoLabel: { type: String, default: null },
   // Período obrigatório: o atalho não pode ser desmarcado e não há "todo o histórico".
   obrigatorio: { type: Boolean, default: false },
   // Esconde a quebra por período (Mapa de fluxos não tem quebra).
@@ -23,7 +23,7 @@ const dataFim = defineModel('dataFim', { type: String, default: null })
 
 <template>
   <template v-if="mostrarQuebra">
-    <div class="text-caption text-medium-emphasis mb-1">Quebrar por período</div>
+    <div class="text-caption text-medium-emphasis mb-1">{{ $t('reports.period.breakBy') }}</div>
     <v-btn-toggle
       v-model="quebra"
       mandatory
@@ -35,7 +35,7 @@ const dataFim = defineModel('dataFim', { type: String, default: null })
     </v-btn-toggle>
   </template>
 
-  <div class="text-caption text-medium-emphasis mb-1">{{ periodoLabel }}</div>
+  <div class="text-caption text-medium-emphasis mb-1">{{ periodoLabel ?? $t('reports.period.label') }}</div>
   <v-btn-toggle
     v-model="periodo"
     :mandatory="obrigatorio"
@@ -48,11 +48,11 @@ const dataFim = defineModel('dataFim', { type: String, default: null })
   </v-btn-toggle>
   <v-row v-if="periodo === 'personalizado'" dense class="mb-2">
     <v-col cols="6">
-      <v-text-field v-model="dataInicio" type="date" label="Data início" density="compact" clearable />
+      <v-text-field v-model="dataInicio" type="date" :label="$t('reports.period.startDate')" density="compact" clearable />
     </v-col>
     <v-col cols="6">
-      <v-text-field v-model="dataFim" type="date" label="Data fim" density="compact" clearable />
+      <v-text-field v-model="dataFim" type="date" :label="$t('reports.period.endDate')" density="compact" clearable />
     </v-col>
   </v-row>
-  <div v-else-if="!periodo && !obrigatorio" class="text-caption text-medium-emphasis mb-2">Sem período: todo o histórico.</div>
+  <div v-else-if="!periodo && !obrigatorio" class="text-caption text-medium-emphasis mb-2">{{ $t('reports.period.noPeriod') }}</div>
 </template>
