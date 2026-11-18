@@ -36,7 +36,38 @@
   "auth": {
     "brandTitle": "Ticket management, no runaround.",
     "brandText": "One place for your team to handle, prioritize and resolve, and for your customers to follow every ticket from start to finish.",
-    "mascotAlt": "Uplexis fox mascot answering tickets with a headset"
+    "mascotAlt": "Uplexis fox mascot answering tickets with a headset",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "forgotLink": "Forgot my password",
+    "backToLogin": "Back to sign in",
+    "staffLogin": {
+      "subtitle": "Restricted access for internal staff.",
+      "loginFailed": "Unable to sign in. Check your credentials.",
+      "customerPrompt": "Are you a customer who wants to open a ticket?",
+      "customerLink": "Go to the customer portal"
+    },
+    "customerLogin": {
+      "title": "Customer Portal",
+      "subtitle": "Track your tickets in one place.",
+      "staffPrompt": "Are you internal staff?",
+      "staffLink": "Go here"
+    },
+    "forgot": {
+      "subtitle": "Enter your email and we'll send you a link to reset your password.",
+      "sent": "If that email exists in our records, you'll receive a recovery link shortly.",
+      "submit": "Send recovery link"
+    },
+    "reset": {
+      "title": "Reset password",
+      "subtitle": "Choose a new password for your account.",
+      "done": "Password reset successfully. You can now sign in with your new password.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password",
+      "failed": "Unable to reset your password. The link may have expired."
+    }
   },
   "labels": {
     "prioridade": {
@@ -133,5 +164,9 @@
     "generic": "Something went wrong. Please try again.",
     "tooManyAttempts": "Too many attempts. Wait a minute before trying again.",
     "mapImage": "Could not generate the map image."
+  },
+  "notFound": {
+    "message": "Page not found.",
+    "back": "Back"
   }
 }

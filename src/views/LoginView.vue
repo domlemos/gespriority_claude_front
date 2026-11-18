@@ -3,8 +3,10 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from 'vue-i18n'
 import { extractErrorMessage } from '@/utils/errors'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -23,7 +25,7 @@ async function onSubmit() {
     await auth.login('web', { email: email.value, password: password.value })
     router.replace(route.query.redirect || { name: 'dashboard' })
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível entrar. Confira suas credenciais.')
+    errorMessage.value = extractErrorMessage(error, t('auth.staffLogin.loginFailed'))
   } finally {
     loading.value = false
   }
@@ -31,7 +33,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <AuthLayout title="Entrar" subtitle="Acesso restrito à equipe interna.">
+  <AuthLayout :title="t('auth.signIn')" :subtitle="t('auth.staffLogin.subtitle')">
     <v-form @submit.prevent="onSubmit">
       <v-alert
         v-if="errorMessage"
@@ -47,7 +49,7 @@ async function onSubmit() {
 
       <v-text-field
         v-model="email"
-        label="E-mail"
+        :label="$t('auth.email')"
         type="email"
         autocomplete="username"
         prepend-inner-icon="mdi-email-outline"
@@ -57,7 +59,7 @@ async function onSubmit() {
 
       <v-text-field
         v-model="password"
-        label="Senha"
+        :label="$t('auth.password')"
         :type="showPassword ? 'text' : 'password'"
         autocomplete="current-password"
         prepend-inner-icon="mdi-lock-outline"
@@ -69,7 +71,7 @@ async function onSubmit() {
 
       <div class="d-flex justify-end mb-6">
         <RouterLink class="text-caption text-primary text-decoration-none" :to="{ name: 'staff-forgot-password' }">
-          Esqueci minha senha
+          {{ $t('auth.forgotLink') }}
         </RouterLink>
       </div>
 
@@ -80,13 +82,13 @@ async function onSubmit() {
         size="large"
         :loading="loading"
       >
-        Entrar
+        {{ $t('auth.signIn') }}
       </v-btn>
 
       <div class="text-center text-caption text-medium-emphasis mt-8">
-        É cliente e quer abrir um chamado?
+        {{ $t('auth.staffLogin.customerPrompt') }}
         <RouterLink class="text-primary text-decoration-none font-weight-medium" :to="{ name: 'customer-login' }">
-          Acesse o portal do cliente
+          {{ $t('auth.staffLogin.customerLink') }}
         </RouterLink>
       </div>
     </v-form>

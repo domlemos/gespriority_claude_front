@@ -36,7 +36,38 @@
   "auth": {
     "brandTitle": "Gestão de chamados, sem enrolação.",
     "brandText": "Um único lugar para sua equipe atender, priorizar e resolver — e para seus clientes acompanharem cada chamado do início ao fim.",
-    "mascotAlt": "Mascote raposa da Uplexis atendendo chamados com headset"
+    "mascotAlt": "Mascote raposa da Uplexis atendendo chamados com headset",
+    "email": "E-mail",
+    "password": "Senha",
+    "signIn": "Entrar",
+    "forgotLink": "Esqueci minha senha",
+    "backToLogin": "Voltar para o login",
+    "staffLogin": {
+      "subtitle": "Acesso restrito à equipe interna.",
+      "loginFailed": "Não foi possível entrar. Confira suas credenciais.",
+      "customerPrompt": "É cliente e quer abrir um chamado?",
+      "customerLink": "Acesse o portal do cliente"
+    },
+    "customerLogin": {
+      "title": "Portal do Cliente",
+      "subtitle": "Acompanhe seus chamados em um só lugar.",
+      "staffPrompt": "É da equipe interna?",
+      "staffLink": "Acesse por aqui"
+    },
+    "forgot": {
+      "subtitle": "Informe seu e-mail e enviaremos um link para redefinir sua senha.",
+      "sent": "Se esse e-mail existir na nossa base, você vai receber um link de recuperação em instantes.",
+      "submit": "Enviar link de recuperação"
+    },
+    "reset": {
+      "title": "Redefinir senha",
+      "subtitle": "Escolha uma nova senha para sua conta.",
+      "done": "Senha redefinida com sucesso. Você já pode entrar com a nova senha.",
+      "newPassword": "Nova senha",
+      "confirmPassword": "Confirmar nova senha",
+      "submit": "Redefinir senha",
+      "failed": "Não foi possível redefinir sua senha. O link pode ter expirado."
+    }
   },
   "labels": {
     "prioridade": {
@@ -133,5 +164,9 @@
     "generic": "Algo deu errado. Tente novamente.",
     "tooManyAttempts": "Muitas tentativas. Aguarde um minuto antes de tentar de novo.",
     "mapImage": "Não foi possível gerar a imagem do mapa."
+  },
+  "notFound": {
+    "message": "Página não encontrada.",
+    "back": "Voltar"
   }
 }

@@ -3,8 +3,10 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from 'vue-i18n'
 import { extractErrorMessage } from '@/utils/errors'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 
@@ -35,11 +37,11 @@ async function onSubmit() {
 
 <template>
   <AuthLayout
-    title="Esqueci minha senha"
-    subtitle="Informe seu e-mail e enviaremos um link para redefinir sua senha."
+    :title="t('auth.forgotLink')"
+    :subtitle="t('auth.forgot.subtitle')"
   >
     <v-alert v-if="sent" type="success" variant="tonal" density="comfortable" class="mb-4">
-      Se esse e-mail existir na nossa base, você vai receber um link de recuperação em instantes.
+      {{ $t('auth.forgot.sent') }}
     </v-alert>
 
     <v-form v-else @submit.prevent="onSubmit">
@@ -57,7 +59,7 @@ async function onSubmit() {
 
       <v-text-field
         v-model="email"
-        label="E-mail"
+        :label="$t('auth.email')"
         type="email"
         autocomplete="username"
         prepend-inner-icon="mdi-email-outline"
@@ -66,14 +68,14 @@ async function onSubmit() {
       />
 
       <v-btn type="submit" color="primary" block size="large" :loading="loading">
-        Enviar link de recuperação
+        {{ $t('auth.forgot.submit') }}
       </v-btn>
     </v-form>
 
     <div class="text-center text-caption mt-8">
       <RouterLink class="text-primary text-decoration-none font-weight-medium" :to="loginRoute">
         <v-icon icon="mdi-arrow-left" size="14" class="mr-1" />
-        Voltar para o login
+        {{ $t('auth.backToLogin') }}
       </RouterLink>
     </div>
   </AuthLayout>

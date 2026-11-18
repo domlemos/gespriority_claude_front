@@ -3,8 +3,10 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from 'vue-i18n'
 import { extractErrorMessage } from '@/utils/errors'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 
@@ -35,7 +37,7 @@ async function onSubmit() {
     })
     done.value = true
   } catch (error) {
-    errorMessage.value = extractErrorMessage(error, 'Não foi possível redefinir sua senha. O link pode ter expirado.')
+    errorMessage.value = extractErrorMessage(error, t('auth.reset.failed'))
   } finally {
     loading.value = false
   }
@@ -43,9 +45,9 @@ async function onSubmit() {
 </script>
 
 <template>
-  <AuthLayout title="Redefinir senha" subtitle="Escolha uma nova senha para sua conta.">
+  <AuthLayout :title="t('auth.reset.title')" :subtitle="t('auth.reset.subtitle')">
     <v-alert v-if="done" type="success" variant="tonal" density="comfortable" class="mb-4">
-      Senha redefinida com sucesso. Você já pode entrar com a nova senha.
+      {{ $t('auth.reset.done') }}
     </v-alert>
 
     <v-form v-else @submit.prevent="onSubmit">
@@ -63,7 +65,7 @@ async function onSubmit() {
 
       <v-text-field
         v-model="email"
-        label="E-mail"
+        :label="$t('auth.email')"
         type="email"
         autocomplete="username"
         prepend-inner-icon="mdi-email-outline"
@@ -73,7 +75,7 @@ async function onSubmit() {
 
       <v-text-field
         v-model="password"
-        label="Nova senha"
+        :label="$t('auth.reset.newPassword')"
         :type="showPassword ? 'text' : 'password'"
         autocomplete="new-password"
         prepend-inner-icon="mdi-lock-outline"
@@ -85,7 +87,7 @@ async function onSubmit() {
 
       <v-text-field
         v-model="passwordConfirmation"
-        label="Confirmar nova senha"
+        :label="$t('auth.reset.confirmPassword')"
         :type="showPassword ? 'text' : 'password'"
         autocomplete="new-password"
         prepend-inner-icon="mdi-lock-check-outline"
@@ -94,14 +96,14 @@ async function onSubmit() {
       />
 
       <v-btn type="submit" color="primary" block size="large" :loading="loading">
-        Redefinir senha
+        {{ $t('auth.reset.submit') }}
       </v-btn>
     </v-form>
 
     <div class="text-center text-caption mt-8">
       <RouterLink class="text-primary text-decoration-none font-weight-medium" :to="loginRoute">
         <v-icon icon="mdi-arrow-left" size="14" class="mr-1" />
-        Voltar para o login
+        {{ $t('auth.backToLogin') }}
       </RouterLink>
     </div>
   </AuthLayout>
