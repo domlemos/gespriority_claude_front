@@ -20,19 +20,29 @@ function flatten(obj, prefix = '', out = {}) {
 
 // Chaves estáticas usadas em t('…') / $t('…') / i18n.global.t('…') precisam existir nos dois idiomas.
 // Chaves dinâmicas (template literal, concatenação) são ignoradas.
+function reportMissing(flat, key, file, src, idx) {
+  if (key.endsWith('.')) return 0
+  const miss = ['pt-BR', 'en'].filter((l) => !(key in flat[l]))
+  if (!miss.length) return 0
+  console.log(`chave inexistente: ${key} (${path.relative(root, file)}:${lineOf(src, idx)})`)
+  return 1
+}
+
+// Chaves que usam plural do vue-i18n (`a | b`); `|` em qualquer outra mensagem é erro.
+const PLURAL_KEYS = ['duration.days', 'duration.hours', 'duration.minutes']
+
 function checkUsedKeys(flat) {
+  const KEYPATH = /<i18n-t[^>]*?\skeypath\s*=\s*(['"])([\w.-]+)\1/g
   const USE = /(?:^|[^\w$])\$?t\(\s*(['"])([\w.-]+)\1\s*[,)]/g
   let problems = 0
   for (const file of walk(path.join(root, 'src'))) {
     const src = fs.readFileSync(file, 'utf8')
     for (const m of src.matchAll(USE)) {
       const key = m[2]
-      if (key.endsWith('.')) continue
-      const miss = ['pt-BR', 'en'].filter((l) => !(key in flat[l]))
-      if (miss.length) {
-        console.log(`chave inexistente: ${key} (${path.relative(root, file)}:${lineOf(src, m.index + 1)})`)
-        problems++
-      }
+      problems += reportMissing(flat, key, file, src, m.index + 1)
+    }
+    for (const m of src.matchAll(KEYPATH)) {
+      problems += reportMissing(flat, m[2], file, src, m.index + 1)
     }
   }
   return problems
@@ -64,6 +74,10 @@ function checkLocales() {
         problems++
         continue
       }
+      if (msg.includes('|') && !PLURAL_KEYS.includes(key)) {
+        console.log(`'|' em mensagem que não é plural [${l}] ${key} (use PLURAL_KEYS se for plural)`)
+        problems++
+      }
       baseCompile(msg, {
         onError: (err) => {
           console.log(`erro de compilação [${l}] ${key}: ${err.message}`)
@@ -83,7 +97,7 @@ function checkLocales() {
 const LETTER = /[A-Za-zÀ-ÿ]/
 const ACCENT = /[À-ÿ]/
 const TAG = /<(?:[^>"']|"[^"]*"|'[^']*')*>/g
-const ATTRS = 'title|label|placeholder|text|hint|subtitle|no-data-text|loading-text|alt|aria-label|prefix|suffix|prepend-text|append-text|confirm-text'
+const ATTRS = 'title|label|placeholder|text|hint|subtitle|no-data-text|loading-text|alt|aria-label|prefix|suffix|prepend-text|append-text|confirm-text|message|error-messages|items-per-page-text|no-results-text'
 const STATIC_ATTR = new RegExp(`\\s(${ATTRS})\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'g')
 
 const blank = (s) => s.replace(/[^\n]/g, ' ')
@@ -139,7 +153,6 @@ function scanFile(file) {
       const line = lineOf(code, s.index) + offsetLines
       if (ACCENT.test(s.text)) add(line, s.text)
       else if (!isI18nPlugin && s.text.includes('pt-BR')) add(line, s.text)
-      if (ACCENT.test(s.text) && !isI18nPlugin && s.text.includes('pt-BR')) { /* já listado */ }
     }
   }
 

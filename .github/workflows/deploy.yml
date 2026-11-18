@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check locales
+        run: npm run check:locales
+
       - name: Build
         run: npm run build
 
