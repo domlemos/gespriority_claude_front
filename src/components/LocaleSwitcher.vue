@@ -10,23 +10,25 @@ const options = computed(() => LOCALE_OPTIONS.map((o) => ({ code: o.code, title:
 </script>
 
 <template>
-  <v-menu>
-    <template #activator="{ props }">
-      <v-btn v-bind="props" variant="text" class="text-none" :aria-label="t('locale.label')" :title="t('locale.label')">
-        <v-icon icon="mdi-translate" class="mr-1" />
-        {{ shortName }}
-        <v-icon icon="mdi-chevron-down" size="small" class="ml-1" />
-      </v-btn>
-    </template>
+  <div class="locale-switcher d-inline-flex">
+    <v-menu>
+      <template #activator="{ props }">
+        <v-btn v-bind="props" variant="text" class="text-none" :aria-label="t('locale.label')" :title="t('locale.label')">
+          <v-icon icon="mdi-translate" class="mr-1" />
+          {{ shortName }}
+          <v-icon icon="mdi-chevron-down" size="small" class="ml-1" />
+        </v-btn>
+      </template>
 
-    <v-list density="compact" min-width="160">
-      <v-list-item
-        v-for="option in options"
-        :key="option.code"
-        :title="option.title"
-        :active="option.code === locale"
-        @click="setLocale(option.code)"
-      />
-    </v-list>
-  </v-menu>
+      <v-list density="compact" min-width="160">
+        <v-list-item
+          v-for="option in options"
+          :key="option.code"
+          :title="option.title"
+          :active="option.code === locale"
+          @click="setLocale(option.code)"
+        />
+      </v-list>
+    </v-menu>
+  </div>
 </template>
