@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { garantirCsrf } from '@/services/csrf'
+import { currentLocale } from '@/plugins/i18n'
 
 const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
 
@@ -15,6 +16,8 @@ const api = axios.create({
 const METODOS_DE_ESCRITA = ['post', 'put', 'patch', 'delete']
 
 api.interceptors.request.use(async (config) => {
+  config.headers['Accept-Language'] = currentLocale()
+
   if (METODOS_DE_ESCRITA.includes((config.method ?? 'get').toLowerCase())) {
     config.headers['X-CSRF-TOKEN'] = await garantirCsrf(baseURL)
   }

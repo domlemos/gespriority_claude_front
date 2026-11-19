@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import customerService from '@/services/customerService'
 import clientService from '@/services/clientService'
+import { LOCALE_OPTIONS, toBackendLocale } from '@/plugins/i18n'
 import { extractErrorMessage } from '@/utils/errors'
 
 const props = defineProps({
@@ -24,6 +25,10 @@ const isEditing = computed(() => targetCustomerId.value !== null)
 const name = ref('')
 const email = ref('')
 const password = ref('')
+const locale = ref('pt_BR')
+const localeItems = computed(() =>
+  LOCALE_OPTIONS.map((o) => ({ title: t(o.nameKey), value: toBackendLocale(o.code) })),
+)
 const clientId = ref(null)
 const clientOptions = ref([])
 const loading = ref(false)
@@ -48,6 +53,7 @@ watch(
     name.value = props.customer?.name ?? ''
     email.value = props.customer?.email ?? ''
     clientId.value = props.customer?.client?.id ?? null
+    locale.value = props.customer?.locale ?? 'pt_BR'
 
     await loadClients()
   },
@@ -71,6 +77,7 @@ async function onSubmit() {
     name: name.value,
     email: email.value,
     client_id: clientId.value,
+    locale: locale.value,
     ...(password.value ? { password: password.value } : {}),
   }
 
@@ -100,6 +107,7 @@ async function onSendInvite() {
         name: name.value,
         email: email.value,
         client_id: clientId.value,
+    locale: locale.value,
       })
       createdCustomerId.value = created.data.id
       emit('saved')
@@ -148,6 +156,12 @@ async function onSendInvite() {
           <div v-if="!isEditing" class="text-caption text-medium-emphasis mb-2">
             {{ $t('admin.customers.passwordHint') }}
           </div>
+          <v-select
+            v-model="locale"
+            :items="localeItems"
+            :label="$t('admin.common.language')"
+            class="mb-2"
+          />
           <v-select
             v-model="clientId"
             :items="clientOptions"

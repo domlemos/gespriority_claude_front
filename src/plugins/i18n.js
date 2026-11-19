@@ -49,6 +49,24 @@ export function setLocale(locale) {
   document.documentElement.lang = locale
 }
 
+// Códigos: front 'pt-BR' | 'en' <-> backend 'pt_BR' | 'en'.
+export function toBackendLocale(locale) {
+  return locale === 'en' ? 'en' : 'pt_BR'
+}
+
+export function fromBackendLocale(locale) {
+  return locale === 'en' ? 'en' : 'pt-BR'
+}
+
+// Há escolha explícita (valor válido) salva neste navegador?
+export function hasExplicitLocale() {
+  try {
+    return SUPPORTED_LOCALES.includes(localStorage.getItem(STORAGE_KEY))
+  } catch {
+    return false
+  }
+}
+
 export function currentLocale() {
   return i18n.global.locale.value
 }

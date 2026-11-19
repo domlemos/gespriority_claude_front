@@ -2,8 +2,15 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { LOCALE_OPTIONS, setLocale } from '@/plugins/i18n'
+import { useAuthStore } from '@/stores/auth'
 
 const { t, locale } = useI18n()
+const auth = useAuthStore()
+
+function choose(code) {
+  setLocale(code)
+  auth.saveLocale(code)
+}
 
 const shortName = computed(() => LOCALE_OPTIONS.find((o) => o.code === locale.value)?.short ?? '')
 const options = computed(() => LOCALE_OPTIONS.map((o) => ({ code: o.code, title: t(o.nameKey) })))
@@ -26,7 +33,7 @@ const options = computed(() => LOCALE_OPTIONS.map((o) => ({ code: o.code, title:
           :key="option.code"
           :title="option.title"
           :active="option.code === locale"
-          @click="setLocale(option.code)"
+          @click="choose(option.code)"
         />
       </v-list>
     </v-menu>

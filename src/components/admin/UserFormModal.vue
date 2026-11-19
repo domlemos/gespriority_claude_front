@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import userService from '@/services/userService'
 import roleService from '@/services/roleService'
 import solutionGroupService from '@/services/solutionGroupService'
+import { LOCALE_OPTIONS, toBackendLocale } from '@/plugins/i18n'
 import { extractErrorMessage } from '@/utils/errors'
 
 const props = defineProps({
@@ -26,6 +27,10 @@ const name = ref('')
 const email = ref('')
 const password = ref('')
 const sendInviteOnCreate = ref(true)
+const locale = ref('pt_BR')
+const localeItems = computed(() =>
+  LOCALE_OPTIONS.map((o) => ({ title: t(o.nameKey), value: toBackendLocale(o.code) })),
+)
 const roleIds = ref([])
 const roleOptions = ref([])
 const solutionGroupId = ref(null)
@@ -59,6 +64,7 @@ watch(
     name.value = props.user?.name ?? ''
     email.value = props.user?.email ?? ''
     solutionGroupId.value = props.user?.grupo_solucao_id ?? null
+    locale.value = props.user?.locale ?? 'pt_BR'
     roleIds.value = []
     solutionGroupOptions.value = []
 
@@ -97,6 +103,7 @@ async function onSubmit() {
     name: name.value,
     email: email.value,
     role_ids: roleIds.value,
+    locale: locale.value,
     grupo_solucao_id: solutionGroupId.value,
     ...(password.value ? { password: password.value } : {}),
   }
@@ -183,6 +190,12 @@ async function onSendInvite() {
             :label="$t('admin.users.sendInviteOnCreate')"
             density="compact"
             hide-details
+            class="mb-2"
+          />
+          <v-select
+            v-model="locale"
+            :items="localeItems"
+            :label="$t('admin.common.language')"
             class="mb-2"
           />
           <v-select

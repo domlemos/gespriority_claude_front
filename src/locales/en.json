@@ -508,6 +508,7 @@
     "common": {
       "name": "Name",
       "email": "Email",
+      "language": "Language",
       "advancedFilter": "Advanced Filter",
       "clearFilters": "Clear filters",
       "clear": "Clear",

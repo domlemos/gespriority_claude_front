@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia'
 import authService from '@/services/authService'
 import { definirCsrf } from '@/services/csrf'
+import api from '@/services/api'
+import {
+  currentLocale,
+  fromBackendLocale,
+  hasExplicitLocale,
+  setLocale,
+  toBackendLocale,
+} from '@/plugins/i18n'
 
 // Sessão por cookie HttpOnly (Sanctum SPA, padrão OWASP): o front nunca vê
 // nem guarda credencial — nada em sessionStorage/localStorage. O estado aqui
@@ -40,6 +48,7 @@ export const useAuthStore = defineStore('auth', {
       this.guard = guard
       this.user = data.user
       this.conferidos[guard] = true
+      this.syncLocale()
       return data
     },
 
@@ -47,6 +56,7 @@ export const useAuthStore = defineStore('auth', {
       if (!this.guard) return null
       const user = await authService.me(this.guard)
       this.user = user
+      this.syncLocale()
       return user
     },
 
@@ -62,9 +72,35 @@ export const useAuthStore = defineStore('auth', {
         const user = await authService.me(guard)
         this.guard = guard
         this.user = user
+        this.syncLocale()
         return true
       } catch {
         return false
+      }
+    },
+
+    // Chamada depois de carregar o usuário. Escolha explícita neste navegador
+    // vence e vai ao servidor se diferir; sem escolha, adota a do servidor.
+    // Aplicar o locale do servidor usa setLocale direto (não saveLocale): sem eco/loop.
+    syncLocale() {
+      if (!this.user) return
+      const serverLocale = fromBackendLocale(this.user.locale)
+      if (hasExplicitLocale()) {
+        if (currentLocale() !== serverLocale) return this.saveLocale(currentLocale())
+      } else {
+        setLocale(serverLocale)
+      }
+    },
+
+    // Grava a escolha do seletor na conta (no-op deslogado). Falha só loga.
+    async saveLocale(locale) {
+      if (!this.isAuthenticated) return
+      try {
+        const prefixo = this.guard === 'customer' ? '/customer' : ''
+        await api.patch(`${prefixo}/me/locale`, { locale: toBackendLocale(locale) })
+        this.user = { ...this.user, locale: toBackendLocale(locale) }
+      } catch (error) {
+        console.warn('Could not save the language preference to the account.', error)
       }
     },
 
