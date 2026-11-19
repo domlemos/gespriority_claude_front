@@ -348,10 +348,10 @@ watch(
           </v-row>
 
           <v-row dense class="mb-2">
-            <v-col cols="6">
+            <v-col cols="12" sm="6">
               <v-select v-model="origem" :items="originOptions" :label="$t('incidents.form.origem')" required />
             </v-col>
-            <v-col v-if="itemId" cols="6">
+            <v-col v-if="itemId" cols="12" sm="6">
               <v-text-field
                 :model-value="prioridadeExibida"
                 :label="$t('incidents.form.prioridade')"

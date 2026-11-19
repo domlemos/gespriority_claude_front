@@ -5,7 +5,12 @@
     "close": "Close",
     "delete": "Delete",
     "edit": "Edit",
-    "actions": "Actions"
+    "actions": "Actions",
+    "sortBy": "Sort by",
+    "sortAsc": "Ascending",
+    "sortDesc": "Descending",
+    "details": "Details",
+    "openMenu": "Open menu"
   },
   "locale": {
     "label": "Language",

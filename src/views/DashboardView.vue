@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
+import ResponsiveDataTable from '@/components/ResponsiveDataTable.vue'
 import IncidentAdvancedFilterModal from '@/components/IncidentAdvancedFilterModal.vue'
 import IncidentCreateModal from '@/components/IncidentCreateModal.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -252,9 +253,9 @@ loadFilterOptions()
 
 <template>
   <AppLayout fluid>
-    <div class="d-flex align-center justify-space-between mb-4">
+    <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-4">
       <h1 class="text-h5 font-weight-bold">{{ $t('incidents.dashboard.title') }}</h1>
-      <div class="d-flex align-center ga-2">
+      <div class="d-flex flex-wrap align-center ga-2">
         <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
           {{ $t('incidents.dashboard.clearFilters') }}
         </v-btn>
@@ -291,12 +292,13 @@ loadFilterOptions()
       {{ filtersSavedMessage }}
     </v-snackbar>
 
-    <v-data-table-server
+    <ResponsiveDataTable
       :headers="headers"
       :items="items"
       :items-length="totalItems"
       :items-per-page="itemsPerPage"
       :loading="loading"
+      cards-up-to="md"
       class="incident-table"
       @update:options="onOptionsUpdate"
       @click:row="onRowClick"
@@ -359,12 +361,71 @@ loadFilterOptions()
           {{ formatRemainingMinutes(item.tempo_restante_resolucao_minutos) }}
         </div>
       </template>
-    </v-data-table-server>
+      <template #card="{ item, click }">
+        <v-card variant="outlined" class="h-100 d-flex flex-column" @click="click">
+          <v-card-item class="pb-2">
+            <div class="d-flex flex-wrap align-center ga-2 mb-2">
+              <span class="text-body-2 font-weight-bold text-medium-emphasis">#{{ item.numero }}</span>
+              <v-chip size="x-small" :color="TIPO_COLORS[item.tipo]" variant="tonal">{{ tipoLabel(item.tipo) }}</v-chip>
+              <v-chip size="x-small" :color="STATUS_COLORS[item.status]" variant="tonal">{{ statusLabel(item.status) }}</v-chip>
+              <v-spacer />
+              <v-chip v-if="!item.prioridade" size="x-small" variant="outlined">{{ $t('incidents.dashboard.unclassified') }}</v-chip>
+              <v-chip v-else size="x-small" :color="PRIORIDADE_COLORS[item.prioridade]" variant="flat">
+                {{ prioridadeLabel(item.prioridade) }}
+              </v-chip>
+            </div>
+            <div class="text-subtitle-1 font-weight-bold text-break incident-card-title">{{ item.titulo }}</div>
+            <div class="text-body-2 text-medium-emphasis text-truncate">
+              {{ item.cliente ?? '—' }}<span v-if="item.email_cliente"> · {{ item.email_cliente }}</span>
+            </div>
+          </v-card-item>
+
+          <v-card-text class="pt-0 flex-grow-1 text-body-2">
+            <div class="d-flex align-start ga-2 py-1">
+              <v-icon icon="mdi-shape-outline" size="16" class="mt-1 text-medium-emphasis" />
+              <span class="text-break">{{ classification(item) }}</span>
+            </div>
+            <div class="d-flex align-start ga-2 py-1">
+              <v-icon icon="mdi-account-group-outline" size="16" class="mt-1 text-medium-emphasis" />
+              <span class="text-break">{{ item.grupo_solucao ?? '—' }} · {{ item.responsavel ?? '—' }}</span>
+            </div>
+            <div class="d-flex align-start ga-2 py-1">
+              <v-icon icon="mdi-calendar-clock-outline" size="16" class="mt-1 text-medium-emphasis" />
+              <span>{{ formatDateTime(item.data_abertura) }}</span>
+            </div>
+          </v-card-text>
+
+          <v-divider />
+
+          <div class="d-flex">
+            <div v-for="sla in ['resposta', 'resolucao']" :key="sla" class="flex-1-1-0 pa-3 sla-cell">
+              <div class="text-caption text-medium-emphasis mb-1">
+                {{ sla === 'resposta' ? $t('incidents.dashboard.headers.slaResposta') : $t('incidents.dashboard.headers.slaResolucao') }}
+              </div>
+              <v-chip size="x-small" :color="SLA_STATUS_COLORS[item[`status_sla_${sla}`]]" variant="tonal">
+                {{ slaStatusLabel(item[`status_sla_${sla}`]) }}
+              </v-chip>
+              <div v-if="item[`status_sla_${sla}`] !== 'sem_sla'" class="text-caption text-medium-emphasis mt-1">
+                {{ formatRemainingMinutes(item[`tempo_restante_${sla}_minutos`]) }}
+              </div>
+            </div>
+          </div>
+        </v-card>
+      </template>
+    </ResponsiveDataTable>
   </AppLayout>
 </template>
 
 <style scoped>
 .incident-table :deep(tbody tr) {
   cursor: pointer;
+}
+
+.incident-card-title {
+  line-height: 1.35;
+}
+
+.sla-cell + .sla-cell {
+  border-inline-start: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 </style>

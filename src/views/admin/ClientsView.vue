@@ -6,6 +6,7 @@ import ClientAdvancedFilterModal from '@/components/admin/ClientAdvancedFilterMo
 import ConfirmDeleteDialog from '@/components/admin/ConfirmDeleteDialog.vue'
 import clientService from '@/services/clientService'
 import { extractErrorMessage } from '@/utils/errors'
+import ResponsiveDataTable from '@/components/ResponsiveDataTable.vue'
 
 const { t } = useI18n()
 
@@ -117,9 +118,9 @@ async function confirmDelete() {
 </script>
 
 <template>
-  <div class="d-flex align-center justify-space-between mb-4">
+  <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-4">
     <h1 class="text-h5 font-weight-bold">{{ $t('admin.clients.title') }}</h1>
-    <div class="d-flex align-center ga-2">
+    <div class="d-flex flex-wrap align-center ga-2">
       <v-btn v-if="hasActiveFilters" variant="text" size="small" prepend-icon="mdi-filter-off" @click="clearFilters">
         {{ $t('admin.common.clearFilters') }}
       </v-btn>
@@ -136,7 +137,7 @@ async function confirmDelete() {
 
   <ClientAdvancedFilterModal v-model="filterModalOpen" :filters="appliedFilters" @apply="applyFilters" />
 
-  <v-data-table-server
+  <ResponsiveDataTable
     :headers="headers"
     :items="items"
     :items-length="totalItems"
@@ -148,7 +149,7 @@ async function confirmDelete() {
       <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEdit(item)" />
       <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="askDelete(item)" />
     </template>
-  </v-data-table-server>
+  </ResponsiveDataTable>
 
   <ClientFormModal v-model="formOpen" :client="editingClient" @saved="loadClients" />
 

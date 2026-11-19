@@ -20,6 +20,7 @@ import {
   statusOptions as statusOptionsFn,
   tipoOptions as tipoOptionsFn,
 } from '@/utils/incidentLabels'
+import { useDisplay } from 'vuetify'
 
 // Só edição — a abertura de chamado é a modal `IncidentCreateModal`.
 const props = defineProps({
@@ -367,26 +368,40 @@ watch(() => props.id, () => {
 })
 
 init()
+
+// No celular, "Novo" e "Clonar" vão pra um menu pra o cabeçalho fixo caber numa linha.
+const { xs } = useDisplay()
 </script>
 
 <template>
   <AppLayout fluid>
-    <div class="d-flex align-center justify-space-between mb-4 form-header">
-      <div class="d-flex align-center">
+    <div class="d-flex align-center justify-space-between ga-2 mb-4 form-header">
+      <div class="d-flex align-center" style="min-width: 0">
         <v-btn icon="mdi-arrow-left" variant="text" density="comfortable" class="mr-2" :to="{ name: 'dashboard' }" />
         <h1 class="text-h5 font-weight-bold ma-0">
           {{ $t('incidents.form.title', { id }) }}
         </h1>
       </div>
 
-      <div class="d-flex align-center ga-2">
-        <v-btn v-if="canManage" variant="outlined" @click="openCreate">
-          {{ $t('incidents.form.newTicket') }}
-        </v-btn>
-        <v-btn v-if="canManage" variant="outlined" @click="cloneAsNew">
-          {{ $t('incidents.form.clone') }}
-        </v-btn>
-        <v-btn v-if="canManage" color="primary" :loading="saving" @click="onSubmit">
+      <div v-if="canManage" class="d-flex align-center ga-2">
+        <template v-if="!xs">
+          <v-btn variant="outlined" @click="openCreate">
+            {{ $t('incidents.form.newTicket') }}
+          </v-btn>
+          <v-btn variant="outlined" @click="cloneAsNew">
+            {{ $t('incidents.form.clone') }}
+          </v-btn>
+        </template>
+        <v-menu v-else>
+          <template #activator="{ props }">
+            <v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" density="comfortable" :aria-label="$t('common.actions')" />
+          </template>
+          <v-list density="compact">
+            <v-list-item prepend-icon="mdi-plus" :title="$t('incidents.form.newTicket')" @click="openCreate" />
+            <v-list-item prepend-icon="mdi-content-copy" :title="$t('incidents.form.clone')" @click="cloneAsNew" />
+          </v-list>
+        </v-menu>
+        <v-btn color="primary" :loading="saving" @click="onSubmit">
           {{ $t('common.save') }}
         </v-btn>
       </div>
@@ -491,7 +506,7 @@ init()
               />
 
               <v-row dense class="mb-2">
-                <v-col cols="4">
+                <v-col cols="12" sm="4">
                   <v-text-field
                     :model-value="prioridadeExibida"
                     :label="$t('incidents.form.prioridade')"
@@ -501,7 +516,7 @@ init()
                   />
                 </v-col>
 
-                <v-col cols="4">
+                <v-col cols="12" sm="4">
                   <v-select
                     v-model="origem"
                     :items="originOptions"
@@ -513,7 +528,7 @@ init()
                   />
                 </v-col>
 
-                <v-col cols="4">
+                <v-col cols="12" sm="4">
                   <v-select
                     v-model="status"
                     :items="statusOptions"
@@ -526,7 +541,7 @@ init()
 
               <div class="text-caption text-medium-emphasis mb-1">{{ $t('incidents.form.classificacao') }}</div>
               <v-row dense class="mb-2">
-                <v-col cols="4">
+                <v-col cols="12" sm="4">
                   <v-select
                     v-model="categoriaId"
                     :items="categoryOptions"
@@ -538,7 +553,7 @@ init()
                     @update:model-value="watchCategoriaChange"
                   />
                 </v-col>
-                <v-col cols="4">
+                <v-col cols="12" sm="4">
                   <v-select
                     v-model="subcategoriaId"
                     :items="filteredSubcategoryOptions"
@@ -550,7 +565,7 @@ init()
                     @update:model-value="watchSubcategoriaChange"
                   />
                 </v-col>
-                <v-col cols="4">
+                <v-col cols="12" sm="4">
                   <v-select
                     v-model="itemId"
                     :items="filteredItemOptions"
@@ -564,7 +579,7 @@ init()
               </v-row>
 
               <v-row dense class="mb-2">
-                <v-col cols="6">
+                <v-col cols="12" sm="6">
                   <v-select
                     v-model="grupoSolucaoId"
                     :items="solutionGroupOptions"
@@ -579,7 +594,7 @@ init()
                   />
                 </v-col>
 
-                <v-col cols="6">
+                <v-col cols="12" sm="6">
                   <v-select
                     v-model="responsavelId"
                     :items="filteredResponsavelOptions"

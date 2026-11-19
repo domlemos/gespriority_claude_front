@@ -6,6 +6,8 @@ import customerService from '@/services/customerService'
 import userService from '@/services/userService'
 import { extractErrorMessage } from '@/utils/errors'
 import { formatDateTime } from '@/utils/format'
+import ResponsiveDataTable from '@/components/ResponsiveDataTable.vue'
+import AuditLogDetails from '@/components/admin/AuditLogDetails.vue'
 
 const { t } = useI18n()
 
@@ -270,7 +272,8 @@ onMounted(carregarOpcoes)
   </v-sheet>
 
   <template v-else>
-    <v-data-table
+    <ResponsiveDataTable
+      :server="false"
       v-model:expanded="expandidos"
       :headers="headers"
       :items="logs"
@@ -313,42 +316,15 @@ onMounted(carregarOpcoes)
       <template #expanded-row="{ columns, item }">
         <tr>
           <td :colspan="columns.length" class="bg-grey-lighten-5 py-3">
-            <template v-if="detalhes(item).tipo === 'diff'">
-              <v-table density="compact" class="bg-transparent">
-                <thead>
-                  <tr><th>{{ $t('admin.auditLogs.field') }}</th><th>{{ $t('admin.auditLogs.from') }}</th><th>{{ $t('admin.auditLogs.to') }}</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="linha in detalhes(item).linhas" :key="linha.campo">
-                    <td class="font-weight-medium">{{ linha.campo }}</td>
-                    <td class="text-medium-emphasis">{{ linha.de }}</td>
-                    <td>{{ linha.para }}</td>
-                  </tr>
-                </tbody>
-              </v-table>
-            </template>
-            <div v-else-if="detalhes(item).tipo === 'campos'" class="text-body-2">
-              {{ $t('admin.auditLogs.changedFields') }} <strong>{{ detalhes(item).campos.join(', ') }}</strong>
-              <span class="text-medium-emphasis">{{ $t('admin.auditLogs.changedFieldsHint') }}</span>
-            </div>
-            <v-table v-else-if="detalhes(item).tipo === 'parametros'" density="compact" class="bg-transparent">
-              <thead>
-                <tr><th>{{ $t('admin.auditLogs.parameter') }}</th><th>{{ $t('admin.auditLogs.value') }}</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="linha in detalhes(item).linhas" :key="linha.campo">
-                  <td class="font-weight-medium">{{ linha.campo }}</td>
-                  <td>{{ linha.valor }}</td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div v-else class="text-body-2 text-medium-emphasis">{{ $t('admin.auditLogs.noDetails') }}</div>
-
-            <div v-if="item.user_agent" class="text-caption text-medium-emphasis mt-2">{{ $t('admin.auditLogs.browser', { agent: item.user_agent }) }}</div>
+            <AuditLogDetails :item="item" :details="detalhes(item)" />
           </td>
         </tr>
       </template>
-    </v-data-table>
+
+      <template #card-details="{ item }">
+        <AuditLogDetails :item="item" :details="detalhes(item)" />
+      </template>
+    </ResponsiveDataTable>
 
     <div v-if="temMais" class="d-flex justify-center mt-4">
       <v-btn variant="outlined" :loading="carregando && pagina >= 1" @click="consultar(pagina + 1)">{{ $t('admin.auditLogs.loadMore') }}</v-btn>

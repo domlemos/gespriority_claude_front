@@ -5,7 +5,12 @@
     "close": "Fechar",
     "delete": "Excluir",
     "edit": "Editar",
-    "actions": "Ações"
+    "actions": "Ações",
+    "sortBy": "Ordenar por",
+    "sortAsc": "Crescente",
+    "sortDesc": "Decrescente",
+    "details": "Detalhes",
+    "openMenu": "Abrir menu"
   },
   "locale": {
     "label": "Idioma",

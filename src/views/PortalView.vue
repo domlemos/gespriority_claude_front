@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
+import ResponsiveDataTable from '@/components/ResponsiveDataTable.vue'
 import PortalIncidentCreateModal from '@/components/PortalIncidentCreateModal.vue'
 import PortalIncidentModal from '@/components/PortalIncidentModal.vue'
 import portalIncidentService from '@/services/portalIncidentService'
@@ -131,7 +132,7 @@ watch(incidentOpen, (open) => {
 
 <template>
   <AppLayout>
-    <div class="d-flex align-center justify-space-between mb-6">
+    <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-6">
       <div>
         <h1 class="text-h5 font-weight-bold mb-1">{{ $t('portal.greeting', { name: auth.user?.name }) }}</h1>
         <p class="text-body-2 text-medium-emphasis ma-0">{{ $t('portal.subtitle') }}</p>
@@ -184,7 +185,7 @@ watch(incidentOpen, (open) => {
         </v-col>
       </v-row>
 
-      <v-data-table-server
+      <ResponsiveDataTable
         :headers="headers"
         :items="items"
         :items-length="totalItems"
@@ -208,7 +209,25 @@ watch(incidentOpen, (open) => {
 
         <template #item.created_at="{ item }">{{ item.created_at ? formatDateTime(item.created_at) : '—' }}</template>
         <template #item.updated_at="{ item }">{{ item.updated_at ? formatDateTime(item.updated_at) : '—' }}</template>
-      </v-data-table-server>
+        <template #card="{ item, click }">
+          <v-card variant="outlined" class="h-100" @click="click">
+            <v-card-item>
+              <div class="d-flex align-center ga-2 mb-1">
+                <span class="text-body-2 font-weight-bold text-medium-emphasis">#{{ item.id }}</span>
+                <v-spacer />
+                <v-chip size="x-small" :color="STATUS_COLORS[item.status]" variant="tonal">
+                  {{ statusLabel(item.status) }}
+                </v-chip>
+              </div>
+              <div class="text-subtitle-1 font-weight-bold text-break">{{ item.titulo }}</div>
+            </v-card-item>
+            <v-card-text class="pt-0 text-caption text-medium-emphasis">
+              <div>{{ $t('portal.openedAt') }}: {{ item.created_at ? formatDateTime(item.created_at) : '—' }}</div>
+              <div>{{ $t('portal.updatedAt') }}: {{ item.updated_at ? formatDateTime(item.updated_at) : '—' }}</div>
+            </v-card-text>
+          </v-card>
+        </template>
+      </ResponsiveDataTable>
     </v-card>
   </AppLayout>
 </template>
@@ -216,5 +235,9 @@ watch(incidentOpen, (open) => {
 <style scoped>
 .portal-table :deep(tbody tr) {
   cursor: pointer;
+}
+
+.portal-table.responsive-data-table--cards {
+  padding: 8px 16px 0;
 }
 </style>
