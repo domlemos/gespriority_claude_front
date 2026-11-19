@@ -418,7 +418,14 @@
       "loadError": "Não foi possível carregar o feed do incidente.",
       "editError": "Não foi possível editar o comentário.",
       "addError": "Não foi possível adicionar o comentário.",
-      "deleteError": "Não foi possível excluir o comentário."
+      "deleteError": "Não foi possível excluir o comentário.",
+      "replyToUser": "Responder ao usuário",
+      "replyTitle": "Responder ao usuário",
+      "replyWarning": "O cliente verá esta resposta no portal e a receberá por e-mail. Depois de enviada, não pode ser editada.",
+      "replyPlaceholder": "Escreva a resposta ao cliente...",
+      "sendReply": "Enviar resposta",
+      "replyError": "Não foi possível enviar a resposta.",
+      "replyVisible": "Resposta · enviada ao cliente"
     },
     "attachments": {
       "attach": "Anexar arquivos",

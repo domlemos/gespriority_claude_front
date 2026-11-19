@@ -11,6 +11,13 @@ export default {
       .post(`/incidentes/${incidentId}/descricoes`, payload)
       .then((res) => res.data.data)
   },
+  // Resposta ao cliente: entra no feed como 'resposta', aparece no portal e
+  // vai por e-mail ao cliente. Imutável depois de enviada.
+  reply(incidentId, payload) {
+    return api
+      .post(`/incidentes/${incidentId}/respostas`, payload)
+      .then((res) => res.data.data)
+  },
   update(incidentId, descriptionId, payload) {
     return api
       .put(`/incidentes/${incidentId}/descricoes/${descriptionId}`, payload)

@@ -418,7 +418,14 @@
       "loadError": "Could not load the incident feed.",
       "editError": "Could not edit the comment.",
       "addError": "Could not add the comment.",
-      "deleteError": "Could not delete the comment."
+      "deleteError": "Could not delete the comment.",
+      "replyToUser": "Reply to user",
+      "replyTitle": "Reply to user",
+      "replyWarning": "The customer will see this reply in the portal and receive it by e-mail. Once sent, it cannot be edited.",
+      "replyPlaceholder": "Write your reply to the customer...",
+      "sendReply": "Send reply",
+      "replyError": "Could not send the reply.",
+      "replyVisible": "Reply · sent to customer"
     },
     "attachments": {
       "attach": "Attach files",

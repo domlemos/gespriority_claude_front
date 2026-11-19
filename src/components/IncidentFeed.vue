@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import incidentDescriptionService from '@/services/incidentDescriptionService'
@@ -24,6 +24,18 @@ const commentModalOpen = ref(false)
 const commentModalText = ref('')
 const commentModalEntry = ref(null)
 const commentModalSaving = ref(false)
+// Modo "Responder ao usuário": o texto vai para o cliente (portal + e-mail).
+const commentModalReply = ref(false)
+
+const modalTitle = computed(() => {
+  if (commentModalEntry.value) return t('incidents.feed.editCommentTitle')
+  return commentModalReply.value ? t('incidents.feed.replyTitle') : t('incidents.feed.addCommentTitle')
+})
+
+const submitLabel = computed(() => {
+  if (commentModalEntry.value) return t('common.save')
+  return commentModalReply.value ? t('incidents.feed.sendReply') : t('incidents.feed.comment')
+})
 
 const deleteOpen = ref(false)
 const deleting = ref(false)
@@ -84,12 +96,21 @@ async function loadFeed() {
 
 function openCreateModal() {
   commentModalEntry.value = null
+  commentModalReply.value = false
+  commentModalText.value = ''
+  commentModalOpen.value = true
+}
+
+function openReplyModal() {
+  commentModalEntry.value = null
+  commentModalReply.value = true
   commentModalText.value = ''
   commentModalOpen.value = true
 }
 
 function openEditModal(entry) {
   commentModalEntry.value = entry
+  commentModalReply.value = false
   commentModalText.value = entry.descricao
   commentModalOpen.value = true
 }
@@ -114,7 +135,8 @@ async function submitCommentModal() {
       const index = entries.value.findIndex((item) => item.id === commentModalEntry.value.id)
       if (index !== -1) entries.value[index] = updated
     } else {
-      const created = await incidentDescriptionService.create(props.incidentId, {
+      const service = commentModalReply.value ? incidentDescriptionService.reply : incidentDescriptionService.create
+      const created = await service(props.incidentId, {
         descricao: commentModalText.value,
       })
       entries.value.push(created)
@@ -123,10 +145,10 @@ async function submitCommentModal() {
     }
     closeCommentModal()
   } catch (error) {
-    errorMessage.value = extractErrorMessage(
-      error,
-      commentModalEntry.value ? t('incidents.feed.editError') : t('incidents.feed.addError'),
-    )
+    let fallback = t('incidents.feed.addError')
+    if (commentModalEntry.value) fallback = t('incidents.feed.editError')
+    else if (commentModalReply.value) fallback = t('incidents.feed.replyError')
+    errorMessage.value = extractErrorMessage(error, fallback)
   } finally {
     commentModalSaving.value = false
   }
@@ -199,7 +221,7 @@ defineExpose({ reload: loadFeed })
             <div class="d-flex align-center">
               <span class="font-weight-bold text-body-2 mr-2">{{ authorName(entry) }}</span>
               <span class="text-caption text-medium-emphasis">{{ formatDateTime(entry.created_at) }}</span>
-              <!-- Única entrada do staff que o cliente vê no portal. -->
+              <!-- Encerramento e resposta: as entradas do staff que o cliente vê no portal. -->
               <v-chip
                 v-if="entry.tipo === 'encerramento'"
                 size="x-small"
@@ -209,6 +231,16 @@ defineExpose({ reload: loadFeed })
                 class="ml-2"
               >
                 {{ $t('incidents.feed.closingVisible') }}
+              </v-chip>
+              <v-chip
+                v-if="entry.tipo === 'resposta'"
+                size="x-small"
+                variant="tonal"
+                color="info"
+                prepend-icon="mdi-email-fast-outline"
+                class="ml-2"
+              >
+                {{ $t('incidents.feed.replyVisible') }}
               </v-chip>
 
               <v-spacer />
@@ -225,9 +257,12 @@ defineExpose({ reload: loadFeed })
       </template>
     </div>
 
-    <div v-if="auth.hasPermission('tickets.manage')" class="pa-4 pt-0 flex-shrink-0">
-      <v-btn color="primary" block prepend-icon="mdi-comment-plus-outline" @click="openCreateModal">
+    <div v-if="auth.hasPermission('tickets.manage')" class="d-flex ga-2 pa-4 pt-0 flex-shrink-0">
+      <v-btn color="primary" class="flex-1-1" prepend-icon="mdi-comment-plus-outline" @click="openCreateModal">
         {{ $t('incidents.feed.addComment') }}
+      </v-btn>
+      <v-btn color="primary" variant="tonal" class="flex-1-1" prepend-icon="mdi-reply" @click="openReplyModal">
+        {{ $t('incidents.feed.replyToUser') }}
       </v-btn>
     </div>
   </div>
@@ -235,10 +270,13 @@ defineExpose({ reload: loadFeed })
   <v-dialog v-model="commentModalOpen" max-width="640">
     <v-card>
       <v-card-title class="text-subtitle-1 font-weight-bold">
-        {{ commentModalEntry ? $t('incidents.feed.editCommentTitle') : $t('incidents.feed.addCommentTitle') }}
+        {{ modalTitle }}
       </v-card-title>
 
       <v-card-text>
+        <v-alert v-if="commentModalReply" type="info" variant="tonal" density="compact" class="mb-3">
+          {{ $t('incidents.feed.replyWarning') }}
+        </v-alert>
         <v-textarea
           v-model="commentModalText"
           auto-grow
@@ -246,7 +284,9 @@ defineExpose({ reload: loadFeed })
           density="comfortable"
           hide-details
           autofocus
-          :placeholder="$t('incidents.feed.commentPlaceholder')"
+          :placeholder="commentModalReply ? $t('incidents.feed.replyPlaceholder') : $t('incidents.feed.commentPlaceholder')"
+          :counter="commentModalReply ? 5000 : undefined"
+          :maxlength="commentModalReply ? 5000 : undefined"
         />
       </v-card-text>
 
@@ -259,7 +299,7 @@ defineExpose({ reload: loadFeed })
           :disabled="!commentModalText.trim()"
           @click="submitCommentModal"
         >
-          {{ commentModalEntry ? $t('common.save') : $t('incidents.feed.comment') }}
+          {{ submitLabel }}
         </v-btn>
       </v-card-actions>
     </v-card>
