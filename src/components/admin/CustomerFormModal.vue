@@ -107,7 +107,7 @@ async function onSendInvite() {
         name: name.value,
         email: email.value,
         client_id: clientId.value,
-    locale: locale.value,
+        locale: locale.value,
       })
       createdCustomerId.value = created.data.id
       emit('saved')

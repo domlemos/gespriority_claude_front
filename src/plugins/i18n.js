@@ -38,13 +38,16 @@ const i18n = createI18n({
 
 document.documentElement.lang = i18n.global.locale.value
 
-export function setLocale(locale) {
+// `persist: false` aplica o idioma sem gravá-lo como escolha explícita do navegador.
+export function setLocale(locale, { persist = true } = {}) {
   if (!SUPPORTED_LOCALES.includes(locale)) return
   i18n.global.locale.value = locale
-  try {
-    localStorage.setItem(STORAGE_KEY, locale)
-  } catch {
-    // sem persistência: a troca vale só para a sessão
+  if (persist) {
+    try {
+      localStorage.setItem(STORAGE_KEY, locale)
+    } catch {
+      // sem persistência: a troca vale só para a sessão
+    }
   }
   document.documentElement.lang = locale
 }

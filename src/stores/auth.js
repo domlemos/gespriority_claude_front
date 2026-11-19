@@ -80,15 +80,17 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // Chamada depois de carregar o usuário. Escolha explícita neste navegador
-    // vence e vai ao servidor se diferir; sem escolha, adota a do servidor.
+    // vence e vai ao servidor se diferir. Sem escolha: servidor 'en' é aplicado sem
+    // gravar; servidor 'pt_BR' mantém o idioma detectado pelo navegador, pois todas as
+    // contas nascem pt_BR (não é evidência de escolha). Só o seletor altera a conta.
     // Aplicar o locale do servidor usa setLocale direto (não saveLocale): sem eco/loop.
     syncLocale() {
       if (!this.user) return
       const serverLocale = fromBackendLocale(this.user.locale)
       if (hasExplicitLocale()) {
         if (currentLocale() !== serverLocale) return this.saveLocale(currentLocale())
-      } else {
-        setLocale(serverLocale)
+      } else if (serverLocale === 'en') {
+        setLocale('en', { persist: false })
       }
     },
 
